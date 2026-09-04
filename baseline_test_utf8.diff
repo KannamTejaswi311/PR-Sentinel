@@ -1,0 +1,13 @@
+diff --git a/example.py b/example.py
+new file mode 100644
+index 00000000..7dc0499f
+--- /dev/null
++++ b/example.py
+@@ -0,0 +1,7 @@
++import sqlite3
++
++def get_user(username):
++    connection = sqlite3.connect("users.db")
++    query = "SELECT * FROM users WHERE username = '" + username + "'"
++    result = connection.execute(query)
++    return result.fetchone()
