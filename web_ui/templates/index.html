@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Code Review Assistant</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+    <!-- ============================= -->
+    <!-- HEADER -->
+    <!-- ============================= -->
+
+    <header>
+
+        <div class="logo">
+            AI Code Review Assistant
+        </div>
+
+        <div class="status">
+            ● Local AI
+        </div>
+
+    </header>
+
+
+    <!-- ============================= -->
+    <!-- MAIN CONTENT -->
+    <!-- ============================= -->
+
+    <main>
+
+        <!-- ============================= -->
+        <!-- HERO SECTION -->
+        <!-- ============================= -->
+
+        <section class="hero">
+
+            <h1>
+                AI-Powered Code Review
+            </h1>
+
+            <p>
+                Analyze your code changes using PR-Agent,
+                Ollama and Qwen2.5-Coder.
+            </p>
+
+        </section>
+
+
+        <!-- ============================= -->
+        <!-- UPLOAD SECTION -->
+        <!-- ============================= -->
+
+        <section class="review-card">
+
+            <h2>
+                Submit Code for Review
+            </h2>
+
+            <p class="description">
+                Upload a Git diff file to start an automated code review.
+            </p>
+
+
+            <div class="upload-area">
+
+                <div class="upload-icon">
+                    ↑
+                </div>
+
+                <h3>
+                    Upload Diff File
+                </h3>
+
+                <p>
+                    Select a .diff or .patch file
+                </p>
+
+
+                <input
+                    type="file"
+                    id="diffFile"
+                    accept=".diff,.patch"
+                >
+
+
+                <label
+                    for="diffFile"
+                    class="choose-button"
+                >
+                    Choose Diff File
+                </label>
+
+
+                <p id="fileName">
+                    No file selected
+                </p>
+
+            </div>
+
+
+            <button
+                class="review-button"
+                type="button"
+            >
+                Review Code
+            </button>
+
+        </section>
+
+
+        <!-- ============================= -->
+        <!-- REVIEW SUMMARY -->
+        <!-- ============================= -->
+
+        <section class="summary">
+
+            <h2>
+                Review Summary
+            </h2>
+
+
+            <div class="summary-grid">
+
+
+                <!-- Critical Issues -->
+
+                <div class="summary-box">
+
+                    <span
+                        class="number"
+                        id="criticalIssues"
+                    >
+                        0
+                    </span>
+
+                    <span>
+                        Critical Issues
+                    </span>
+
+                </div>
+
+
+                <!-- Security Issues -->
+
+                <div class="summary-box">
+
+                    <span
+                        class="number"
+                        id="securityIssues"
+                    >
+                        0
+                    </span>
+
+                    <span>
+                        Security Issues
+                    </span>
+
+                </div>
+
+
+                <!-- Code Quality -->
+
+                <div class="summary-box">
+
+                    <span
+                        class="number"
+                        id="codeQualityIssues"
+                    >
+                        0
+                    </span>
+
+                    <span>
+                        Code Quality
+                    </span>
+
+                </div>
+
+
+                <!-- Test Issues -->
+
+                <div class="summary-box">
+
+                    <span
+                        class="number"
+                        id="testIssues"
+                    >
+                        0
+                    </span>
+
+                    <span>
+                        Test Issues
+                    </span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ============================= -->
+        <!-- REVIEW RESULTS -->
+        <!-- ============================= -->
+
+        <section class="results">
+
+            <h2>
+                Review Results
+            </h2>
+
+
+            <div class="result-placeholder">
+
+                <p>
+                    Your AI code review results will appear here.
+                </p>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- ============================= -->
+    <!-- FOOTER -->
+    <!-- ============================= -->
+
+    <footer>
+
+        <p>
+            PR-Agent • Ollama • Qwen2.5-Coder
+        </p>
+
+    </footer>
+
+
+    <!-- ============================= -->
+    <!-- JAVASCRIPT -->
+    <!-- ============================= -->
+
+    <script>
+
+        // -----------------------------------------
+        // Get HTML elements
+        // -----------------------------------------
+
+        const fileInput =
+            document.getElementById("diffFile");
+
+        const fileName =
+            document.getElementById("fileName");
+
+        const reviewButton =
+            document.querySelector(".review-button");
+
+        const results =
+            document.querySelector(".result-placeholder");
+
+
+        const criticalIssues =
+            document.getElementById("criticalIssues");
+
+        const securityIssues =
+            document.getElementById("securityIssues");
+
+        const codeQualityIssues =
+            document.getElementById("codeQualityIssues");
+
+        const testIssues =
+            document.getElementById("testIssues");
+
+
+        // -----------------------------------------
+        // Display selected filename
+        // -----------------------------------------
+
+        fileInput.addEventListener(
+            "change",
+            function () {
+
+                if (this.files.length > 0) {
+
+                    fileName.textContent =
+                        this.files[0].name;
+
+                } else {
+
+                    fileName.textContent =
+                        "No file selected";
+
+                }
+
+            }
+        );
+
+
+        // -----------------------------------------
+        // HTML escape function
+        // -----------------------------------------
+
+        function escapeHtml(text) {
+
+            const div =
+                document.createElement("div");
+
+            div.textContent = text;
+
+            return div.innerHTML;
+        }
+
+
+        // -----------------------------------------
+        // Format PR-Agent review
+        // -----------------------------------------
+        //
+        // PR-Agent returns a mixture of Markdown and
+        // HTML table tags. This function converts only
+        // the known PR-Agent formatting into safe HTML.
+        //
+        // AI-generated content is escaped first, so
+        // arbitrary HTML cannot execute in the browser.
+        // -----------------------------------------
+
+        function formatReview(review) {
+
+            let safe =
+                escapeHtml(review);
+
+
+            // -------------------------------------
+            // Convert Markdown heading
+            // -------------------------------------
+
+            safe = safe.replace(
+                /^## PR Reviewer Guide 🔍/m,
+                '<h3 class="review-title">PR Reviewer Guide 🔍</h3>'
+            );
+
+
+            // -------------------------------------
+            // Remove table wrapper
+            // -------------------------------------
+
+            safe = safe.replace(
+                /&lt;table&gt;/gi,
+                '<div class="review-table">'
+            );
+
+            safe = safe.replace(
+                /&lt;\/table&gt;/gi,
+                '</div>'
+            );
+
+
+            // -------------------------------------
+            // Convert table rows
+            // -------------------------------------
+
+            safe = safe.replace(
+                /&lt;tr&gt;/gi,
+                '<div class="review-row">'
+            );
+
+            safe = safe.replace(
+                /&lt;\/tr&gt;/gi,
+                '</div>'
+            );
+
+
+            // -------------------------------------
+            // Convert table cells
+            // -------------------------------------
+
+            safe = safe.replace(
+                /&lt;td&gt;/gi,
+                '<div class="review-cell">'
+            );
+
+            safe = safe.replace(
+                /&lt;\/td&gt;/gi,
+                '</div>'
+            );
+
+
+            // -------------------------------------
+            // Convert bold text
+            // -------------------------------------
+
+            safe = safe.replace(
+                /&lt;strong&gt;/gi,
+                '<strong>'
+            );
+
+            safe = safe.replace(
+                /&lt;\/strong&gt;/gi,
+                '</strong>'
+            );
+
+
+            // -------------------------------------
+            // Convert line breaks
+            // -------------------------------------
+
+            safe = safe.replace(
+                /&lt;br\s*\/?&gt;/gi,
+                '<br>'
+            );
+
+
+            // -------------------------------------
+            // Convert paragraph-like lines
+            // -------------------------------------
+
+            safe = safe.replace(
+                /\n/g,
+                '<br>'
+            );
+
+
+            return safe;
+        }
+
+
+        // -----------------------------------------
+        // Reset dashboard counters
+        // -----------------------------------------
+
+        function resetSummary() {
+
+            criticalIssues.textContent = "0";
+
+            securityIssues.textContent = "0";
+
+            codeQualityIssues.textContent = "0";
+
+            testIssues.textContent = "0";
+
+        }
+
+
+        // -----------------------------------------
+        // Review button
+        // -----------------------------------------
+
+        reviewButton.addEventListener(
+            "click",
+            async function () {
+
+
+                // ---------------------------------
+                // Check file selection
+                // ---------------------------------
+
+                if (fileInput.files.length === 0) {
+
+                    results.innerHTML = `
+                        <div class="review-output">
+                            <h3>File Required</h3>
+                            <p>
+                                Please select a .diff or .patch file first.
+                            </p>
+                        </div>
+                    `;
+
+                    return;
+                }
+
+
+                // ---------------------------------
+                // Get selected file
+                // ---------------------------------
+
+                const file =
+                    fileInput.files[0];
+
+
+                // ---------------------------------
+                // Create form data
+                // ---------------------------------
+
+                const formData =
+                    new FormData();
+
+                formData.append(
+                    "file",
+                    file
+                );
+
+
+                // ---------------------------------
+                // Disable button
+                // ---------------------------------
+
+                reviewButton.disabled = true;
+
+                reviewButton.textContent =
+                    "Reviewing...";
+
+
+                // ---------------------------------
+                // Reset previous summary
+                // ---------------------------------
+
+                resetSummary();
+
+
+                // ---------------------------------
+                // Show loading message
+                // ---------------------------------
+
+                results.innerHTML = `
+
+                    <div class="review-output">
+
+                        <h3>
+                            AI Review in Progress
+                        </h3>
+
+                        <p>
+                            PR-Agent is analyzing your code.
+                        </p>
+
+                        <p>
+                            Please wait while the local AI model
+                            completes the review...
+                        </p>
+
+                    </div>
+
+                `;
+
+
+                try {
+
+                    // ---------------------------------
+                    // Send file to FastAPI
+                    // ---------------------------------
+
+                    const response =
+                        await fetch(
+                            "/upload",
+                            {
+                                method: "POST",
+                                body: formData
+                            }
+                        );
+
+
+                    // ---------------------------------
+                    // Convert response to JSON
+                    // ---------------------------------
+
+                    const data =
+                        await response.json();
+
+
+                    // ---------------------------------
+                    // Successful review
+                    // ---------------------------------
+
+                    if (
+                        response.ok &&
+                        data.review
+                    ) {
+
+
+                        // -----------------------------
+                        // Update summary counters
+                        // -----------------------------
+
+                        if (data.summary) {
+
+                            criticalIssues.textContent =
+                                data.summary.critical_issues ?? 0;
+
+                            securityIssues.textContent =
+                                data.summary.security_issues ?? 0;
+
+                            codeQualityIssues.textContent =
+                                data.summary.code_quality_issues ?? 0;
+
+                            testIssues.textContent =
+                                data.summary.test_issues ?? 0;
+
+                        }
+
+
+                        // -----------------------------
+                        // Format AI review
+                        // -----------------------------
+
+                        const formattedReview =
+                            formatReview(data.review);
+
+
+                        // -----------------------------
+                        // Display AI review
+                        // -----------------------------
+
+                        results.innerHTML = `
+
+                            <div class="review-output">
+
+                                <div class="review-status">
+                                    ✓ AI Review Completed
+                                </div>
+
+                                <div class="review-content">
+                                    ${formattedReview}
+                                </div>
+
+                            </div>
+
+                        `;
+
+
+                    } else {
+
+
+                        // ---------------------------------
+                        // Review failed
+                        // ---------------------------------
+
+                        const message =
+                            data.message ||
+                            "The review could not be completed.";
+
+                        const error =
+                            data.error || "";
+
+
+                        results.innerHTML = `
+
+                            <div class="review-output">
+
+                                <h3>
+                                    Review Error
+                                </h3>
+
+                                <p>
+                                    ${escapeHtml(message)}
+                                </p>
+
+                                ${
+                                    error
+                                    ?
+                                    `<pre>${escapeHtml(error)}</pre>`
+                                    :
+                                    ""
+                                }
+
+                            </div>
+
+                        `;
+
+                    }
+
+
+                } catch (error) {
+
+
+                    // ---------------------------------
+                    // Server connection error
+                    // ---------------------------------
+
+                    results.innerHTML = `
+
+                        <div class="review-output">
+
+                            <h3>
+                                Unable to Complete Review
+                            </h3>
+
+                            <p>
+                                Unable to connect to the review server.
+                            </p>
+
+                            <p>
+                                Please check that FastAPI is running.
+                            </p>
+
+                        </div>
+
+                    `;
+
+                } finally {
+
+
+                    // ---------------------------------
+                    // Re-enable button
+                    // ---------------------------------
+
+                    reviewButton.disabled = false;
+
+                    reviewButton.textContent =
+                        "Review Code";
+
+                }
+
+            }
+        );
+
+    </script>
+
+</body>
+
+</html>
