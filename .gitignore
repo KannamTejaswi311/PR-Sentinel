@@ -16,3 +16,12 @@ docs/.cache/
 .qodo
 poetry.lock
 .log
+# Local security/code review test files
+security_credential_test.py
+security_credential_test.diff
+security_test.py
+security_test.diff
+security_test_utf8.diff
+
+# Generated review output
+test_review_output.txt

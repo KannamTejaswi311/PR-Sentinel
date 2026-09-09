@@ -101,7 +101,10 @@ require_ticket_analysis_review=true
 # general options
 publish_output_no_suggestions=true # Set to "false" if you only need the reviewer's remarks (not labels, not "security audit", etc.) and want to avoid noisy "No major issues detected" comments.
 persistent_comment=true
-extra_instructions = ""
+extra_instructions = """Perform a thorough security review of the changed code.
+Pay special attention to hard-coded passwords, API keys, access tokens, secrets, credentials, authentication and authorization issues, injection vulnerabilities, insecure input handling, sensitive data exposure, and unsafe configuration.
+Treat hard-coded credentials or secrets as security concerns and report them clearly with the affected file and line.
+Do not report "No security concerns identified" if a real security vulnerability is present in the diff."""
 num_max_findings = 3
 final_update_message = true
 # review labels
