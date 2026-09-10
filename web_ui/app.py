@@ -3,25 +3,23 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-import os
-import tempfile
+from sentinel.review_analyzer import analyze_review
 
-from pr_agent.agent.pr_agent import PRAgent
-from pr_agent.config_loader import get_settings
+import httpx
 
 
-# =========================================================
-# FastAPI Application
-# =========================================================
+# ============================================================
+# FASTAPI APPLICATION
+# ============================================================
 
 app = FastAPI(
     title="AI Code Review Assistant"
 )
 
 
-# =========================================================
-# Static Files
-# =========================================================
+# ============================================================
+# STATIC FILES
+# ============================================================
 
 app.mount(
     "/static",
@@ -30,21 +28,34 @@ app.mount(
 )
 
 
-# =========================================================
-# HTML Templates
-# =========================================================
+# ============================================================
+# TEMPLATES
+# ============================================================
 
 templates = Jinja2Templates(
     directory="web_ui/templates"
 )
 
 
-# =========================================================
-# Home Page
-# =========================================================
+# ============================================================
+# OLLAMA CONFIGURATION
+# ============================================================
 
-@app.get("/", response_class=HTMLResponse)
+OLLAMA_URL = "http://localhost:11434/api/generate"
+
+OLLAMA_MODEL = "qwen2.5-coder:3b-instruct"
+
+
+# ============================================================
+# HOME PAGE
+# ============================================================
+
+@app.get(
+    "/",
+    response_class=HTMLResponse
+)
 async def home(request: Request):
+
     return templates.TemplateResponse(
         "index.html",
         {
@@ -53,349 +64,243 @@ async def home(request: Request):
     )
 
 
-# =========================================================
-# Review Analysis
-# =========================================================
-
-def analyze_review(review):
-    """
-    Analyze PR-Agent's generated review and calculate
-    dashboard counters.
-
-    The counters are based on the actual AI-generated
-    review text.
-    """
-
-    critical_issues = 0
-    security_issues = 0
-    code_quality_issues = 0
-    test_issues = 0
-
-    # Convert review to lowercase so matching is
-    # case-insensitive.
-    review_lower = review.lower()
-
-    # -----------------------------------------------------
-    # Security Issues
-    # -----------------------------------------------------
-
-    # PR-Agent may explicitly state that no security
-    # concerns were found.
-    no_security_concerns = (
-        "no security concerns identified" in review_lower
-        or "no security concerns" in review_lower
-    )
-
-    security_patterns = [
-        "security concerns",
-        "security concern",
-        "security issue",
-        "security vulnerability",
-
-        # Injection vulnerabilities
-        "sql injection",
-        "xss",
-        "cross-site scripting",
-        "command injection",
-
-        # Authentication / authorization
-        "authentication vulnerability",
-        "authorization vulnerability",
-
-        # Credentials and secrets
-        "hard-coded credentials",
-        "hardcoded credentials",
-        "hard-coded password",
-        "hardcoded password",
-        "hard-coded secret",
-        "hardcoded secret",
-        "sensitive information exposure",
-        "sensitive information",
-        "credential exposure",
-
-        # Other sensitive values
-        "api key",
-        "api keys",
-        "access token",
-        "access tokens",
-        "secret key",
-        "secret keys"
-    ]
-
-    # Only count a security issue when the AI has
-    # actually reported a positive security finding.
-    if not no_security_concerns:
-
-        for pattern in security_patterns:
-
-            if pattern in review_lower:
-
-                security_issues = 1
-                break
-
-    # -----------------------------------------------------
-    # Critical Issues
-    # -----------------------------------------------------
-
-    critical_patterns = [
-        "critical issue",
-        "critical vulnerability",
-        "severity: critical",
-        "critical security"
-    ]
-
-    for pattern in critical_patterns:
-
-        if pattern in review_lower:
-
-            critical_issues = 1
-            break
-
-    # -----------------------------------------------------
-    # Test Issues
-    # -----------------------------------------------------
-
-    if (
-        "no relevant tests" in review_lower
-        or "tests are missing" in review_lower
-        or "missing tests" in review_lower
-        or "test coverage" in review_lower
-    ):
-
-        test_issues = 1
-
-    # -----------------------------------------------------
-    # Code Quality Issues
-    # -----------------------------------------------------
-
-    quality_patterns = [
-        "code quality",
-        "code smell",
-        "maintainability",
-        "performance issue",
-        "bug",
-        "issue:",
-        "problem:",
-        "should be changed",
-        "should be fixed",
-        "improvement"
-    ]
-
-    for pattern in quality_patterns:
-
-        if pattern in review_lower:
-
-            code_quality_issues = 1
-            break
-
-    # -----------------------------------------------------
-    # Return Dashboard Summary
-    # -----------------------------------------------------
-
-    return {
-        "critical_issues": critical_issues,
-        "security_issues": security_issues,
-        "code_quality_issues": code_quality_issues,
-        "test_issues": test_issues
-    }
-
-
-# =========================================================
-# Upload and Review Diff
-# =========================================================
+# ============================================================
+# UPLOAD + CODE REVIEW
+# ============================================================
 
 @app.post("/upload")
 async def upload_diff(
     file: UploadFile = File(...)
 ):
 
-    # -----------------------------------------------------
-    # Validate File
-    # -----------------------------------------------------
+    # --------------------------------------------------------
+    # Validate filename
+    # --------------------------------------------------------
+
+    if not file.filename:
+
+        return {
+            "message": "No file was selected."
+        }
+
+
+    # --------------------------------------------------------
+    # Validate extension
+    # --------------------------------------------------------
 
     if not file.filename.lower().endswith(
         (".diff", ".patch")
     ):
 
         return {
-            "message": "Please upload a .diff or .patch file."
-        }
-
-    content = await file.read()
-
-    diff_path = None
-    output_path = None
-
-    try:
-
-        # -------------------------------------------------
-        # Save Uploaded Diff
-        # -------------------------------------------------
-
-        with tempfile.NamedTemporaryFile(
-            delete=False,
-            suffix=".diff"
-        ) as diff_file:
-
-            diff_file.write(content)
-            diff_path = diff_file.name
-
-        # -------------------------------------------------
-        # Read Diff as UTF-8
-        # -------------------------------------------------
-
-        with open(
-            diff_path,
-            "r",
-            encoding="utf-8"
-        ) as diff_file:
-
-            diff_content = diff_file.read()
-
-        # -------------------------------------------------
-        # Check Empty Diff
-        # -------------------------------------------------
-
-        if not diff_content.strip():
-
-            return {
-                "message": "The uploaded diff file is empty."
-            }
-
-        # -------------------------------------------------
-        # Create Temporary Review Output
-        # -------------------------------------------------
-
-        output_file = tempfile.NamedTemporaryFile(
-            delete=False,
-            suffix=".md"
-        )
-
-        output_path = output_file.name
-
-        output_file.close()
-
-        # -------------------------------------------------
-        # Configure PR-Agent
-        # -------------------------------------------------
-
-        settings = get_settings()
-
-        # Use Plain Diff provider because the web interface
-        # receives a .diff/.patch file directly.
-        settings.set(
-            "config.git_provider",
-            "plain-diff"
-        )
-
-        # Give PR-Agent the uploaded diff.
-        settings.set(
-            "plain_diff.content",
-            diff_content
-        )
-
-        # Tell PlainDiffGitProvider where to write
-        # the generated AI review.
-        settings.set(
-            "plain_diff.output_path",
-            output_path
-        )
-
-        # -------------------------------------------------
-        # Run PR-Agent
-        # -------------------------------------------------
-
-        agent = PRAgent()
-
-        success = await agent.handle_request(
-            "local_diff",
-            ["review"]
-        )
-
-        # -------------------------------------------------
-        # Read AI Review
-        # -------------------------------------------------
-
-        review = None
-
-        if os.path.exists(output_path):
-
-            with open(
-                output_path,
-                "r",
-                encoding="utf-8"
-            ) as review_file:
-
-                review = review_file.read()
-
-        # -------------------------------------------------
-        # Analyze Successful Review
-        # -------------------------------------------------
-
-        if review and review.strip():
-
-            summary = analyze_review(review)
-
-            return {
-                "message": "AI code review completed successfully.",
-                "filename": file.filename,
-                "review": review,
-                "summary": summary
-            }
-
-        # -------------------------------------------------
-        # PR-Agent Completed but No Output
-        # -------------------------------------------------
-
-        if success:
-
-            return {
-                "message": (
-                    "PR-Agent completed, but no review "
-                    "output was generated."
-                ),
-                "error": "No review output was found."
-            }
-
-        # -------------------------------------------------
-        # PR-Agent Failed
-        # -------------------------------------------------
-
-        return {
-            "message": "PR-Agent review failed.",
-            "error": (
-                "The review engine returned an "
-                "unsuccessful result."
+            "message": (
+                "Please upload a .diff or .patch file."
             )
         }
 
-    # =====================================================
-    # Exception Handling
-    # =====================================================
+
+    # --------------------------------------------------------
+    # Read uploaded file
+    # --------------------------------------------------------
+
+    content = await file.read()
+
+
+    # --------------------------------------------------------
+    # Decode UTF-8
+    # --------------------------------------------------------
+
+    try:
+
+        diff_content = content.decode("utf-8")
+
+    except UnicodeDecodeError:
+
+        return {
+            "message": (
+                "The uploaded diff must be UTF-8 encoded."
+            ),
+
+            "error": (
+                "The file could not be decoded as UTF-8. "
+                "Please save the diff file using UTF-8 encoding."
+            )
+        }
+
+
+    # --------------------------------------------------------
+    # Empty file check
+    # --------------------------------------------------------
+
+    if not diff_content.strip():
+
+        return {
+            "message": (
+                "The uploaded diff file is empty."
+            )
+        }
+
+
+    # ========================================================
+    # AI REVIEW PROMPT
+    # ========================================================
+
+    prompt = f"""
+You are an expert software engineer and security-focused
+code reviewer.
+
+Perform a detailed review of the following Git diff.
+
+Analyze the ACTUAL CHANGED CODE carefully.
+
+Do not say "No security concerns identified" if the changed
+code contains evidence of a security vulnerability.
+
+Focus on:
+
+1. Bugs
+2. Security vulnerabilities
+3. SQL injection
+4. Cross-Site Scripting (XSS)
+5. Command injection
+6. Hardcoded credentials
+7. API key exposure
+8. Access token exposure
+9. Authentication vulnerabilities
+10. Authorization vulnerabilities
+11. Unsafe file access
+12. Path traversal
+13. Weak input validation
+14. Code quality problems
+15. Performance problems
+16. Missing or insufficient tests
+
+For every important security issue, provide:
+
+Category:
+Severity:
+File:
+Line:
+Description:
+Recommendation:
+Test Recommendation:
+
+Use ONLY these severity levels:
+
+CRITICAL
+HIGH
+MEDIUM
+LOW
+
+For security findings, use this exact format:
+
+SECURITY FINDING
+Category: <category>
+Severity: <CRITICAL/HIGH/MEDIUM/LOW>
+File: <filename>
+Line: <line number if known>
+Description: <description>
+Recommendation: <recommendation>
+Test Recommendation: <test recommendation>
+END SECURITY FINDING
+
+If multiple security issues exist, create multiple
+SECURITY FINDING blocks.
+
+If there are no security vulnerabilities, write:
+
+NO SECURITY FINDINGS
+
+Important:
+
+- Inspect the changed code rather than relying only on comments.
+- SQL queries constructed using user-controlled strings should
+  be considered for SQL injection.
+- Directly concatenating or interpolating user input into SQL
+  queries is dangerous.
+- Recommend parameterized queries for SQL injection.
+- Do not ignore a vulnerability merely because the code comment
+  says it is intentional.
+- Do not report a vulnerability without evidence.
+
+Also provide a normal readable code review after the
+structured findings.
+
+Here is the Git diff:
+
+```diff
+{diff_content}
+```
+
+Also provide a normal readable code review after the
+structured findings.
+"""
+
+    # ========================================================
+    # CALL OLLAMA
+    # ========================================================
+
+    try:
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            response = await client.post(
+                OLLAMA_URL,
+                json={
+                    "model": OLLAMA_MODEL,
+                    "prompt": prompt,
+                    "stream": False
+                }
+            )
+
+        if response.status_code != 200:
+            return {
+                "message": "Ollama review failed.",
+                "error": response.text
+            }
+
+        ollama_data = response.json()
+        review = ollama_data.get("response", "")
+
+        if not review.strip():
+            return {
+                "message": "Ollama returned an empty review.",
+                "error": (
+                    "Qwen2.5-Coder did not return any review content."
+                )
+            }
+
+        summary = analyze_review(review, diff_content)
+
+        return {
+            "message": "AI code review completed successfully.",
+            "filename": file.filename,
+            "review": review,
+            "summary": summary
+        }
+
+    except httpx.ConnectError:
+        return {
+            "message": "Unable to connect to Ollama.",
+            "error": (
+                "Ollama is not running or cannot be reached. "
+                "Please make sure Ollama is running on "
+                "http://localhost:11434."
+            )
+        }
+
+    except httpx.TimeoutException:
+        return {
+            "message": "The AI review timed out.",
+            "error": "Qwen2.5-Coder took too long to complete the code review."
+        }
+
+    except ValueError:
+        return {
+            "message": "Invalid response received from Ollama.",
+            "error": "Ollama returned a response that could not be parsed."
+        }
 
     except Exception as error:
-
         return {
             "message": "An error occurred during the review.",
             "error": str(error)
         }
-
-    # =====================================================
-    # Cleanup Temporary Files
-    # =====================================================
-
-    finally:
-
-        if (
-            diff_path
-            and os.path.exists(diff_path)
-        ):
-
-            os.remove(diff_path)
-
-        if (
-            output_path
-            and os.path.exists(output_path)
-        ):
-
-            os.remove(output_path)
