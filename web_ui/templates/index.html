@@ -343,7 +343,28 @@
     </div>
 
 </section>
+        <!-- ============================= -->
+        <!-- REVIEW HISTORY -->
+        <!-- ============================= -->
 
+        <section class="results">
+
+            <h2>
+                Review History
+            </h2>
+
+            <div
+                class="result-placeholder"
+                id="reviewHistory"
+            >
+
+                <p>
+                    No previous reviews found.
+                </p>
+
+            </div>
+
+        </section>
     </main>
 
 
@@ -433,6 +454,13 @@
 
         const securityFindings =
             document.getElementById("securityFindings");
+
+        // -----------------------------------------
+// Review History
+// -----------------------------------------
+
+const reviewHistory =
+    document.getElementById("reviewHistory");
 
 
         // -----------------------------------------
@@ -798,6 +826,198 @@
 
 
         // -----------------------------------------
+        // Display a stored or newly completed review
+        // -----------------------------------------
+
+        function displayReviewData(reviewText, summary) {
+
+            const reviewSummary = summary || {};
+            const severity = reviewSummary.severity || {};
+
+            criticalIssues.textContent =
+                reviewSummary.critical_issues ?? 0;
+
+            securityIssues.textContent =
+                reviewSummary.security_issues ?? 0;
+
+            codeQualityIssues.textContent =
+                reviewSummary.code_quality_issues ?? 0;
+
+            testIssues.textContent =
+                reviewSummary.test_issues ?? 0;
+
+            criticalSeverity.textContent =
+                severity.critical ?? 0;
+
+            highSeverity.textContent =
+                severity.high ?? 0;
+
+            mediumSeverity.textContent =
+                severity.medium ?? 0;
+
+            lowSeverity.textContent =
+                severity.low ?? 0;
+
+            displaySecurityFindings(
+                reviewSummary.findings || []
+            );
+
+            results.innerHTML = `
+
+                <div class="review-output">
+
+                    <div class="review-status">
+                        ✓ AI Review Completed
+                    </div>
+
+                    <div class="review-content">
+                        ${formatReview(reviewText || "")}
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+
+
+        // -----------------------------------------
+        // Review history
+        // -----------------------------------------
+
+        function historySummary(review) {
+
+            return {
+                critical_issues: review.critical_issues ?? 0,
+                security_issues: review.security_issues ?? 0,
+                code_quality_issues: review.code_quality_issues ?? 0,
+                test_issues: review.test_issues ?? 0,
+                severity: {
+                    critical: review.critical_severity ?? 0,
+                    high: review.high_severity ?? 0,
+                    medium: review.medium_severity ?? 0,
+                    low: review.low_severity ?? 0
+                },
+                findings: review.findings || []
+            };
+
+        }
+
+
+        function renderReviewHistory(history) {
+
+            if (!history || history.length === 0) {
+
+                reviewHistory.innerHTML = `
+                    <p>No previous reviews found.</p>
+                `;
+
+                return;
+
+            }
+
+            reviewHistory.innerHTML = history.map(
+                function (item) {
+
+                    return `
+                        <div
+                            class="review-output review-history-item"
+                            data-review-id="${escapeHtml(String(item.id))}"
+                            role="button"
+                            tabindex="0"
+                        >
+                            <h3>${escapeHtml(String(item.filename || "Unknown file"))}</h3>
+                            <p>Reviewed: ${escapeHtml(String(item.review_date || "Unknown date"))}</p>
+                            <p>Security Issues: ${escapeHtml(String(item.security_issues ?? 0))}</p>
+                            <p>Critical: ${escapeHtml(String(item.critical_severity ?? 0))}</p>
+                            <p>High: ${escapeHtml(String(item.high_severity ?? 0))}</p>
+                            <p>Medium: ${escapeHtml(String(item.medium_severity ?? 0))}</p>
+                            <p>Low: ${escapeHtml(String(item.low_severity ?? 0))}</p>
+                            <p>Click to view full review →</p>
+                        </div>
+                    `;
+
+                }
+            ).join("");
+
+        }
+
+
+        async function loadReviewHistory() {
+
+            try {
+                const response = await fetch("/history");
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.message || "Unable to load review history."
+                    );
+                }
+
+                renderReviewHistory(data.history);
+
+            } catch (error) {
+                reviewHistory.innerHTML = `
+                    <p>${escapeHtml(
+                        error.message || "Unable to load review history."
+                    )}</p>
+                `;
+            }
+
+        }
+
+
+        reviewHistory.addEventListener(
+            "click",
+            async function (event) {
+
+                const historyItem =
+                    event.target.closest("[data-review-id]");
+
+                if (!historyItem) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(
+                        `/history/${encodeURIComponent(
+                            historyItem.dataset.reviewId
+                        )}`
+                    );
+                    const data = await response.json();
+
+                    if (!response.ok || !data.success) {
+                        throw new Error(
+                            data.message || "Unable to load review."
+                        );
+                    }
+
+                    displayReviewData(
+                        data.review.review_text,
+                        historySummary(data.review)
+                    );
+
+                    document.getElementById("reviewResults").scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
+
+                } catch (error) {
+                    results.innerHTML = `
+                        <div class="review-output">
+                            <p>${escapeHtml(
+                                error.message || "Unable to load review."
+                            )}</p>
+                        </div>
+                    `;
+                }
+
+            }
+        );
+
+
+        // -----------------------------------------
         // Review button
         // -----------------------------------------
 
@@ -1032,6 +1252,7 @@
 
                         `;
 
+                        await loadReviewHistory();
 
                     } else {
 
@@ -1128,6 +1349,9 @@
 
             }
         );
+
+
+        loadReviewHistory();
 
 
     </script>

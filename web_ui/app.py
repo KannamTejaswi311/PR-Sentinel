@@ -1,199 +1,99 @@
-from fastapi import FastAPI, Request, UploadFile, File
+from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from sentinel.review_analyzer import analyze_review
-
 import httpx
 
-
-# ============================================================
-# FASTAPI APPLICATION
-# ============================================================
-
-app = FastAPI(
-    title="AI Code Review Assistant"
+from sentinel.review_analyzer import analyze_review
+from sentinel.review_history import (
+    get_all_reviews,
+    get_review,
+    init_database,
+    save_review,
 )
 
 
-# ============================================================
-# STATIC FILES
-# ============================================================
+app = FastAPI(title="AI Code Review Assistant")
+
+init_database()
 
 app.mount(
     "/static",
     StaticFiles(directory="web_ui/static"),
-    name="static"
+    name="static",
 )
 
-
-# ============================================================
-# TEMPLATES
-# ============================================================
-
-templates = Jinja2Templates(
-    directory="web_ui/templates"
-)
-
-
-# ============================================================
-# OLLAMA CONFIGURATION
-# ============================================================
+templates = Jinja2Templates(directory="web_ui/templates")
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-
 OLLAMA_MODEL = "qwen2.5-coder:3b-instruct"
 
 
-# ============================================================
-# HOME PAGE
-# ============================================================
-
-@app.get(
-    "/",
-    response_class=HTMLResponse
-)
+@app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request
+
+@app.get("/history")
+async def review_history():
+    try:
+        return {"success": True, "history": get_all_reviews()}
+    except Exception:
+        return {
+            "success": False,
+            "message": "Unable to load review history.",
         }
-    )
 
 
-# ============================================================
-# UPLOAD + CODE REVIEW
-# ============================================================
+@app.get("/history/{review_id}")
+async def review_history_detail(review_id: int):
+    try:
+        review = get_review(review_id)
+        if review is None:
+            return {"success": False, "message": "Review not found."}
+        return {"success": True, "review": review}
+    except Exception:
+        return {
+            "success": False,
+            "message": "Unable to load review.",
+        }
+
 
 @app.post("/upload")
-async def upload_diff(
-    file: UploadFile = File(...)
-):
-
-    # --------------------------------------------------------
-    # Validate filename
-    # --------------------------------------------------------
-
+async def upload_diff(file: UploadFile = File(...)):
     if not file.filename:
+        return {"message": "No file was selected."}
 
-        return {
-            "message": "No file was selected."
-        }
-
-
-    # --------------------------------------------------------
-    # Validate extension
-    # --------------------------------------------------------
-
-    if not file.filename.lower().endswith(
-        (".diff", ".patch")
-    ):
-
-        return {
-            "message": (
-                "Please upload a .diff or .patch file."
-            )
-        }
-
-
-    # --------------------------------------------------------
-    # Read uploaded file
-    # --------------------------------------------------------
+    if not file.filename.lower().endswith((".diff", ".patch")):
+        return {"message": "Please upload a .diff or .patch file."}
 
     content = await file.read()
 
-
-    # --------------------------------------------------------
-    # Decode UTF-8
-    # --------------------------------------------------------
-
     try:
-
         diff_content = content.decode("utf-8")
-
     except UnicodeDecodeError:
-
         return {
-            "message": (
-                "The uploaded diff must be UTF-8 encoded."
-            ),
-
+            "message": "The uploaded diff must be UTF-8 encoded.",
             "error": (
                 "The file could not be decoded as UTF-8. "
                 "Please save the diff file using UTF-8 encoding."
-            )
+            ),
         }
-
-
-    # --------------------------------------------------------
-    # Empty file check
-    # --------------------------------------------------------
 
     if not diff_content.strip():
-
-        return {
-            "message": (
-                "The uploaded diff file is empty."
-            )
-        }
-
-
-    # ========================================================
-    # AI REVIEW PROMPT
-    # ========================================================
+        return {"message": "The uploaded diff file is empty."}
 
     prompt = f"""
-You are an expert software engineer and security-focused
-code reviewer.
+You are an expert software engineer and security-focused code reviewer.
 
-Perform a detailed review of the following Git diff.
+Perform a detailed review of the following Git diff. Analyze the actual
+changed code carefully. Focus on bugs, security vulnerabilities, SQL injection,
+XSS, command injection, hardcoded credentials, exposed keys or tokens,
+authentication, authorization, unsafe file access, path traversal, input
+validation, code quality, performance, and missing tests.
 
-Analyze the ACTUAL CHANGED CODE carefully.
-
-Do not say "No security concerns identified" if the changed
-code contains evidence of a security vulnerability.
-
-Focus on:
-
-1. Bugs
-2. Security vulnerabilities
-3. SQL injection
-4. Cross-Site Scripting (XSS)
-5. Command injection
-6. Hardcoded credentials
-7. API key exposure
-8. Access token exposure
-9. Authentication vulnerabilities
-10. Authorization vulnerabilities
-11. Unsafe file access
-12. Path traversal
-13. Weak input validation
-14. Code quality problems
-15. Performance problems
-16. Missing or insufficient tests
-
-For every important security issue, provide:
-
-Category:
-Severity:
-File:
-Line:
-Description:
-Recommendation:
-Test Recommendation:
-
-Use ONLY these severity levels:
-
-CRITICAL
-HIGH
-MEDIUM
-LOW
-
-For security findings, use this exact format:
-
+For security findings, use this format:
 SECURITY FINDING
 Category: <category>
 Severity: <CRITICAL/HIGH/MEDIUM/LOW>
@@ -204,27 +104,8 @@ Recommendation: <recommendation>
 Test Recommendation: <test recommendation>
 END SECURITY FINDING
 
-If multiple security issues exist, create multiple
-SECURITY FINDING blocks.
-
-If there are no security vulnerabilities, write:
-
-NO SECURITY FINDINGS
-
-Important:
-
-- Inspect the changed code rather than relying only on comments.
-- SQL queries constructed using user-controlled strings should
-  be considered for SQL injection.
-- Directly concatenating or interpolating user input into SQL
-  queries is dangerous.
-- Recommend parameterized queries for SQL injection.
-- Do not ignore a vulnerability merely because the code comment
-  says it is intentional.
-- Do not report a vulnerability without evidence.
-
-Also provide a normal readable code review after the
-structured findings.
+If there are no security vulnerabilities, write: NO SECURITY FINDINGS.
+Do not report vulnerabilities without evidence in the changed code.
 
 Here is the Git diff:
 
@@ -232,13 +113,8 @@ Here is the Git diff:
 {diff_content}
 ```
 
-Also provide a normal readable code review after the
-structured findings.
+Also provide a normal readable code review after the structured findings.
 """
-
-    # ========================================================
-    # CALL OLLAMA
-    # ========================================================
 
     try:
         async with httpx.AsyncClient(timeout=180.0) as client:
@@ -247,14 +123,14 @@ structured findings.
                 json={
                     "model": OLLAMA_MODEL,
                     "prompt": prompt,
-                    "stream": False
-                }
+                    "stream": False,
+                },
             )
 
         if response.status_code != 200:
             return {
                 "message": "Ollama review failed.",
-                "error": response.text
+                "error": response.text,
             }
 
         ollama_data = response.json()
@@ -263,18 +139,22 @@ structured findings.
         if not review.strip():
             return {
                 "message": "Ollama returned an empty review.",
-                "error": (
-                    "Qwen2.5-Coder did not return any review content."
-                )
+                "error": "Qwen2.5-Coder did not return any review content.",
             }
 
         summary = analyze_review(review, diff_content)
+        review_id = save_review(
+            filename=file.filename,
+            summary=summary,
+            review_text=review,
+        )
 
         return {
             "message": "AI code review completed successfully.",
             "filename": file.filename,
+            "review_id": review_id,
             "review": review,
-            "summary": summary
+            "summary": summary,
         }
 
     except httpx.ConnectError:
@@ -284,23 +164,20 @@ structured findings.
                 "Ollama is not running or cannot be reached. "
                 "Please make sure Ollama is running on "
                 "http://localhost:11434."
-            )
+            ),
         }
-
     except httpx.TimeoutException:
         return {
             "message": "The AI review timed out.",
-            "error": "Qwen2.5-Coder took too long to complete the code review."
+            "error": "Qwen2.5-Coder took too long to complete the code review.",
         }
-
     except ValueError:
         return {
             "message": "Invalid response received from Ollama.",
-            "error": "Ollama returned a response that could not be parsed."
+            "error": "Ollama returned a response that could not be parsed.",
         }
-
     except Exception as error:
         return {
             "message": "An error occurred during the review.",
-            "error": str(error)
+            "error": str(error),
         }
