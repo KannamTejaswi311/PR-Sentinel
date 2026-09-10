@@ -25,3 +25,6 @@ security_test_utf8.diff
 
 # Generated review output
 test_review_output.txt
+# Review History database
+review_history.db
+*.db
