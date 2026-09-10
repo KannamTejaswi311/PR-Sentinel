@@ -200,9 +200,125 @@
 
                 </div>
 
+
             </div>
 
         </section>
+
+
+        <!-- ============================= -->
+        <!-- STAGE 3 - SEVERITY OVERVIEW -->
+        <!-- ============================= -->
+
+        <section class="summary">
+
+            <h2>
+                Security Severity
+            </h2>
+
+
+            <div class="summary-grid">
+
+
+                <!-- Critical -->
+
+                <div class="summary-box">
+
+                    <span
+                        class="number"
+                        id="criticalSeverity"
+                    >
+                        0
+                    </span>
+
+                    <span>
+                        Critical
+                    </span>
+
+                </div>
+
+
+                <!-- High -->
+
+                <div class="summary-box">
+
+                    <span
+                        class="number"
+                        id="highSeverity"
+                    >
+                        0
+                    </span>
+
+                    <span>
+                        High
+                    </span>
+
+                </div>
+
+
+                <!-- Medium -->
+
+                <div class="summary-box">
+
+                    <span
+                        class="number"
+                        id="mediumSeverity"
+                    >
+                        0
+                    </span>
+
+                    <span>
+                        Medium
+                    </span>
+
+                </div>
+
+
+                <!-- Low -->
+
+                <div class="summary-box">
+
+                    <span
+                        class="number"
+                        id="lowSeverity"
+                    >
+                        0
+                    </span>
+
+                    <span>
+                        Low
+                    </span>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+        <!-- ============================= -->
+        <!-- STAGE 3 - SECURITY FINDINGS -->
+        <!-- ============================= -->
+
+        <section class="results">
+
+    <h2>
+        Security Findings
+    </h2>
+
+    <div
+        class="result-placeholder"
+        id="securityFindings"
+    >
+
+        <p>
+            No security findings detected yet.
+        </p>
+
+    </div>
+
+</section>
 
 
         <!-- ============================= -->
@@ -211,20 +327,22 @@
 
         <section class="results">
 
-            <h2>
-                Review Results
-            </h2>
+    <h2>
+        Review Results
+    </h2>
 
+    <div
+        class="result-placeholder"
+        id="reviewResults"
+    >
 
-            <div class="result-placeholder">
+        <p>
+            Your AI code review results will appear here.
+        </p>
 
-                <p>
-                    Your AI code review results will appear here.
-                </p>
+    </div>
 
-            </div>
-
-        </section>
+</section>
 
     </main>
 
@@ -248,6 +366,7 @@
 
     <script>
 
+
         // -----------------------------------------
         // Get HTML elements
         // -----------------------------------------
@@ -255,27 +374,65 @@
         const fileInput =
             document.getElementById("diffFile");
 
+
         const fileName =
             document.getElementById("fileName");
+
 
         const reviewButton =
             document.querySelector(".review-button");
 
-        const results =
-            document.querySelector(".result-placeholder");
 
+        const results =
+            document.getElementById("reviewResults");
+
+
+        // -----------------------------------------
+        // Stage 2 summary elements
+        // -----------------------------------------
 
         const criticalIssues =
             document.getElementById("criticalIssues");
 
+
         const securityIssues =
             document.getElementById("securityIssues");
+
 
         const codeQualityIssues =
             document.getElementById("codeQualityIssues");
 
+
         const testIssues =
             document.getElementById("testIssues");
+
+
+        // -----------------------------------------
+        // Stage 3 severity elements
+        // -----------------------------------------
+
+        const criticalSeverity =
+            document.getElementById("criticalSeverity");
+
+
+        const highSeverity =
+            document.getElementById("highSeverity");
+
+
+        const mediumSeverity =
+            document.getElementById("mediumSeverity");
+
+
+        const lowSeverity =
+            document.getElementById("lowSeverity");
+
+
+        // -----------------------------------------
+        // Stage 3 security findings
+        // -----------------------------------------
+
+        const securityFindings =
+            document.getElementById("securityFindings");
 
 
         // -----------------------------------------
@@ -314,19 +471,12 @@
             div.textContent = text;
 
             return div.innerHTML;
+
         }
 
 
         // -----------------------------------------
         // Format PR-Agent review
-        // -----------------------------------------
-        //
-        // PR-Agent returns a mixture of Markdown and
-        // HTML table tags. This function converts only
-        // the known PR-Agent formatting into safe HTML.
-        //
-        // AI-generated content is escaped first, so
-        // arbitrary HTML cannot execute in the browser.
         // -----------------------------------------
 
         function formatReview(review) {
@@ -354,6 +504,7 @@
                 '<div class="review-table">'
             );
 
+
             safe = safe.replace(
                 /&lt;\/table&gt;/gi,
                 '</div>'
@@ -368,6 +519,7 @@
                 /&lt;tr&gt;/gi,
                 '<div class="review-row">'
             );
+
 
             safe = safe.replace(
                 /&lt;\/tr&gt;/gi,
@@ -384,6 +536,7 @@
                 '<div class="review-cell">'
             );
 
+
             safe = safe.replace(
                 /&lt;\/td&gt;/gi,
                 '</div>'
@@ -399,6 +552,7 @@
                 '<strong>'
             );
 
+
             safe = safe.replace(
                 /&lt;\/strong&gt;/gi,
                 '</strong>'
@@ -410,7 +564,7 @@
             // -------------------------------------
 
             safe = safe.replace(
-                /&lt;br\s*\/?&gt;/gi,
+                /\n/g,
                 '<br>'
             );
 
@@ -420,12 +574,13 @@
             // -------------------------------------
 
             safe = safe.replace(
-                /\n/g,
+                /<br><br>/g,
                 '<br>'
             );
 
 
             return safe;
+
         }
 
 
@@ -435,13 +590,209 @@
 
         function resetSummary() {
 
-            criticalIssues.textContent = "0";
 
-            securityIssues.textContent = "0";
+            // Stage 2 counters
 
-            codeQualityIssues.textContent = "0";
+            criticalIssues.textContent =
+                "0";
 
-            testIssues.textContent = "0";
+
+            securityIssues.textContent =
+                "0";
+
+
+            codeQualityIssues.textContent =
+                "0";
+
+
+            testIssues.textContent =
+                "0";
+
+
+            // Stage 3 severity counters
+
+            criticalSeverity.textContent =
+                "0";
+
+
+            highSeverity.textContent =
+                "0";
+
+
+            mediumSeverity.textContent =
+                "0";
+
+
+            lowSeverity.textContent =
+                "0";
+
+
+            // Reset security findings
+
+            securityFindings.innerHTML = `
+
+                <div class="result-placeholder">
+
+                    <p>
+                        No security findings detected yet.
+                    </p>
+
+                </div>
+
+            `;
+
+        }
+
+
+        // -----------------------------------------
+        // Display security findings
+        // -----------------------------------------
+
+        function displaySecurityFindings(findings) {
+
+
+            // No findings
+
+            if (!findings || findings.length === 0) {
+
+                securityFindings.innerHTML = `
+
+                    <div class="result-placeholder">
+
+                        <p>
+                            No security findings detected.
+                        </p>
+
+                    </div>
+
+                `;
+
+                return;
+
+            }
+
+
+            // Findings exist
+
+            securityFindings.innerHTML =
+                findings.map(
+                    function (finding) {
+
+                        const category =
+                            finding.category ||
+                            "Security Issue";
+
+
+                        const severity =
+                            finding.severity ||
+                            "MEDIUM";
+
+
+                        const file =
+                            finding.file ||
+                            "Unknown";
+
+
+                        const line =
+                            finding.line ??
+                            "Unknown";
+
+
+                        const description =
+                            finding.description ||
+                            "No description available.";
+
+
+                        const recommendation =
+                            finding.recommendation ||
+                            "Review and fix the security issue.";
+
+
+                        const testRecommendation =
+                            finding.test_recommendation ||
+                            "Add a test covering the security issue.";
+
+
+                        return `
+
+                            <div class="review-output">
+
+                                <h3>
+                                    ${escapeHtml(category)}
+                                </h3>
+
+
+                                <p>
+                                    <strong>
+                                        Severity:
+                                    </strong>
+
+                                    ${escapeHtml(
+                                        String(severity)
+                                    )}
+                                </p>
+
+
+                                <p>
+                                    <strong>
+                                        File:
+                                    </strong>
+
+                                    ${escapeHtml(
+                                        String(file)
+                                    )}
+                                </p>
+
+
+                                <p>
+                                    <strong>
+                                        Line:
+                                    </strong>
+
+                                    ${escapeHtml(
+                                        String(line)
+                                    )}
+                                </p>
+
+
+                                <p>
+                                    <strong>
+                                        Description:
+                                    </strong>
+
+                                    ${escapeHtml(
+                                        String(description)
+                                    )}
+                                </p>
+
+
+                                <p>
+                                    <strong>
+                                        Recommendation:
+                                    </strong>
+
+                                    ${escapeHtml(
+                                        String(recommendation)
+                                    )}
+                                </p>
+
+
+                                <p>
+                                    <strong>
+                                        Test Recommendation:
+                                    </strong>
+
+                                    ${escapeHtml(
+                                        String(testRecommendation)
+                                    )}
+                                </p>
+
+                            </div>
+
+                        `;
+
+                    }
+                ).join("");
 
         }
 
@@ -462,15 +813,23 @@
                 if (fileInput.files.length === 0) {
 
                     results.innerHTML = `
+
                         <div class="review-output">
-                            <h3>File Required</h3>
+
+                            <h3>
+                                File Required
+                            </h3>
+
                             <p>
                                 Please select a .diff or .patch file first.
                             </p>
+
                         </div>
+
                     `;
 
                     return;
+
                 }
 
 
@@ -489,6 +848,7 @@
                 const formData =
                     new FormData();
 
+
                 formData.append(
                     "file",
                     file
@@ -499,7 +859,9 @@
                 // Disable button
                 // ---------------------------------
 
-                reviewButton.disabled = true;
+                reviewButton.disabled =
+                    true;
+
 
                 reviewButton.textContent =
                     "Reviewing...";
@@ -540,6 +902,7 @@
 
                 try {
 
+
                     // ---------------------------------
                     // Send file to FastAPI
                     // ---------------------------------
@@ -573,22 +936,67 @@
 
 
                         // -----------------------------
-                        // Update summary counters
+                        // Update dashboard
                         // -----------------------------
 
                         if (data.summary) {
 
+
+                            // -------------------------
+                            // Stage 2 counters
+                            // -------------------------
+
                             criticalIssues.textContent =
                                 data.summary.critical_issues ?? 0;
+
 
                             securityIssues.textContent =
                                 data.summary.security_issues ?? 0;
 
+
                             codeQualityIssues.textContent =
                                 data.summary.code_quality_issues ?? 0;
 
+
                             testIssues.textContent =
                                 data.summary.test_issues ?? 0;
+
+
+                            // -------------------------
+                            // Stage 3 severity
+                            // -------------------------
+
+                            const severity =
+                                data.summary.severity ?? {};
+
+
+                            criticalSeverity.textContent =
+                                severity.critical ?? 0;
+
+
+                            highSeverity.textContent =
+                                severity.high ?? 0;
+
+
+                            mediumSeverity.textContent =
+                                severity.medium ?? 0;
+
+
+                            lowSeverity.textContent =
+                                severity.low ?? 0;
+
+
+                            // -------------------------
+                            // Stage 3 findings
+                            // -------------------------
+
+                            const findings =
+                                data.summary.findings ?? [];
+
+
+                            displaySecurityFindings(
+                                findings
+                            );
 
                         }
 
@@ -598,7 +1006,9 @@
                         // -----------------------------
 
                         const formattedReview =
-                            formatReview(data.review);
+                            formatReview(
+                                data.review
+                            );
 
 
                         // -----------------------------
@@ -612,6 +1022,7 @@
                                 <div class="review-status">
                                     ✓ AI Review Completed
                                 </div>
+
 
                                 <div class="review-content">
                                     ${formattedReview}
@@ -633,8 +1044,10 @@
                             data.message ||
                             "The review could not be completed.";
 
+
                         const error =
-                            data.error || "";
+                            data.error ||
+                            "";
 
 
                         results.innerHTML = `
@@ -645,9 +1058,13 @@
                                     Review Error
                                 </h3>
 
+
                                 <p>
-                                    ${escapeHtml(message)}
+                                    ${escapeHtml(
+                                        message
+                                    )}
                                 </p>
+
 
                                 ${
                                     error
@@ -679,9 +1096,11 @@
                                 Unable to Complete Review
                             </h3>
 
+
                             <p>
                                 Unable to connect to the review server.
                             </p>
+
 
                             <p>
                                 Please check that FastAPI is running.
@@ -698,7 +1117,9 @@
                     // Re-enable button
                     // ---------------------------------
 
-                    reviewButton.disabled = false;
+                    reviewButton.disabled =
+                        false;
+
 
                     reviewButton.textContent =
                         "Review Code";
@@ -707,6 +1128,7 @@
 
             }
         );
+
 
     </script>
 
