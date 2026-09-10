@@ -39,11 +39,10 @@ async def home(request: Request):
 async def review_history():
     try:
         return {"success": True, "history": get_all_reviews()}
-    except Exception as error:
+    except Exception:
         return {
             "success": False,
             "message": "Unable to load review history.",
-            "error": str(error),
         }
 
 
@@ -54,11 +53,10 @@ async def review_history_detail(review_id: int):
         if review is None:
             return {"success": False, "message": "Review not found."}
         return {"success": True, "review": review}
-    except Exception as error:
+    except Exception:
         return {
             "success": False,
             "message": "Unable to load review.",
-            "error": str(error),
         }
 
 
