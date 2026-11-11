@@ -1,0 +1,114 @@
+{
+  "pr_id": "Ghost_pr2",
+  "experiment_id": "E6_A4",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/comments-ui/src/components/content/forms/form.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/comments-ui/src/components/content/forms/form.tsx b/apps/comments-ui/src/components/content/forms/form.tsx",
+      "execution_status": "SUCCESS",
+      "finding_id": "807e1f0a-fd66-4643-8b4c-deffe9288fb7",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/comments-ui/src/components/content/forms/form.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A4"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/comments-ui/src/components/content/forms/reply-form.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/comments-ui/src/components/content/forms/form.tsx b/apps/comments-ui/src/components/content/forms/form.tsx",
+      "execution_status": "SUCCESS",
+      "finding_id": "539796ec-8b37-45b1-aff0-fb8cd1d6bbce",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/comments-ui/src/components/content/forms/reply-form.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A4"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/comments-ui/test/e2e/actions.test.ts",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/comments-ui/src/components/content/forms/form.tsx b/apps/comments-ui/src/components/content/forms/form.tsx",
+      "execution_status": "SUCCESS",
+      "finding_id": "84e42691-7980-46e6-b146-c91a4db02ef7",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.ts)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/comments-ui/test/e2e/actions.test.ts' has unsupported extension '.ts'.",
+      "recommendation": "Add external static analyzer for '.ts' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A4"
+      }
+    }
+  ],
+  "findings_count": 3,
+  "risk_assessment": {
+    "score": 2,
+    "risk_level": "LOW RISK",
+    "recommendation": "APPROVE WITH SUGGESTIONS: Minor style or non-critical observations.",
+    "metrics": {
+      "raw_finding_score": 1.5,
+      "file_spread_multiplier": 1.2,
+      "diff_size_multiplier": 1.15,
+      "codebert_penalty_added": 0.0,
+      "total_diff_lines": 165,
+      "modified_files_count": 3
+    },
+    "formula_explanation": "PR Risk Score = min(100, round(RawScore(1.5) * FileSpread(1.20) * DiffSize(1.15) + CodeBERTPenalty(0.0))) = 2",
+    "top_contributions": [
+      {
+        "title": "Unsupported Language (.tsx)",
+        "severity": "INFORMATIONAL",
+        "is_security": false,
+        "points_added": 0.5
+      },
+      {
+        "title": "Unsupported Language (.tsx)",
+        "severity": "INFORMATIONAL",
+        "is_security": false,
+        "points_added": 0.5
+      },
+      {
+        "title": "Unsupported Language (.ts)",
+        "severity": "INFORMATIONAL",
+        "is_security": false,
+        "points_added": 0.5
+      }
+    ]
+  },
+  "duration_seconds": 0.008,
+  "execution_manifest": {
+    "codebert": "ERROR: Real CodeBERT model required in research mode, but unavailable.",
+    "static_analyzer": "SUCCESS",
+    "rag_pipeline": "ERROR: Real CodeBERT model required in research mode, but unavailable.",
+    "multi_agent": "MONOLITHIC_MODE",
+    "synthesizer": "SUCCESS",
+    "test_generator": "SUCCESS"
+  }
+}

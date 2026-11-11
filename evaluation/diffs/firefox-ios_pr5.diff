@@ -1,0 +1,1865 @@
+diff --git a/firefox-ios/Client.xcodeproj/project.pbxproj b/firefox-ios/Client.xcodeproj/project.pbxproj
+index e1c5fe666d1b9..b6796df3fa434 100644
+--- a/firefox-ios/Client.xcodeproj/project.pbxproj
++++ b/firefox-ios/Client.xcodeproj/project.pbxproj
+@@ -309,10 +309,6 @@
+ 		21996BAB2AE95AFC00E0D55F /* TabTrayPanelType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21996BAA2AE95AFC00E0D55F /* TabTrayPanelType.swift */; };
+ 		2199A1D22DB80B6C00DC84BD /* ZoomPageManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2199A1D12DB80B6C00DC84BD /* ZoomPageManagerTests.swift */; };
+ 		2199A1D42DB8389000DC84BD /* MockZoomStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2199A1D32DB8389000DC84BD /* MockZoomStore.swift */; };
+-		219A0FD52ACC8506009A6D1A /* InactiveTabsCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 219A0FD42ACC8506009A6D1A /* InactiveTabsCell.swift */; };
+-		219A0FD72ACC8C03009A6D1A /* InactiveTabsHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 219A0FD62ACC8C03009A6D1A /* InactiveTabsHeaderView.swift */; };
+-		219A0FD92ACC8C0F009A6D1A /* InactiveTabsFooterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 219A0FD82ACC8C0F009A6D1A /* InactiveTabsFooterView.swift */; };
+-		219A0FDB2ACCCFFC009A6D1A /* InactiveTabsSectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 219A0FDA2ACCCFFC009A6D1A /* InactiveTabsSectionManager.swift */; };
+ 		219AEE4A2E5E38BD00BF5F6F /* TabProviderAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 219AEE492E5E38B200BF5F6F /* TabProviderAdapter.swift */; };
+ 		219AEECE2E5E524300BF5F6F /* MockTabProviderProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 219AEECD2E5E523600BF5F6F /* MockTabProviderProtocol.swift */; };
+ 		219F27152EA2956100AE4536 /* MockBrowserViewControllerWebViewDelegates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 219F27142EA2956100AE4536 /* MockBrowserViewControllerWebViewDelegates.swift */; };
+@@ -341,7 +337,6 @@
+ 		21EEAA192D3852B300595119 /* BookmarksTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21EEAA182D3852B300595119 /* BookmarksTelemetry.swift */; };
+ 		21EEAA1B2D3AE3B300595119 /* BookmarksTelemetryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21EEAA1A2D3AE3B300595119 /* BookmarksTelemetryTests.swift */; };
+ 		21EEAA1D2D4005DE00595119 /* NativeErrorPageFeatureFlag.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21EEAA1C2D4005DE00595119 /* NativeErrorPageFeatureFlag.swift */; };
+-		21F2A2D22B0BC85200626AEC /* InactiveTabsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21F2A2D12B0BC85200626AEC /* InactiveTabsModel.swift */; };
+ 		21F2A2D42B0D194A00626AEC /* TabsPanelStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21F2A2D32B0D194A00626AEC /* TabsPanelStateTests.swift */; };
+ 		21F422662E315E5C004FF994 /* LegacyTabScrollController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21F422652E315E55004FF994 /* LegacyTabScrollController.swift */; };
+ 		21F96EE42D41830300A164A0 /* NativeErrorPageFeatureFlagTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21F96EE22D41830300A164A0 /* NativeErrorPageFeatureFlagTests.swift */; };
+@@ -2999,10 +2994,6 @@
+ 		21996BAA2AE95AFC00E0D55F /* TabTrayPanelType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabTrayPanelType.swift; sourceTree = "<group>"; };
+ 		2199A1D12DB80B6C00DC84BD /* ZoomPageManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomPageManagerTests.swift; sourceTree = "<group>"; };
+ 		2199A1D32DB8389000DC84BD /* MockZoomStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockZoomStore.swift; sourceTree = "<group>"; };
+-		219A0FD42ACC8506009A6D1A /* InactiveTabsCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InactiveTabsCell.swift; sourceTree = "<group>"; };
+-		219A0FD62ACC8C03009A6D1A /* InactiveTabsHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InactiveTabsHeaderView.swift; sourceTree = "<group>"; };
+-		219A0FD82ACC8C0F009A6D1A /* InactiveTabsFooterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InactiveTabsFooterView.swift; sourceTree = "<group>"; };
+-		219A0FDA2ACCCFFC009A6D1A /* InactiveTabsSectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InactiveTabsSectionManager.swift; sourceTree = "<group>"; };
+ 		219AEE492E5E38B200BF5F6F /* TabProviderAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabProviderAdapter.swift; sourceTree = "<group>"; };
+ 		219AEECD2E5E523600BF5F6F /* MockTabProviderProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockTabProviderProtocol.swift; sourceTree = "<group>"; };
+ 		219F27142EA2956100AE4536 /* MockBrowserViewControllerWebViewDelegates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockBrowserViewControllerWebViewDelegates.swift; sourceTree = "<group>"; };
+@@ -3033,7 +3024,6 @@
+ 		21EEAA182D3852B300595119 /* BookmarksTelemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarksTelemetry.swift; sourceTree = "<group>"; };
+ 		21EEAA1A2D3AE3B300595119 /* BookmarksTelemetryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarksTelemetryTests.swift; sourceTree = "<group>"; };
+ 		21EEAA1C2D4005DE00595119 /* NativeErrorPageFeatureFlag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeErrorPageFeatureFlag.swift; sourceTree = "<group>"; };
+-		21F2A2D12B0BC85200626AEC /* InactiveTabsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InactiveTabsModel.swift; sourceTree = "<group>"; };
+ 		21F2A2D32B0D194A00626AEC /* TabsPanelStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabsPanelStateTests.swift; sourceTree = "<group>"; };
+ 		21F422652E315E55004FF994 /* LegacyTabScrollController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyTabScrollController.swift; sourceTree = "<group>"; };
+ 		21F96EE22D41830300A164A0 /* NativeErrorPageFeatureFlagTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeErrorPageFeatureFlagTests.swift; sourceTree = "<group>"; };
+@@ -11889,23 +11879,12 @@
+ 				1DDE3DB62AC3820A0039363B /* TabModel.swift */,
+ 				219935E62B05447C00E5966F /* TabDisplayModel.swift */,
+ 				219935EB2B07110900E5966F /* TabTrayModel.swift */,
+-				21F2A2D12B0BC85200626AEC /* InactiveTabsModel.swift */,
+ 				5A9F83432B2B8CE900272819 /* TabPeekModel.swift */,
+ 				ED28DAC82C45A95F00D2641C /* TabScrollBehaviorModel.swift */,
+ 			);
+ 			path = Models;
+ 			sourceTree = "<group>";
+ 		};
+-		219A0FD32ACC84C5009A6D1A /* InactiveTabs */ = {
+-			isa = PBXGroup;
+-			children = (
+-				219A0FD42ACC8506009A6D1A /* InactiveTabsCell.swift */,
+-				219A0FD62ACC8C03009A6D1A /* InactiveTabsHeaderView.swift */,
+-				219A0FD82ACC8C0F009A6D1A /* InactiveTabsFooterView.swift */,
+-			);
+-			path = InactiveTabs;
+-			sourceTree = "<group>";
+-		};
+ 		21B548932B1E5EC000DC1DF8 /* Middleware */ = {
+ 			isa = PBXGroup;
+ 			children = (
+@@ -11918,7 +11897,6 @@
+ 		21C5B3572AF2A6D80093F366 /* LayoutManager */ = {
+ 			isa = PBXGroup;
+ 			children = (
+-				219A0FDA2ACCCFFC009A6D1A /* InactiveTabsSectionManager.swift */,
+ 				21B359C52AEAC20300FF09E3 /* TabsSectionManager.swift */,
+ 			);
+ 			path = LayoutManager;
+@@ -11934,7 +11912,6 @@
+ 				8AC6F2232D6E243F00D10A9F /* ExperimentEmptyPrivateTabsView.swift */,
+ 				8AC6F2252D6E263500D10A9F /* ExperimentRemoteTabsEmptyView.swift */,
+ 				8A2068362D6D52830063A77B /* ExperimentTabCell.swift */,
+-				219A0FD32ACC84C5009A6D1A /* InactiveTabs */,
+ 				1D2F68B02ACCA22000524B92 /* RemoteTabsEmptyView.swift */,
+ 				1DEBC55D2AC4ED70006E4801 /* RemoteTabsPanel.swift */,
+ 				1D2F68AE2ACB272500524B92 /* RemoteTabsViewController.swift */,
+@@ -18521,7 +18498,6 @@
+ 				39BF0CD52EB512A1002064F5 /* ImpressionTrackingUtility.swift in Sources */,
+ 				D3BE7B461B054F8600641031 /* UITestAppDelegate.swift in Sources */,
+ 				C8DC90C72A06759E0008832B /* MarkupAttributionUtility.swift in Sources */,
+-				219A0FD52ACC8506009A6D1A /* InactiveTabsCell.swift in Sources */,
+ 				8A1CBB992BE01839008BE4D4 /* MicrosurveyPromptState.swift in Sources */,
+ 				C28094312ECF877D0083BC16 /* TranslationsServiceError.swift in Sources */,
+ 				23D57E6E25ED6F2700883FAD /* SearchViewController.swift in Sources */,
+@@ -18682,7 +18658,6 @@
+ 				21618A632A422A3900A5189E /* ThemeMiddleware.swift in Sources */,
+ 				0E77DF0F2CB8220000B80BA1 /* GeneratedPasswordStorage.swift in Sources */,
+ 				BA1237C32DAE6D5700BB6333 /* AddressBarSettingsView.swift in Sources */,
+-				219A0FDB2ACCCFFC009A6D1A /* InactiveTabsSectionManager.swift in Sources */,
+ 				B2981F8A2B71AD7A00132C1B /* AutofillAccessoryViewButtonItem.swift in Sources */,
+ 				63B213282CCA796D00A466DB /* NativeErrorPageAction.swift in Sources */,
+ 				211F00AC27F4D918001D9189 /* HistoryPanel+Search.swift in Sources */,
+@@ -19003,7 +18978,6 @@
+ 				D04D1B92209790B60074B35F /* Toast.swift in Sources */,
+ 				8A93F87429D3A5C1004159D9 /* LaunchCoordinator.swift in Sources */,
+ 				C2D71B952A384F11003DEC7A /* ThemedTableViewCell.swift in Sources */,
+-				219A0FD72ACC8C03009A6D1A /* InactiveTabsHeaderView.swift in Sources */,
+ 				8A5D1CBF2A30DC75005AD35C /* SyncNowSetting.swift in Sources */,
+ 				210E0EB8298D9D4500BB4F33 /* SearchEngineProvider.swift in Sources */,
+ 				21618A612A4201E500A5189E /* ThemeSettingsController.swift in Sources */,
+@@ -19283,7 +19257,6 @@
+ 				2191D4472DC3BC1200E1A839 /* ZoomTelemetry.swift in Sources */,
+ 				0A76936B2C82018700103A6D /* TrackingProtectionBlockedTrackersView.swift in Sources */,
+ 				E1463D022981DA190074E16E /* NotificationManager.swift in Sources */,
+-				219A0FD92ACC8C0F009A6D1A /* InactiveTabsFooterView.swift in Sources */,
+ 				884CA7492344A301002E4711 /* TextContentDetector.swift in Sources */,
+ 				8A9F0B5627C595F300FE09AE /* ImageIdentifiers.swift in Sources */,
+ 				43A5643823CD1E1C00B6857D /* UpdateViewController.swift in Sources */,
+@@ -19325,7 +19298,6 @@
+ 				0BDDB3462CA6E43A00D501DF /* BookmarksSaver.swift in Sources */,
+ 				EBB89506219398E500EB91A0 /* TabContentBlocker.swift in Sources */,
+ 				E1B9A2C22CAD91EF00F6A0E9 /* ToolbarTelemetry.swift in Sources */,
+-				21F2A2D22B0BC85200626AEC /* InactiveTabsModel.swift in Sources */,
+ 				D3E8EF101B97BE69001900FB /* ClearPrivateDataTableViewController.swift in Sources */,
+ 				E11C0E3D2CEF328B00D884D3 /* TermsOfServiceManager.swift in Sources */,
+ 				C8F457AA1F1FDD9B000CB895 /* BrowserViewController+KeyCommands.swift in Sources */,
+diff --git a/firefox-ios/Client/Application/AccessibilityIdentifiers.swift b/firefox-ios/Client/Application/AccessibilityIdentifiers.swift
+index 5ee773539f42b..8afd4b8665307 100644
+--- a/firefox-ios/Client/Application/AccessibilityIdentifiers.swift
++++ b/firefox-ios/Client/Application/AccessibilityIdentifiers.swift
+@@ -317,15 +317,6 @@ struct AccessibilityIdentifiers {
+         static let tabCell = "TabDisplayView.tabCell"
+         static let closeButton = "tabCloseButton"
+         static let tabsTray = "Tabs Tray"
+-
+-        struct InactiveTabs {
+-            static let headerLabel = "InactiveTabs.headerLabel"
+-            static let headerButton = "InactiveTabs.headerButton"
+-            static let headerView = "InactiveTabs.header"
+-            static let cellLabel = "InactiveTabs.cell.label"
+-            static let footerView = "InactiveTabs.footer"
+-            static let deleteButton = "InactiveTabs.deleteButton"
+-        }
+     }
+ 
+     struct LibraryPanels {
+@@ -692,7 +683,6 @@ struct AccessibilityIdentifiers {
+             static let title = "BrowsingSettings"
+             static let tabs = "TABS"
+             static let links = "LINKS"
+-            static let inactiveTabsSwitch = "Inactive Tabs"
+             static let blockPopUps = "blockPopups"
+             static let autoPlay = "AutoplaySettings"
+             static let blockImages = "NoImageModeStatus"
+diff --git a/firefox-ios/Client/Frontend/Browser/Tabs/Action/TabPanelAction.swift b/firefox-ios/Client/Frontend/Browser/Tabs/Action/TabPanelAction.swift
+index 9ad79048d949e..06e805d3b7a58 100644
+--- a/firefox-ios/Client/Frontend/Browser/Tabs/Action/TabPanelAction.swift
++++ b/firefox-ios/Client/Frontend/Browser/Tabs/Action/TabPanelAction.swift
+@@ -1,7 +1,3 @@
+-// This Source Code Form is subject to the terms of the Mozilla Public
+-// License, v. 2.0. If a copy of the MPL was not distributed with this
+-// file, You can obtain one at http://mozilla.org/MPL/2.0/
+-
+ import Redux
+ import Common
+ 
+@@ -22,7 +18,6 @@ struct TabPanelViewAction: Action {
+     let moveTabData: MoveTabData?
+     let toastType: ToastType?
+     let shareSheetURL: URL?
+-    let isInactiveTab: Bool?
+     let deleteTabPeriod: TabsDeletionPeriod?
+ 
+     init(panelType: TabTrayPanelType?,
+@@ -33,7 +28,6 @@ struct TabPanelViewAction: Action {
+          moveTabData: MoveTabData? = nil,
+          toastType: ToastType? = nil,
+          shareSheetURL: URL? = nil,
+-         isInactiveTab: Bool? = nil,
+          deleteTabPeriod: TabsDeletionPeriod? = nil,
+          windowUUID: WindowUUID,
+          actionType: ActionType) {
+@@ -47,7 +41,6 @@ struct TabPanelViewAction: Action {
+         self.moveTabData = moveTabData
+         self.toastType = toastType
+         self.shareSheetURL = shareSheetURL
+-        self.isInactiveTab = isInactiveTab
+         self.deleteTabPeriod = deleteTabPeriod
+     }
+ }
+@@ -65,11 +58,6 @@ enum TabPanelViewActionType: ActionType {
+     case deleteTabsOlderThan
+     case undoCloseAllTabs
+     case moveTab
+-    case toggleInactiveTabs
+-    case closeInactiveTab
+-    case undoCloseInactiveTab
+-    case closeAllInactiveTabs
+-    case undoCloseAllInactiveTabs
+     case learnMorePrivateMode
+     case selectTab
+ }
+@@ -78,12 +66,10 @@ struct TabPanelMiddlewareAction: Action {
+     let windowUUID: WindowUUID
+     let actionType: ActionType
+     let tabDisplayModel: TabDisplayModel?
+-    let inactiveTabModels: [InactiveTabsModel]?
+     let toastType: ToastType??
+     let scrollBehavior: TabScrollBehavior?
+ 
+     init(tabDisplayModel: TabDisplayModel? = nil,
+-         inactiveTabModels: [InactiveTabsModel]? = nil,
+          toastType: ToastType? = nil,
+          scrollBehavior: TabScrollBehavior? = nil,
+          windowUUID: WindowUUID,
+@@ -91,7 +77,6 @@ struct TabPanelMiddlewareAction: Action {
+         self.windowUUID = windowUUID
+         self.actionType = actionType
+         self.tabDisplayModel = tabDisplayModel
+-        self.inactiveTabModels = inactiveTabModels
+         self.toastType = toastType
+         self.scrollBehavior = scrollBehavior
+     }
+@@ -102,7 +87,6 @@ enum TabPanelMiddlewareActionType: ActionType {
+     case willAppearTabPanel
+     case didChangeTabPanel
+     case refreshTabs
+-    case refreshInactiveTabs
+     case showToast
+     case scrollToTab
+ }
+diff --git a/firefox-ios/Client/Frontend/Browser/Tabs/LayoutManager/InactiveTabsSectionManager.swift b/firefox-ios/Client/Frontend/Browser/Tabs/LayoutManager/InactiveTabsSectionManager.swift
+deleted file mode 100644
+index b364c52347fef..0000000000000
+--- a/firefox-ios/Client/Frontend/Browser/Tabs/LayoutManager/InactiveTabsSectionManager.swift
++++ /dev/null
+@@ -1,58 +0,0 @@
+-// This Source Code Form is subject to the terms of the Mozilla Public
+-// License, v. 2.0. If a copy of the MPL was not distributed with this
+-// file, You can obtain one at http://mozilla.org/MPL/2.0/
+-
+-import Foundation
+-
+-protocol InactiveTabsSectionManagerDelegate: AnyObject {
+-    @MainActor
+-    func deleteInactiveTab(for index: Int)
+-}
+-
+-@MainActor
+-final class InactiveTabsSectionManager {
+-    struct UX {
+-        static let margin: CGFloat = 15.0
+-        static let headerEstimatedHeight: CGFloat = 48
+-        static let footerEstimatedHeight: CGFloat = 88
+-    }
+-
+-    weak var delegate: InactiveTabsSectionManagerDelegate?
+-
+-    func layoutSection(_ layoutEnvironment: NSCollectionLayoutEnvironment,
+-                       isExpanded: Bool) -> NSCollectionLayoutSection {
+-        var config = UICollectionLayoutListConfiguration(appearance: .grouped)
+-        config.headerMode = .firstItemInSection
+-        config.footerMode = .supplementary
+-        config.showsSeparators = false
+-        config.trailingSwipeActionsConfigurationProvider = { indexPath in
+-            let deleteAction = UIContextualAction(
+-                style: .destructive,
+-                title: .TabsTray.InactiveTabs.CloseInactiveTabSwipeActionTitle) { [weak self] _, _, completion in
+-                    self?.delegate?.deleteInactiveTab(for: indexPath.row)
+-                completion(true)
+-            }
+-            return UISwipeActionsConfiguration(actions: [deleteAction])
+-        }
+-
+-        let section = NSCollectionLayoutSection.list(using: config, layoutEnvironment: layoutEnvironment)
+-
+-        // Supplementary Item
+-        let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1),
+-                                                heightDimension: .estimated(UX.headerEstimatedHeight))
+-        let header = NSCollectionLayoutBoundarySupplementaryItem(
+-            layoutSize: headerSize,
+-            elementKind: UICollectionView.elementKindSectionHeader,
+-            alignment: .top)
+-
+-        let footerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1),
+-                                                heightDimension: .estimated(UX.footerEstimatedHeight))
+-        let footer = NSCollectionLayoutBoundarySupplementaryItem(
+-            layoutSize: footerSize,
+-            elementKind: UICollectionView.elementKindSectionFooter,
+-            alignment: .bottom)
+-
+-        section.boundarySupplementaryItems = isExpanded ? [header, footer] : [header]
+-        return section
+-    }
+-}
+diff --git a/firefox-ios/Client/Frontend/Browser/Tabs/Middleware/TabManagerMiddleware.swift b/firefox-ios/Client/Frontend/Browser/Tabs/Middleware/TabManagerMiddleware.swift
+index 308b651a6f970..df78a44f63e81 100644
+--- a/firefox-ios/Client/Frontend/Browser/Tabs/Middleware/TabManagerMiddleware.swift
++++ b/firefox-ios/Client/Frontend/Browser/Tabs/Middleware/TabManagerMiddleware.swift
+@@ -253,32 +253,14 @@ final class TabManagerMiddleware: FeatureFlaggable,
+             selectTab(
+                 for: tabUUID,
+                 uuid: action.windowUUID,
+-                isInactiveTab: action.isInactiveTab ?? false,
+                 panelType: action.panelType ?? .tabs,
+                 selectedTabIndex: action.selectedTabIndex
+             )
+ 
+-        case TabPanelViewActionType.closeAllInactiveTabs:
+-            closeAllInactiveTabs(state: state, uuid: action.windowUUID)
+-
+-        case TabPanelViewActionType.undoCloseAllInactiveTabs:
+-            undoCloseAllInactiveTabs(uuid: action.windowUUID)
+-
+-        case TabPanelViewActionType.closeInactiveTab:
+-            guard let tabUUID = action.tabUUID else { return }
+-            closeInactiveTab(for: tabUUID, state: state, uuid: action.windowUUID)
+-
+-        case TabPanelViewActionType.undoCloseInactiveTab:
+-            undoCloseInactiveTab(uuid: action.windowUUID)
+-
+         case TabPanelViewActionType.learnMorePrivateMode:
+             guard let urlRequest = action.urlRequest else { return }
+             didTapLearnMoreAboutPrivate(with: urlRequest, uuid: action.windowUUID)
+ 
+-        case TabPanelViewActionType.toggleInactiveTabs:
+-            // TODO: FXIOS-14327- This will be deleted in the next PR to remove inactive tabs
+-            break
+-
+         default:
+             break
+         }
+@@ -357,14 +339,11 @@ final class TabManagerMiddleware: FeatureFlaggable,
+     private func getTabsDisplayModel(for isPrivateMode: Bool,
+                                      uuid: WindowUUID) -> TabDisplayModel {
+         let tabs = refreshTabs(for: isPrivateMode, uuid: uuid)
+-        let inactiveTabs = refreshInactiveTabs(for: isPrivateMode, uuid: uuid)
+         let tabDisplayModel = TabDisplayModel(
+             isPrivateMode: isPrivateMode,
+             tabs: tabs,
+             normalTabsCount: normalTabsCountTextForTabTray(for: uuid),
+             privateTabsCount: privateTabsCountTextForTabTray(for: uuid),
+-            inactiveTabs: inactiveTabs,
+-            isInactiveTabsExpanded: false,
+             enableDeleteTabsButton: shouldEnableDeleteTabsButton(for: uuid, isPrivateMode: isPrivateMode)
+         )
+         return tabDisplayModel
+@@ -393,19 +372,6 @@ final class TabManagerMiddleware: FeatureFlaggable,
+         return tabs
+     }
+ 
+-    // TODO: FXIOS-14327 - This will be deleted in the next PR to remove inactive tabs
+-    /// Gets the list of inactive tabs from `TabManager` and builds the array of InactiveTabsModel
+-    /// to use in TabDisplayView
+-    ///
+-    /// - Parameter isPrivateMode: is on Private mode or not
+-    /// - Returns: Array of InactiveTabsModel used to configure collection view
+-    private func refreshInactiveTabs(for isPrivateMode: Bool = false, uuid: WindowUUID) -> [InactiveTabsModel] {
+-        guard !isPrivateMode else { return [InactiveTabsModel]() }
+-
+-        let inactiveTabs = [InactiveTabsModel]()
+-        return inactiveTabs
+-    }
+-
+     /// Creates a new tab in `TabManager` using optional `URLRequest`
+     ///
+     /// - Parameters:
+@@ -650,81 +616,6 @@ final class TabManagerMiddleware: FeatureFlaggable,
+         store.dispatch(scrollAction)
+     }
+ 
+-    // MARK: - Inactive tabs helper
+-
+-    // TODO: FXIOS-14327 - This will be deleted in the next PR to remove inactive tabs
+-    /// Close all inactive tabs, removing them from the tabs array on `TabManager`.
+-    /// Makes a backup of tabs to be deleted in case the undo option is selected.
+-    private func closeAllInactiveTabs(state: AppState, uuid: WindowUUID) {
+-        guard let tabsState = state.screenState(TabsPanelState.self, for: .tabsPanel, window: uuid) else { return }
+-        let refreshAction = TabPanelMiddlewareAction(inactiveTabModels: [InactiveTabsModel](),
+-                                                     windowUUID: uuid,
+-                                                     actionType: TabPanelMiddlewareActionType.refreshInactiveTabs)
+-        store.dispatch(refreshAction)
+-
+-        // Refresh the active tabs panel. Can only happen if the user is in normal browsering mode (not private).
+-        // Related: FXIOS-10010, FXIOS-9954, FXIOS-9999
+-        let model = getTabsDisplayModel(for: false, uuid: uuid)
+-        let refreshActiveTabsPanelAction = TabPanelMiddlewareAction(tabDisplayModel: model,
+-                                                                    windowUUID: uuid,
+-                                                                    actionType: TabPanelMiddlewareActionType.refreshTabs)
+-        store.dispatch(refreshActiveTabsPanelAction)
+-
+-        let inactiveTabsCount = tabsState.inactiveTabs.count
+-        let toastAction = TabPanelMiddlewareAction(toastType: .closedAllInactiveTabs(count: inactiveTabsCount),
+-                                                   windowUUID: uuid,
+-                                                   actionType: TabPanelMiddlewareActionType.showToast)
+-        store.dispatch(toastAction)
+-    }
+-
+-    // TODO: FXIOS-14327 - This will be deleted in the next PR to remove inactive tabs
+-    /// Handles undo close all inactive tabs. Adding back the backup tabs saved previously
+-    private func undoCloseAllInactiveTabs(uuid: WindowUUID) {
+-        let inactiveTabs = self.refreshInactiveTabs(uuid: uuid)
+-        let refreshAction = TabPanelMiddlewareAction(inactiveTabModels: inactiveTabs,
+-                                                     windowUUID: uuid,
+-                                                     actionType: TabPanelMiddlewareActionType.refreshInactiveTabs)
+-        store.dispatch(refreshAction)
+-    }
+-
+-    // TODO: FXIOS-14327 - This will be deleted in the next PR to remove inactive tabs
+-    private func closeInactiveTab(for tabUUID: String, state: AppState, uuid: WindowUUID) {
+-        guard let tabsState = state.screenState(TabsPanelState.self, for: .tabsPanel, window: uuid) else { return }
+-        let tabManager = tabManager(for: uuid)
+-        if let tabToClose = tabManager.getTabForUUID(uuid: tabUUID) {
+-            let index = tabsState.inactiveTabs.firstIndex { $0.tabUUID == tabUUID }
+-            tabManager.backupCloseTab = BackupCloseTab(
+-                tab: tabToClose,
+-                restorePosition: index,
+-                isSelected: false)
+-        }
+-        tabManager.removeTab(tabUUID)
+-
+-        let inactiveTabs = self.refreshInactiveTabs(uuid: uuid)
+-        let refreshAction = TabPanelMiddlewareAction(inactiveTabModels: inactiveTabs,
+-                                                     windowUUID: uuid,
+-                                                     actionType: TabPanelMiddlewareActionType.refreshInactiveTabs)
+-        store.dispatch(refreshAction)
+-
+-        let toastAction = TabPanelMiddlewareAction(toastType: .closedSingleInactiveTab,
+-                                                   windowUUID: uuid,
+-                                                   actionType: TabPanelMiddlewareActionType.showToast)
+-        store.dispatch(toastAction)
+-    }
+-
+-    // TODO: FXIOS-14327 - This will be deleted in the next PR to remove inactive tabs
+-    private func undoCloseInactiveTab(uuid: WindowUUID) {
+-        let windowTabManager = self.tabManager(for: uuid)
+-        guard windowTabManager.backupCloseTab != nil else { return }
+-
+-        windowTabManager.undoCloseTab()
+-        let inactiveTabs = self.refreshInactiveTabs(uuid: uuid)
+-        let refreshAction = TabPanelMiddlewareAction(inactiveTabModels: inactiveTabs,
+-                                                     windowUUID: uuid,
+-                                                     actionType: TabPanelMiddlewareActionType.refreshInactiveTabs)
+-        store.dispatch(refreshAction)
+-    }
+-
+     private func didTapLearnMoreAboutPrivate(with urlRequest: URLRequest, uuid: WindowUUID) {
+         addNewTab(with: urlRequest, isPrivate: true, showOverlay: false, for: uuid)
+     }
+@@ -732,7 +623,6 @@ final class TabManagerMiddleware: FeatureFlaggable,
+     private func selectTab(
+         for tabUUID: TabUUID,
+         uuid: WindowUUID,
+-        isInactiveTab: Bool,
+         panelType: TabTrayPanelType,
+         selectedTabIndex: Int?
+     ) {
+diff --git a/firefox-ios/Client/Frontend/Browser/Tabs/Models/InactiveTabsModel.swift b/firefox-ios/Client/Frontend/Browser/Tabs/Models/InactiveTabsModel.swift
+deleted file mode 100644
+index 4b570bffb52e8..0000000000000
+--- a/firefox-ios/Client/Frontend/Browser/Tabs/Models/InactiveTabsModel.swift
++++ /dev/null
+@@ -1,30 +0,0 @@
+-// This Source Code Form is subject to the terms of the Mozilla Public
+-// License, v. 2.0. If a copy of the MPL was not distributed with this
+-// file, You can obtain one at http://mozilla.org/MPL/2.0/
+-
+-import Foundation
+-
+-struct InactiveTabsModel: Equatable, Identifiable, Hashable {
+-    var id: String { return tabUUID }
+-    let tabUUID: TabUUID
+-    let title: String
+-    let url: URL?
+-    var favIconURL: String?
+-
+-    var displayURL: String {
+-        guard let url = url else { return title }
+-
+-        return url.absoluteString
+-    }
+-
+-    static func emptyState(
+-        tabUUID: TabUUID,
+-        title: String
+-    ) -> InactiveTabsModel {
+-        return InactiveTabsModel(
+-            tabUUID: tabUUID,
+-            title: title,
+-            url: nil
+-        )
+-    }
+-}
+diff --git a/firefox-ios/Client/Frontend/Browser/Tabs/Models/TabDisplayModel.swift b/firefox-ios/Client/Frontend/Browser/Tabs/Models/TabDisplayModel.swift
+index 2eb6072707c41..c285052c7f0a3 100644
+--- a/firefox-ios/Client/Frontend/Browser/Tabs/Models/TabDisplayModel.swift
++++ b/firefox-ios/Client/Frontend/Browser/Tabs/Models/TabDisplayModel.swift
+@@ -9,8 +9,6 @@ struct TabDisplayModel: Equatable {
+     var tabs: [TabModel]
+     var normalTabsCount: String
+     var privateTabsCount: String
+-    var inactiveTabs: [InactiveTabsModel]
+-    var isInactiveTabsExpanded: Bool
+     var undoCloseType: ToastType?
+     var enableDeleteTabsButton: Bool
+ }
+diff --git a/firefox-ios/Client/Frontend/Browser/Tabs/State/TabsPanelState.swift b/firefox-ios/Client/Frontend/Browser/Tabs/State/TabsPanelState.swift
+index 44bd170450bb8..60e1137cbfc27 100644
+--- a/firefox-ios/Client/Frontend/Browser/Tabs/State/TabsPanelState.swift
++++ b/firefox-ios/Client/Frontend/Browser/Tabs/State/TabsPanelState.swift
+@@ -9,14 +9,11 @@ import Common
+ struct TabsPanelState: ScreenState, Equatable {
+     struct ScrollState: Equatable {
+         let toIndex: Int
+-        let isInactiveTabSection: Bool
+         let withAnimation: Bool
+     }
+ 
+     var isPrivateMode: Bool
+     var tabs: [TabModel]
+-    var inactiveTabs: [InactiveTabsModel]
+-    var isInactiveTabsExpanded: Bool
+     var windowUUID: WindowUUID
+     var scrollState: ScrollState?
+     var didTapAddTab: Bool
+@@ -40,8 +37,6 @@ struct TabsPanelState: ScreenState, Equatable {
+         self.init(windowUUID: panelState.windowUUID,
+                   isPrivateMode: panelState.isPrivateMode,
+                   tabs: panelState.tabs,
+-                  inactiveTabs: panelState.inactiveTabs,
+-                  isInactiveTabsExpanded: panelState.isInactiveTabsExpanded,
+                   scrollState: panelState.scrollState,
+                   didTapAddTab: panelState.didTapAddTab,
+                   urlRequest: panelState.urlRequest)
+@@ -52,8 +47,6 @@ struct TabsPanelState: ScreenState, Equatable {
+             windowUUID: windowUUID,
+             isPrivateMode: isPrivateMode,
+             tabs: [TabModel](),
+-            inactiveTabs: [InactiveTabsModel](),
+-            isInactiveTabsExpanded: false,
+             toastType: nil,
+             scrollState: nil,
+             didTapAddTab: false,
+@@ -63,16 +56,12 @@ struct TabsPanelState: ScreenState, Equatable {
+     init(windowUUID: WindowUUID,
+          isPrivateMode: Bool,
+          tabs: [TabModel],
+-         inactiveTabs: [InactiveTabsModel],
+-         isInactiveTabsExpanded: Bool,
+          toastType: ToastType? = nil,
+          scrollState: ScrollState? = nil,
+          didTapAddTab: Bool = false,
+          urlRequest: URLRequest? = nil) {
+         self.isPrivateMode = isPrivateMode
+         self.tabs = tabs
+-        self.inactiveTabs = inactiveTabs
+-        self.isInactiveTabsExpanded = isInactiveTabsExpanded
+         self.windowUUID = windowUUID
+         self.scrollState = scrollState
+         self.didTapAddTab = didTapAddTab
+@@ -87,8 +76,6 @@ struct TabsPanelState: ScreenState, Equatable {
+ 
+         if let action = action as? TabPanelMiddlewareAction {
+             return TabsPanelState.reduceTabPanelMiddlewareAction(action: action, state: state)
+-        } else if let action = action as? TabPanelViewAction {
+-            return TabsPanelState.reduceTabsPanelViewAction(action: action, state: state)
+         }
+ 
+         return defaultState(from: state)
+@@ -103,9 +90,7 @@ struct TabsPanelState: ScreenState, Equatable {
+ 
+             return TabsPanelState(windowUUID: state.windowUUID,
+                                   isPrivateMode: tabsModel.isPrivateMode,
+-                                  tabs: tabsModel.tabs,
+-                                  inactiveTabs: tabsModel.inactiveTabs,
+-                                  isInactiveTabsExpanded: tabsModel.isInactiveTabsExpanded)
++                                  tabs: tabsModel.tabs)
+ 
+         case TabPanelMiddlewareActionType.willAppearTabPanel:
+             let scrollModel = createTabScrollBehavior(
+@@ -115,25 +100,13 @@ struct TabsPanelState: ScreenState, Equatable {
+             return TabsPanelState(windowUUID: state.windowUUID,
+                                   isPrivateMode: state.isPrivateMode,
+                                   tabs: state.tabs,
+-                                  inactiveTabs: state.inactiveTabs,
+-                                  isInactiveTabsExpanded: state.isInactiveTabsExpanded,
+                                   scrollState: scrollModel)
+ 
+         case TabPanelMiddlewareActionType.refreshTabs:
+             guard let tabModel = action.tabDisplayModel else { return defaultState(from: state) }
+             return TabsPanelState(windowUUID: state.windowUUID,
+                                   isPrivateMode: state.isPrivateMode,
+-                                  tabs: tabModel.tabs,
+-                                  inactiveTabs: state.inactiveTabs,
+-                                  isInactiveTabsExpanded: state.isInactiveTabsExpanded)
+-
+-        case TabPanelMiddlewareActionType.refreshInactiveTabs:
+-            guard let inactiveTabs = action.inactiveTabModels else { return defaultState(from: state) }
+-            return TabsPanelState(windowUUID: state.windowUUID,
+-                                  isPrivateMode: state.isPrivateMode,
+-                                  tabs: state.tabs,
+-                                  inactiveTabs: inactiveTabs,
+-                                  isInactiveTabsExpanded: state.isInactiveTabsExpanded)
++                                  tabs: tabModel.tabs)
+ 
+         case TabPanelMiddlewareActionType.scrollToTab:
+             guard let scrollBehavior = action.scrollBehavior else { return defaultState(from: state) }
+@@ -141,8 +114,6 @@ struct TabsPanelState: ScreenState, Equatable {
+             return TabsPanelState(windowUUID: state.windowUUID,
+                                   isPrivateMode: state.isPrivateMode,
+                                   tabs: state.tabs,
+-                                  inactiveTabs: state.inactiveTabs,
+-                                  isInactiveTabsExpanded: state.isInactiveTabsExpanded,
+                                   scrollState: scrollModel)
+ 
+         default:
+@@ -150,49 +121,30 @@ struct TabsPanelState: ScreenState, Equatable {
+         }
+     }
+ 
+-    static func reduceTabsPanelViewAction(action: TabPanelViewAction,
+-                                          state: TabsPanelState) -> TabsPanelState {
+-        switch action.actionType {
+-        case TabPanelViewActionType.toggleInactiveTabs:
+-            return TabsPanelState(windowUUID: state.windowUUID,
+-                                  isPrivateMode: state.isPrivateMode,
+-                                  tabs: state.tabs,
+-                                  inactiveTabs: state.inactiveTabs,
+-                                  isInactiveTabsExpanded: !state.isInactiveTabsExpanded)
+-
+-        default:
+-            return defaultState(from: state)
+-        }
+-    }
+-
+     static func defaultState(from state: TabsPanelState) -> TabsPanelState {
+         return TabsPanelState(windowUUID: state.windowUUID,
+                               isPrivateMode: state.isPrivateMode,
+-                              tabs: state.tabs,
+-                              inactiveTabs: state.inactiveTabs,
+-                              isInactiveTabsExpanded: state.isInactiveTabsExpanded)
++                              tabs: state.tabs)
+     }
+ 
+     static func createTabScrollBehavior(
+         forState state: TabsPanelState,
+         withScrollBehavior scrollBehavior: TabScrollBehavior
+     ) -> TabsPanelState.ScrollState? {
+-        guard !(state.tabs.isEmpty && state.inactiveTabs.isEmpty) else { return nil }
++        guard !state.tabs.isEmpty else { return nil }
+ 
+         if case .scrollToSelectedTab(let shouldAnimate) = scrollBehavior {
+             if let selectedTabIndex = state.tabs.firstIndex(where: { $0.isSelected }) {
+-                return ScrollState(toIndex: selectedTabIndex, isInactiveTabSection: false, withAnimation: shouldAnimate)
++                return ScrollState(toIndex: selectedTabIndex, withAnimation: shouldAnimate)
+             } else if !state.tabs.isEmpty {
+                 // If the user switches between the normal and private tab panels, there's a chance this subset of tabs does
+                 // not contain a selected tab. In that case, we should scroll to the bottom of the panel.
+                 // Note: Could optimize further by scrolling to the most recent tab if we had `lastExecutedTime` in our model
+-                return ScrollState(toIndex: state.tabs.count - 1, isInactiveTabSection: false, withAnimation: shouldAnimate)
++                return ScrollState(toIndex: state.tabs.count, withAnimation: shouldAnimate)
+             }
+         } else if case .scrollToTab(let tabUUID, let shouldAnimate) = scrollBehavior {
+             if let tabIndex = state.tabs.firstIndex(where: { $0.tabUUID == tabUUID }) {
+-                return ScrollState(toIndex: tabIndex, isInactiveTabSection: false, withAnimation: shouldAnimate)
+-            } else if let tabIndex = state.inactiveTabs.firstIndex(where: { $0.tabUUID == tabUUID }) {
+-                return ScrollState(toIndex: tabIndex, isInactiveTabSection: true, withAnimation: shouldAnimate)
++                return ScrollState(toIndex: tabIndex, withAnimation: shouldAnimate)
+             } else {
+                 // This can happen if the user closes a tab, switches to a different tab panel, and then taps "undo"
+                 return nil
+diff --git a/firefox-ios/Client/Frontend/Browser/Tabs/Views/Animation/TabAnimation.swift b/firefox-ios/Client/Frontend/Browser/Tabs/Views/Animation/TabAnimation.swift
+index a2ccab12aabac..36ee8205b2f16 100644
+--- a/firefox-ios/Client/Frontend/Browser/Tabs/Views/Animation/TabAnimation.swift
++++ b/firefox-ios/Client/Frontend/Browser/Tabs/Views/Animation/TabAnimation.swift
+@@ -448,8 +448,6 @@ extension TabTrayViewController: BasicAnimationControllerDelegate {
+             switch item {
+             case .tab(let model):
+                 return model.id == id
+-            case .inactiveTab(let model):
+-                return model.id == id
+             }
+         }
+     }
+diff --git a/firefox-ios/Client/Frontend/Browser/Tabs/Views/InactiveTabs/InactiveTabsCell.swift b/firefox-ios/Client/Frontend/Browser/Tabs/Views/InactiveTabs/InactiveTabsCell.swift
+deleted file mode 100644
+index 30e833294de15..0000000000000
+--- a/firefox-ios/Client/Frontend/Browser/Tabs/Views/InactiveTabs/InactiveTabsCell.swift
++++ /dev/null
+@@ -1,85 +0,0 @@
+-// This Source Code Form is subject to the terms of the Mozilla Public
+-// License, v. 2.0. If a copy of the MPL was not distributed with this
+-// file, You can obtain one at http://mozilla.org/MPL/2.0/
+-
+-import Common
+-import SiteImageView
+-import UIKit
+-
+-class InactiveTabsCell: UICollectionViewListCell, ReusableCell, ThemeApplicable {
+-    struct UX {
+-        static let imageSize: CGFloat = 28
+-        static let labelTopBottomMargin: CGFloat = 11
+-        static let imageViewLeadingConstant: CGFloat = 16
+-        static let separatorHeight: CGFloat = 0.5
+-        static let faviconCornerRadius: CGFloat = 5
+-    }
+-
+-    private lazy var selectedView: UIView = .build { _ in }
+-    private lazy var leftImageView: FaviconImageView = .build { _ in }
+-    private lazy var bottomSeparatorView: UIView = .build { _ in }
+-
+-    private lazy var titleLabel: UILabel = .build { label in
+-        label.font = FXFontStyles.Regular.body.scaledFont()
+-        label.adjustsFontForContentSizeCategory = true
+-        label.accessibilityIdentifier = AccessibilityIdentifiers.TabTray.InactiveTabs.cellLabel
+-        label.textAlignment = .natural
+-        label.contentMode = .center
+-    }
+-
+-    func configure(with inactiveTabsModel: InactiveTabsModel) {
+-        setupView()
+-
+-        titleLabel.text = inactiveTabsModel.title
+-
+-        // FXIOS-9938 Right now, passing the faviconURL means each of these websites is caching favicon URLs and images based
+-        // on the full favicon URL path and not the short domain. This can be improved but will require some reworking.
+-        // For now, the consequence is that Inactive tab favicons have to be downloaded when viewed for the first time.
+-        var siteResource: SiteResource?
+-        if let faviconURLString = inactiveTabsModel.favIconURL,
+-           let faviconURL = URL(string: faviconURLString) {
+-            siteResource = .remoteURL(url: faviconURL)
+-        }
+-        leftImageView.setFavicon(FaviconImageViewModel(siteURLString: inactiveTabsModel.url?.absoluteString,
+-                                                       siteResource: siteResource,
+-                                                       faviconCornerRadius: InactiveTabsCell.UX.faviconCornerRadius))
+-    }
+-
+-    func applyTheme(theme: Theme) {
+-        backgroundColor = theme.colors.layer2
+-        contentView.backgroundColor = theme.colors.layer2
+-        titleLabel.textColor = theme.colors.textPrimary
+-        bottomSeparatorView.backgroundColor = theme.colors.borderPrimary
+-        selectedView.backgroundColor = .green
+-    }
+-
+-    private func setupView() {
+-        contentView.addSubview(leftImageView)
+-        contentView.addSubviews(titleLabel)
+-        contentView.addSubview(bottomSeparatorView)
+-
+-        NSLayoutConstraint.activate([
+-            leftImageView.heightAnchor.constraint(equalToConstant: UX.imageSize),
+-            leftImageView.widthAnchor.constraint(equalToConstant: UX.imageSize),
+-            leftImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor,
+-                                                   constant: UX.imageViewLeadingConstant),
+-            leftImageView.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
+-            leftImageView.trailingAnchor.constraint(equalTo: titleLabel.leadingAnchor,
+-                                                    constant: -UX.imageViewLeadingConstant),
+-
+-            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor,
+-                                            constant: UX.labelTopBottomMargin),
+-            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+-            titleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor,
+-                                               constant: -UX.labelTopBottomMargin),
+-
+-            bottomSeparatorView.heightAnchor.constraint(equalToConstant: UX.separatorHeight),
+-            bottomSeparatorView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+-            bottomSeparatorView.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+-            bottomSeparatorView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+-        ])
+-
+-        leftImageView.setContentHuggingPriority(.required, for: .vertical)
+-        selectedBackgroundView = selectedView
+-    }
+-}
+diff --git a/firefox-ios/Client/Frontend/Browser/Tabs/Views/InactiveTabs/InactiveTabsFooterView.swift b/firefox-ios/Client/Frontend/Browser/Tabs/Views/InactiveTabs/InactiveTabsFooterView.swift
+deleted file mode 100644
+index 6c568c2c7b7ff..0000000000000
+--- a/firefox-ios/Client/Frontend/Browser/Tabs/Views/InactiveTabs/InactiveTabsFooterView.swift
++++ /dev/null
+@@ -1,67 +0,0 @@
+-// This Source Code Form is subject to the terms of the Mozilla Public
+-// License, v. 2.0. If a copy of the MPL was not distributed with this
+-// file, You can obtain one at http://mozilla.org/MPL/2.0/
+-
+-import Common
+-import ComponentLibrary
+-import UIKit
+-
+-class InactiveTabsFooterView: UICollectionReusableView, ReusableCell, ThemeApplicable {
+-    struct UX {
+-        static let buttonImagePadding: CGFloat = 11
+-        static let iPadOffset: CGFloat = 100
+-        static let iPhoneOffset: CGFloat = 23
+-        static let buttonTopOffset: CGFloat = 16
+-        static let buttonBottomOffset: CGFloat = 24
+-    }
+-    // MARK: - Properties
+-    var buttonClosure: (@MainActor () -> Void)?
+-
+-    // MARK: - UI Elements
+-    private lazy var roundedButton: PrimaryRoundedButton = .build { button in
+-        let viewModel = PrimaryRoundedButtonViewModel(
+-            title: .TabsTray.InactiveTabs.CloseAllInactiveTabsButton,
+-            a11yIdentifier: AccessibilityIdentifiers.TabTray.InactiveTabs.deleteButton,
+-            imageTitlePadding: UX.buttonImagePadding
+-        )
+-        button.configure(viewModel: viewModel)
+-        button.addTarget(self, action: #selector(self.buttonPressed), for: .touchUpInside)
+-    }
+-
+-    // MARK: - Initializers
+-    override init(frame: CGRect) {
+-        super.init(frame: frame)
+-        setupView()
+-    }
+-
+-    required init?(coder: NSCoder) {
+-        fatalError("init(coder:) has not been implemented")
+-    }
+-
+-    func setupView() {
+-        addSubview(roundedButton)
+-
+-        let horizontalOffSet: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? UX.iPadOffset : UX.iPhoneOffset
+-        accessibilityIdentifier = AccessibilityIdentifiers.TabTray.InactiveTabs.footerView
+-
+-        NSLayoutConstraint.activate([
+-            roundedButton.centerXAnchor.constraint(equalTo: centerXAnchor),
+-            roundedButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: horizontalOffSet),
+-            roundedButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -horizontalOffSet),
+-            roundedButton.topAnchor.constraint(equalTo: topAnchor, constant: UX.buttonTopOffset),
+-            roundedButton.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -UX.buttonBottomOffset)
+-        ])
+-    }
+-
+-    @objc
+-    func buttonPressed() {
+-        buttonClosure?()
+-    }
+-
+-    func applyTheme(theme: Theme) {
+-        backgroundColor = theme.colors.layer2
+-        roundedButton.applyTheme(theme: theme)
+-        let image = UIImage(named: StandardImageIdentifiers.Large.delete)?.tinted(withColor: theme.colors.iconPrimary)
+-        roundedButton.configuration?.image = image?.withRenderingMode(.alwaysTemplate)
+-    }
+-}
+diff --git a/firefox-ios/Client/Frontend/Browser/Tabs/Views/InactiveTabs/InactiveTabsHeaderView.swift b/firefox-ios/Client/Frontend/Browser/Tabs/Views/InactiveTabs/InactiveTabsHeaderView.swift
+deleted file mode 100644
+index 543215d3ea923..0000000000000
+--- a/firefox-ios/Client/Frontend/Browser/Tabs/Views/InactiveTabs/InactiveTabsHeaderView.swift
++++ /dev/null
+@@ -1,80 +0,0 @@
+-// This Source Code Form is subject to the terms of the Mozilla Public
+-// License, v. 2.0. If a copy of the MPL was not distributed with this
+-// file, You can obtain one at http://mozilla.org/MPL/2.0/
+-
+-import Common
+-import Foundation
+-
+-class InactiveTabsHeaderView: UICollectionReusableView, ReusableCell, ThemeApplicable {
+-    private struct UX {
+-        static let titleMinimumScaleFactor: CGFloat = 0.7
+-        static let verticalPadding: CGFloat = 19
+-        static let horizontalPadding: CGFloat = 16
+-        static let buttonBottomPadding: CGFloat = 28
+-    }
+-
+-    var state: ExpandButtonState? {
+-        willSet(state) {
+-            moreButton.setImage(state?.image, for: .normal)
+-        }
+-    }
+-
+-    lazy var titleLabel: UILabel = .build { titleLabel in
+-        titleLabel.font = FXFontStyles.Bold.headline.scaledFont()
+-        titleLabel.text = String.TabsTrayInactiveTabsSectionTitle
+-        titleLabel.adjustsFontForContentSizeCategory = true
+-        titleLabel.accessibilityIdentifier = AccessibilityIdentifiers.TabTray.InactiveTabs.headerLabel
+-        titleLabel.minimumScaleFactor = UX.titleMinimumScaleFactor
+-        titleLabel.adjustsFontSizeToFitWidth = true
+-    }
+-
+-    lazy var moreButton: UIButton = .build { button in
+-        button.isHidden = true
+-        button.setImage(self.state?.image, for: .normal)
+-        button.accessibilityIdentifier = AccessibilityIdentifiers.TabTray.InactiveTabs.headerButton
+-        button.contentHorizontalAlignment = .trailing
+-    }
+-
+-    override init(frame: CGRect) {
+-        super.init(frame: frame)
+-        setupView()
+-    }
+-
+-    required init?(coder: NSCoder) {
+-        fatalError("init(coder:) has not been implemented")
+-    }
+-
+-    func setupView() {
+-        addSubview(titleLabel)
+-        addSubview(moreButton)
+-        moreButton.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+-
+-        isAccessibilityElement = true
+-        accessibilityTraits = .button
+-        accessibilityIdentifier = AccessibilityIdentifiers.TabTray.InactiveTabs.headerView
+-
+-        NSLayoutConstraint.activate(
+-            [
+-                titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+-                titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: UX.verticalPadding),
+-                titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -UX.verticalPadding),
+-                titleLabel.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor,
+-                                                    constant: UX.horizontalPadding),
+-                titleLabel.trailingAnchor.constraint(equalTo: moreButton.leadingAnchor,
+-                                                     constant: -UX.horizontalPadding),
+-
+-                moreButton.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
+-                moreButton.trailingAnchor.constraint(
+-                    equalTo: safeAreaLayoutGuide.trailingAnchor,
+-                    constant: -UX.buttonBottomPadding
+-                ),
+-            ]
+-        )
+-    }
+-
+-    func applyTheme(theme: Theme) {
+-        backgroundColor = theme.colors.layer2
+-        titleLabel.textColor = theme.colors.textPrimary
+-        moreButton.tintColor = theme.colors.textPrimary
+-    }
+-}
+diff --git a/firefox-ios/Client/Frontend/Browser/Tabs/Views/TabDisplayDiffableDataSource.swift b/firefox-ios/Client/Frontend/Browser/Tabs/Views/TabDisplayDiffableDataSource.swift
+index a8b72615765c8..575dc8fd13fe9 100644
+--- a/firefox-ios/Client/Frontend/Browser/Tabs/Views/TabDisplayDiffableDataSource.swift
++++ b/firefox-ios/Client/Frontend/Browser/Tabs/Views/TabDisplayDiffableDataSource.swift
+@@ -7,28 +7,16 @@ typealias TabDisplayViewItem = TabDisplayDiffableDataSource.TabItem
+ 
+ final class TabDisplayDiffableDataSource: UICollectionViewDiffableDataSource<TabDisplayViewSection, TabDisplayViewItem> {
+     enum TabSection: Hashable {
+-        // Adding a UUID to the section allows us to trigger a reload on the header by updating the UUID
+-        // (which creates a diff) while updating the snapshot. This avoids calling reloadSections on inactiveTabs
+-        // when there are no inactiveTabs in the section, which triggers a crash on iOS 15.
+-        case inactiveTabs(UUID)
+         case tabs
+     }
+ 
+     enum TabItem: Hashable {
+-        case inactiveTab(InactiveTabsModel)
+         case tab(TabModel)
+     }
+ 
+     func updateSnapshot(state: TabsPanelState) {
+         var snapshot = NSDiffableDataSourceSnapshot<TabDisplayViewSection, TabDisplayViewItem>()
+-
+-        let inactiveTabsUUID = UUID()
+-        snapshot.appendSections([.inactiveTabs(inactiveTabsUUID), .tabs])
+-
+-        if state.isInactiveTabsExpanded {
+-            let inactiveTabs = state.inactiveTabs.map { TabDisplayViewItem.inactiveTab($0) }
+-            snapshot.appendItems(inactiveTabs, toSection: .inactiveTabs(inactiveTabsUUID))
+-        }
++        snapshot.appendSections([.tabs])
+ 
+         let tabs = state.tabs.map { TabDisplayViewItem.tab($0) }
+         snapshot.appendItems(tabs, toSection: .tabs)
+diff --git a/firefox-ios/Client/Frontend/Browser/Tabs/Views/TabDisplayView.swift b/firefox-ios/Client/Frontend/Browser/Tabs/Views/TabDisplayView.swift
+index 91d5493f36a31..cbf0e70ed09ae 100644
+--- a/firefox-ios/Client/Frontend/Browser/Tabs/Views/TabDisplayView.swift
++++ b/firefox-ios/Client/Frontend/Browser/Tabs/Views/TabDisplayView.swift
+@@ -29,7 +29,6 @@ final class TabDisplayView: UIView,
+                       UICollectionViewDelegateFlowLayout,
+                       TabCellDelegate,
+                       SwipeAnimatorDelegate,
+-                      InactiveTabsSectionManagerDelegate,
+                       FeatureFlaggable,
+                       InsetUpdatable {
+     struct UX {
+@@ -39,7 +38,6 @@ final class TabDisplayView: UIView,
+     let panelType: TabTrayPanelType
+     private(set) var tabsState: TabsPanelState
+     private var performingChainedOperations = false
+-    private var inactiveTabsSectionManager: InactiveTabsSectionManager
+     private var tabsSectionManager: TabsSectionManager
+     private let windowUUID: WindowUUID
+     var theme: Theme?
+@@ -53,18 +51,6 @@ final class TabDisplayView: UIView,
+             guard let self else { return UICollectionViewCell() }
+ 
+             switch sectionItem {
+-            case .inactiveTab(let inactiveTab):
+-                guard let cell = collectionView.dequeueReusableCell(
+-                    withReuseIdentifier: InactiveTabsCell.cellIdentifier,
+-                    for: indexPath
+-                ) as? InactiveTabsCell
+-                else { return UICollectionViewCell() }
+-
+-                cell.configure(with: inactiveTab)
+-                if let theme = theme {
+-                    cell.applyTheme(theme: theme)
+-                }
+-                return cell
+             case .tab(let tab):
+                 if isTabTrayUIExperimentsEnabled {
+                     guard let cell = collectionView.dequeueReusableCell(
+@@ -93,11 +79,6 @@ final class TabDisplayView: UIView,
+         && UIDevice.current.userInterfaceIdiom != .pad
+     }
+ 
+-    var shouldHideInactiveTabs: Bool {
+-        guard !tabsState.isPrivateMode && !isTabTrayUIExperimentsEnabled else { return true }
+-        return tabsState.inactiveTabs.isEmpty
+-    }
+-
+     // Dragging on the collection view is either an 'active drag' where the item is moved, or
+     // that the item has been long pressed on (and not moved yet), and this gesture recognizer
+     // has been triggered
+@@ -130,15 +111,6 @@ final class TabDisplayView: UIView,
+         } else {
+             collectionView.register(cellType: TabCell.self)
+         }
+-        collectionView.register(cellType: InactiveTabsCell.self)
+-        collectionView.register(
+-            InactiveTabsHeaderView.self,
+-            forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+-            withReuseIdentifier: InactiveTabsHeaderView.cellIdentifier)
+-        collectionView.register(
+-            InactiveTabsFooterView.self,
+-            forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter,
+-            withReuseIdentifier: InactiveTabsFooterView.cellIdentifier)
+ 
+         collectionView.alwaysBounceVertical = true
+         collectionView.keyboardDismissMode = .onDrag
+@@ -156,11 +128,9 @@ final class TabDisplayView: UIView,
+                 windowUUID: WindowUUID) {
+         self.panelType = panelType
+         self.tabsState = state
+-        self.inactiveTabsSectionManager = InactiveTabsSectionManager()
+         self.tabsSectionManager = TabsSectionManager()
+         self.windowUUID = windowUUID
+         super.init(frame: .zero)
+-        self.inactiveTabsSectionManager.delegate = self
+         setupLayout()
+         configureDataSource()
+     }
+@@ -199,8 +169,7 @@ final class TabDisplayView: UIView,
+     }
+ 
+     private func scrollToTab(_ scrollState: TabsPanelState.ScrollState) {
+-        let section: Int = scrollState.isInactiveTabSection ? 0 : 1
+-        let indexPath = IndexPath(row: scrollState.toIndex, section: section)
++        let indexPath = IndexPath(row: scrollState.toIndex, section: 1)
+         // Piping this into main thread let the collection view finish its layout process
+         DispatchQueue.main.async {
+             guard !self.collectionView.indexPathsForFullyVisibleItems.contains(indexPath) else { return }
+@@ -223,29 +192,6 @@ final class TabDisplayView: UIView,
+                                   kind: String,
+                                   indexPath: IndexPath) -> UICollectionReusableView? {
+         switch kind {
+-        case UICollectionView.elementKindSectionHeader:
+-            guard let headerView = collectionView.dequeueReusableSupplementaryView(
+-                ofKind: kind,
+-                withReuseIdentifier: InactiveTabsHeaderView.cellIdentifier,
+-                for: indexPath) as? InactiveTabsHeaderView
+-            else { return nil }
+-
+-            headerView.state = tabsState.isInactiveTabsExpanded ? .down : .trailing
+-            if let theme = theme {
+-                headerView.applyTheme(theme: theme)
+-            }
+-            headerView.moreButton.isHidden = false
+-            headerView.moreButton.addTarget(self,
+-                                            action: #selector(toggleInactiveTab),
+-                                            for: .touchUpInside)
+-            headerView.accessibilityLabel = tabsState.isInactiveTabsExpanded ?
+-                .TabsTray.InactiveTabs.TabsTrayInactiveTabsSectionOpenedAccessibilityTitle :
+-                .TabsTray.InactiveTabs.TabsTrayInactiveTabsSectionClosedAccessibilityTitle
+-            let tapGestureRecognizer = UITapGestureRecognizer(target: self,
+-                                                              action: #selector(toggleInactiveTab))
+-            headerView.addGestureRecognizer(tapGestureRecognizer)
+-            return headerView
+-
+         case TabTitleSupplementaryView.cellIdentifier:
+             guard let titleView = collectionView.dequeueReusableSupplementaryView(
+                 ofKind: TabTitleSupplementaryView.cellIdentifier,
+@@ -258,25 +204,6 @@ final class TabDisplayView: UIView,
+             }
+             return titleView
+ 
+-        case UICollectionView.elementKindSectionFooter:
+-            guard tabsState.isInactiveTabsExpanded,
+-                  let footerView = collectionView.dequeueReusableSupplementaryView(
+-                    ofKind: UICollectionView.elementKindSectionFooter,
+-                    withReuseIdentifier: InactiveTabsFooterView.cellIdentifier,
+-                    for: indexPath) as? InactiveTabsFooterView
+-            else { return nil }
+-
+-            if let theme = theme {
+-                footerView.applyTheme(theme: theme)
+-            }
+-            footerView.buttonClosure = {
+-                let action = TabPanelViewAction(panelType: self.panelType,
+-                                                windowUUID: self.windowUUID,
+-                                                actionType: TabPanelViewActionType.closeAllInactiveTabs)
+-                store.dispatch(action)
+-            }
+-            return footerView
+-
+         default:
+             assertionFailure("This is a developer error")
+             return nil
+@@ -297,31 +224,12 @@ final class TabDisplayView: UIView,
+     private func createLayout() -> UICollectionViewCompositionalLayout {
+         // swiftlint:disable line_length
+         let layout = UICollectionViewCompositionalLayout { [weak self] (sectionIndex: Int, layoutEnvironment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection? in
+-        // swiftlint:enable line_length
++            // swiftlint:enable line_length
+             guard let self else { return nil }
+-
+-            // If on private mode or regular mode but without inactive
+-            // tabs we return only the tabs layout
+-            guard !shouldHideInactiveTabs else {
+-                if isTabTrayUIExperimentsEnabled {
+-                    return self.tabsSectionManager.experimentLayoutSection(layoutEnvironment)
+-                } else {
+-                    return self.tabsSectionManager.layoutSection(layoutEnvironment)
+-                }
+-            }
+-
+-            let section = getSection(for: sectionIndex)
+-            switch section {
+-            case .inactiveTabs:
+-                return self.inactiveTabsSectionManager.layoutSection(
+-                    layoutEnvironment,
+-                    isExpanded: tabsState.isInactiveTabsExpanded)
+-            case .tabs:
+-                if isTabTrayUIExperimentsEnabled {
+-                    return self.tabsSectionManager.experimentLayoutSection(layoutEnvironment)
+-                } else {
+-                    return self.tabsSectionManager.layoutSection(layoutEnvironment)
+-                }
++            if isTabTrayUIExperimentsEnabled {
++                return self.tabsSectionManager.experimentLayoutSection(layoutEnvironment)
++            } else {
++                return self.tabsSectionManager.layoutSection(layoutEnvironment)
+             }
+         }
+         return layout
+@@ -346,27 +254,9 @@ final class TabDisplayView: UIView,
+         return snapshot.sectionIdentifiers[sectionIndex]
+     }
+ 
+-    func deleteInactiveTab(for index: Int) {
+-        let inactiveTabs = tabsState.inactiveTabs[index]
+-        let action = TabPanelViewAction(panelType: panelType,
+-                                        tabUUID: inactiveTabs.tabUUID,
+-                                        windowUUID: windowUUID,
+-                                        actionType: TabPanelViewActionType.closeInactiveTab)
+-        store.dispatch(action)
+-    }
+-
+     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+         if let selectedItem = dataSource.itemIdentifier(for: indexPath) {
+             switch selectedItem {
+-            case .inactiveTab(let inactiveTabsModel):
+-                let tabUUID = inactiveTabsModel.tabUUID
+-                let action = TabPanelViewAction(panelType: panelType,
+-                                                tabUUID: tabUUID,
+-                                                selectedTabIndex: indexPath.item,
+-                                                isInactiveTab: true,
+-                                                windowUUID: windowUUID,
+-                                                actionType: TabPanelViewActionType.selectTab)
+-                store.dispatch(action)
+             case .tab(let tabModel):
+                 let tabUUID = tabModel.tabUUID
+                 let action = TabPanelViewAction(panelType: panelType,
+@@ -391,14 +281,6 @@ final class TabDisplayView: UIView,
+                                           actionProvider: tabVC.contextActions)
+     }
+ 
+-    @objc
+-    func toggleInactiveTab() {
+-        let action = TabPanelViewAction(panelType: panelType,
+-                                        windowUUID: windowUUID,
+-                                        actionType: TabPanelViewActionType.toggleInactiveTabs)
+-        store.dispatch(action)
+-    }
+-
+     // MARK: - TabCellDelegate
+     func tabCellDidClose(for tabUUID: TabUUID) {
+         if !isDragging {
+diff --git a/firefox-ios/Client/Frontend/Browser/ToastType.swift b/firefox-ios/Client/Frontend/Browser/ToastType.swift
+index 694439e910597..5939e8c96d871 100644
+--- a/firefox-ios/Client/Frontend/Browser/ToastType.swift
++++ b/firefox-ios/Client/Frontend/Browser/ToastType.swift
+@@ -11,9 +11,7 @@ enum ToastType: Equatable {
+     case addToReadingList
+     case clearCookies
+     case closedSingleTab
+-    case closedSingleInactiveTab
+     case closedAllTabs(count: Int)
+-    case closedAllInactiveTabs(count: Int)
+     case openNewTab
+     case removeFromReadingList
+     case removeShortcut
+@@ -27,10 +25,9 @@ enum ToastType: Equatable {
+             return .LegacyAppMenu.AddToReadingListConfirmMessage
+         case .clearCookies:
+             return .Menu.EnhancedTrackingProtection.clearDataToastMessage
+-        case .closedSingleTab, .closedSingleInactiveTab:
++        case .closedSingleTab:
+             return .TabsTray.CloseTabsToast.SingleTabTitle
+-        case let .closedAllInactiveTabs(tabsCount),
+-            let .closedAllTabs(count: tabsCount):
++        case let .closedAllTabs(count: tabsCount):
+             return String.localizedStringWithFormat(
+                 .TabsTray.CloseTabsToast.Title,
+                 tabsCount)
+@@ -60,12 +57,8 @@ enum ToastType: Equatable {
+         switch self {
+         case .closedSingleTab:
+             return tabPanelAction(for: TabPanelViewActionType.undoClose, uuid: uuid)
+-        case .closedSingleInactiveTab:
+-            return tabPanelAction(for: TabPanelViewActionType.undoCloseInactiveTab, uuid: uuid)
+         case .closedAllTabs:
+             return tabPanelAction(for: TabPanelViewActionType.undoCloseAllTabs, uuid: uuid)
+-        case .closedAllInactiveTabs:
+-            return tabPanelAction(for: TabPanelViewActionType.undoCloseAllInactiveTabs, uuid: uuid)
+         case .retryTranslatingPage:
+             return TranslationsAction(windowUUID: uuid, actionType: TranslationsActionType.didTapRetryFailedTranslation)
+         case .clearCookies,
+diff --git a/firefox-ios/Shared/Strings.swift b/firefox-ios/Shared/Strings.swift
+index 13fc345a5c678..55782ec03e233 100644
+--- a/firefox-ios/Shared/Strings.swift
++++ b/firefox-ios/Shared/Strings.swift
+@@ -3500,29 +3500,6 @@ extension String {
+             value: "Private",
+             comment: "The title on the button to look at private tabs.")
+ 
+-        public struct InactiveTabs {
+-            public static let TabsTrayInactiveTabsSectionClosedAccessibilityTitle = MZLocalizedString(
+-                key: "TabsTray.InactiveTabs.SectionTitle.Closed.Accessibility.v103",
+-                tableName: nil,
+-                value: "View Inactive Tabs",
+-                comment: "Accessibility title for the inactive tabs section button when section is closed. This section groups all tabs that haven't been used in a while.")
+-            public static let TabsTrayInactiveTabsSectionOpenedAccessibilityTitle = MZLocalizedString(
+-                key: "TabsTray.InactiveTabs.SectionTitle.Opened.Accessibility.v103",
+-                tableName: nil,
+-                value: "Hide Inactive Tabs",
+-                comment: "Accessibility title for the inactive tabs section button when section is open. This section groups all tabs that haven't been used in a while.")
+-            public static let CloseAllInactiveTabsButton = MZLocalizedString(
+-                key: "InactiveTabs.TabTray.CloseButtonTitle",
+-                tableName: nil,
+-                value: "Close All Inactive Tabs",
+-                comment: "In the Tabs Tray, in the Inactive Tabs section, this is the button the user must tap in order to close all inactive tabs.")
+-            public static let CloseInactiveTabSwipeActionTitle = MZLocalizedString(
+-                key: "InactiveTabs.TabTray.CloseSwipeActionTitle.v115",
+-                tableName: "TabsTray",
+-                value: "Close",
+-                comment: "This is the swipe action title for closing an inactive tab by swiping, located in the Inactive Tabs section of the Tabs Tray")
+-        }
+-
+         public struct CloseTabsToast {
+             public static let Title = MZLocalizedString(
+                 key: "CloseTabsToast.Title.v113",
+@@ -8481,6 +8458,28 @@ extension String {
+                 value: "Tabs you haven’t viewed for two weeks get moved to the inactive section.",
+                 comment: "This is the description for the setting that toggles the Inactive Tabs feature in the settings menu under the Tabs customization section. Inactive tabs are a separate section of tabs that appears in the Tab Tray, which can be enabled or not")
+         }
++        struct v147 {
++            public static let TabsTrayInactiveTabsSectionClosedAccessibilityTitle = MZLocalizedString(
++                key: "TabsTray.InactiveTabs.SectionTitle.Closed.Accessibility.v103",
++                tableName: nil,
++                value: "View Inactive Tabs",
++                comment: "Accessibility title for the inactive tabs section button when section is closed. This section groups all tabs that haven't been used in a while.")
++            public static let TabsTrayInactiveTabsSectionOpenedAccessibilityTitle = MZLocalizedString(
++                key: "TabsTray.InactiveTabs.SectionTitle.Opened.Accessibility.v103",
++                tableName: nil,
++                value: "Hide Inactive Tabs",
++                comment: "Accessibility title for the inactive tabs section button when section is open. This section groups all tabs that haven't been used in a while.")
++            public static let CloseAllInactiveTabsButton = MZLocalizedString(
++                key: "InactiveTabs.TabTray.CloseButtonTitle",
++                tableName: nil,
++                value: "Close All Inactive Tabs",
++                comment: "In the Tabs Tray, in the Inactive Tabs section, this is the button the user must tap in order to close all inactive tabs.")
++            public static let CloseInactiveTabSwipeActionTitle = MZLocalizedString(
++                key: "InactiveTabs.TabTray.CloseSwipeActionTitle.v115",
++                tableName: "TabsTray",
++                value: "Close",
++                comment: "This is the swipe action title for closing an inactive tab by swiping, located in the Inactive Tabs section of the Tabs Tray")
++        }
+     }
+ }
+ 
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabDisplayDiffableDataSourceTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabDisplayDiffableDataSourceTests.swift
+index 91e515f1e0fb5..6562108f398e1 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabDisplayDiffableDataSourceTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabDisplayDiffableDataSourceTests.swift
+@@ -22,83 +22,39 @@ final class TabDisplayDiffableDataSourceTests: XCTestCase {
+         try await super.tearDown()
+     }
+ 
+-    func testNumberOfSections_ForRegularTabsWithInactiveTabs() {
++    func testNumberOfSections_ForRegularTabs() {
+         let subject = createSubject(isPrivateMode: false,
+-                                    numberInactiveTabs: 2,
+-                                    numberActiveTabs: 5)
+-
+-        XCTAssertEqual(subject.collectionView.numberOfSections, 2)
+-        XCTAssertEqual(subject.collectionView.numberOfItems(inSection: 0), 2)
+-        XCTAssertEqual(subject.collectionView.numberOfItems(inSection: 1), 5)
+-    }
+-
+-    func testNumberOfSections_ForRegularTabsWithoutInactiveTabs() {
+-        let subject = createSubject(isPrivateMode: false,
+-                                    numberInactiveTabs: 0,
+                                     numberActiveTabs: 2)
+ 
+-        XCTAssertEqual(subject.collectionView.numberOfSections, 2)
+-        XCTAssertEqual(subject.collectionView.numberOfItems(inSection: 0), 0)
+-        XCTAssertEqual(subject.collectionView.numberOfItems(inSection: 1), 2)
+-    }
+-
+-    func testNumberOfSections_PrivateTabsAndInactiveTabs() {
+-        let subject = createSubject(isPrivateMode: true,
+-                                    numberInactiveTabs: 2,
+-                                    numberActiveTabs: 2)
+-
+-        XCTAssertEqual(subject.collectionView.numberOfSections, 2)
+-        // if in private mode we should not have any inactive tabs added to the section
+-        XCTAssertEqual(subject.collectionView.numberOfItems(inSection: 0), 0)
+-        XCTAssertEqual(subject.collectionView.numberOfItems(inSection: 1), 2)
++        XCTAssertEqual(subject.collectionView.numberOfSections, 1)
++        XCTAssertEqual(subject.collectionView.numberOfItems(inSection: 0), 2)
+     }
+ 
+-    func testNumberOfSections_PrivateTabsWithoutInactiveTabs() {
++    func testNumberOfSections_PrivateTabs() {
+         let subject = createSubject(isPrivateMode: true,
+-                                    numberInactiveTabs: 0,
+                                     numberActiveTabs: 9)
+ 
+-        XCTAssertEqual(subject.collectionView.numberOfSections, 2)
+-        XCTAssertEqual(subject.collectionView.numberOfItems(inSection: 0), 0)
+-        XCTAssertEqual(subject.collectionView.numberOfItems(inSection: 1), 9)
++        XCTAssertEqual(subject.collectionView.numberOfSections, 1)
++        XCTAssertEqual(subject.collectionView.numberOfItems(inSection: 0), 9)
+     }
+ 
+     func testNumberOfSections_PrivateTabsWithEmptyTabs() {
+         let subject = createSubject(isPrivateMode: true,
+-                                    numberInactiveTabs: 0,
+                                     numberActiveTabs: 0)
+ 
+-        XCTAssertEqual(subject.collectionView.numberOfSections, 2)
++        XCTAssertEqual(subject.collectionView.numberOfSections, 1)
+         XCTAssertEqual(subject.collectionView.numberOfItems(inSection: 0), 0)
+-        XCTAssertEqual(subject.collectionView.numberOfItems(inSection: 1), 0)
+-    }
+-
+-    func testAmountOfSections_ForPrivateTabsWithoutInactiveTabs() {
+-        let subject = createSubject(isPrivateMode: true,
+-                                    numberInactiveTabs: 0,
+-                                    numberActiveTabs: 4)
+-
+-        XCTAssertEqual(subject.collectionView.numberOfSections, 2)
+-        XCTAssertEqual(subject.collectionView.numberOfItems(inSection: 0), 0)
+-        XCTAssertEqual(subject.collectionView.numberOfItems(inSection: 1), 4)
+     }
+ 
+     // MARK: - Private
+     private func createSubject(isPrivateMode: Bool,
+-                               numberInactiveTabs: Int,
+                                numberActiveTabs: Int,
+                                file: StaticString = #filePath,
+                                line: UInt = #line) -> TabDisplayView {
+         let tabs = createTabs(numberOfTabs: numberActiveTabs)
+-
+-        let inactiveTabs = createInactiveTabs(numberOfTabs: numberInactiveTabs)
+-        let isInactiveTabsExpanded = !isPrivateMode && !inactiveTabs.isEmpty
+-
+         let tabState = TabsPanelState(windowUUID: .XCTestDefaultUUID,
+                                       isPrivateMode: isPrivateMode,
+-                                      tabs: tabs,
+-                                      inactiveTabs: inactiveTabs,
+-                                      isInactiveTabsExpanded: isInactiveTabsExpanded)
++                                      tabs: tabs)
+ 
+         let subject = TabDisplayView(panelType: isPrivateMode ? .privateTabs : .tabs,
+                                      state: tabState,
+@@ -117,20 +73,6 @@ final class TabDisplayDiffableDataSourceTests: XCTestCase {
+         return subject
+     }
+ 
+-    private func createInactiveTabs(numberOfTabs: Int) -> [InactiveTabsModel] {
+-        guard numberOfTabs != 0 else { return [InactiveTabsModel]() }
+-
+-        var inactiveTabs = [InactiveTabsModel]()
+-        let tabUUID = "UUID"
+-        for index in 0..<numberOfTabs {
+-            let inactiveTabModel = InactiveTabsModel(tabUUID: tabUUID,
+-                                                     title: "InactiveTab\(index)",
+-                                                     url: nil)
+-            inactiveTabs.append(inactiveTabModel)
+-        }
+-        return inactiveTabs
+-    }
+-
+     private func createTabs(numberOfTabs: Int) -> [TabModel] {
+         guard numberOfTabs != 0 else { return [TabModel]() }
+ 
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabDisplayPanelTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabDisplayPanelTests.swift
+index 37d93a0d22461..dd4674408c2aa 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabDisplayPanelTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabDisplayPanelTests.swift
+@@ -17,20 +17,10 @@ final class TabDisplayPanelTests: XCTestCase {
+         DependencyHelperMock().reset()
+     }
+ 
+-    @MainActor
+-    func testExpandedInactiveTabs_InitialState() {
+-        let subject = createSubject(isPrivateMode: false,
+-                                    emptyTabs: false,
+-                                    emptyInactiveTabs: false)
+-
+-        XCTAssertTrue(subject.tabsState.isInactiveTabsExpanded)
+-    }
+-
+     @MainActor
+     func testIsPrivateTabsEmpty() {
+         let subject = createSubject(isPrivateMode: true,
+-                                    emptyTabs: true,
+-                                    emptyInactiveTabs: true)
++                                    emptyTabs: true)
+ 
+         XCTAssertTrue(subject.tabsState.isPrivateTabsEmpty)
+     }
+@@ -38,8 +28,7 @@ final class TabDisplayPanelTests: XCTestCase {
+     @MainActor
+     func testIsPrivateTabsNotEmpty() {
+         let subject = createSubject(isPrivateMode: true,
+-                                    emptyTabs: false,
+-                                    emptyInactiveTabs: true)
++                                    emptyTabs: false)
+ 
+         XCTAssertFalse(subject.tabsState.isPrivateTabsEmpty)
+     }
+@@ -48,12 +37,10 @@ final class TabDisplayPanelTests: XCTestCase {
+     @MainActor
+     private func createSubject(isPrivateMode: Bool,
+                                emptyTabs: Bool,
+-                               emptyInactiveTabs: Bool,
+                                file: StaticString = #filePath,
+                                line: UInt = #line) -> TabDisplayPanelViewController {
+         let subjectState = createSubjectState(isPrivateMode: isPrivateMode,
+-                                              emptyTabs: emptyTabs,
+-                                              emptyInactiveTabs: emptyInactiveTabs)
++                                              emptyTabs: emptyTabs)
+         let delegate = MockTabDisplayViewDragAndDropInteraction()
+         let subject = TabDisplayPanelViewController(isPrivateMode: isPrivateMode,
+                                                     windowUUID: .XCTestDefaultUUID,
+@@ -65,25 +52,11 @@ final class TabDisplayPanelTests: XCTestCase {
+     }
+ 
+     private func createSubjectState(isPrivateMode: Bool,
+-                                    emptyTabs: Bool,
+-                                    emptyInactiveTabs: Bool) -> TabsPanelState {
++                                    emptyTabs: Bool) -> TabsPanelState {
+         let tabs = createTabs(emptyTabs)
+-        var inactiveTabs = [InactiveTabsModel]()
+-        if !emptyInactiveTabs {
+-            let uuid = "UUID"
+-            for index in 0...2 {
+-                let inactiveTabModel = InactiveTabsModel(tabUUID: uuid,
+-                                                         title: "InactiveTab\(index)",
+-                                                         url: nil)
+-                inactiveTabs.append(inactiveTabModel)
+-            }
+-        }
+-        let isInactiveTabsExpanded = !isPrivateMode && !inactiveTabs.isEmpty
+         return TabsPanelState(windowUUID: .XCTestDefaultUUID,
+                               isPrivateMode: isPrivateMode,
+-                              tabs: tabs,
+-                              inactiveTabs: inactiveTabs,
+-                              isInactiveTabsExpanded: isInactiveTabsExpanded)
++                              tabs: tabs)
+     }
+ 
+     private func createTabs(_ emptyTabs: Bool) -> [TabModel] {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabsPanelStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabsPanelStateTests.swift
+index e561f4bf42c5d..31ddbcdd3dd2e 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabsPanelStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabsPanelStateTests.swift
+@@ -27,13 +27,10 @@ final class TabPanelStateTests: XCTestCase {
+         let reducer = tabsPanelReducer()
+         let tabs = createTabs()
+         let privateTabs = createTabs(isPrivate: true)
+-        let inactiveTabs = createInactiveTabs()
+         let tabDisplayModel = TabDisplayModel(isPrivateMode: true,
+                                               tabs: tabs,
+                                               normalTabsCount: "\(tabs.count)",
+                                               privateTabsCount: "\(privateTabs.count)",
+-                                              inactiveTabs: inactiveTabs,
+-                                              isInactiveTabsExpanded: false,
+                                               enableDeleteTabsButton: true)
+         let action = TabPanelMiddlewareAction(tabDisplayModel: tabDisplayModel,
+                                               windowUUID: .XCTestDefaultUUID,
+@@ -41,8 +38,6 @@ final class TabPanelStateTests: XCTestCase {
+         let newState = reducer(initialState, action)
+         XCTAssertEqual(newState.tabs, tabs)
+         XCTAssertTrue(newState.isPrivateMode)
+-        XCTAssertEqual(newState.inactiveTabs, inactiveTabs)
+-        XCTAssertFalse(newState.isInactiveTabsExpanded)
+     }
+ 
+     @MainActor
+@@ -52,13 +47,10 @@ final class TabPanelStateTests: XCTestCase {
+         let reducer = tabsPanelReducer()
+         let tabs = createTabs()
+         let privateTabs = createTabs(isPrivate: true)
+-        let inactiveTabs = createInactiveTabs()
+         let tabDisplayModel = TabDisplayModel(isPrivateMode: true,
+                                               tabs: tabs,
+                                               normalTabsCount: "\(tabs.count)",
+                                               privateTabsCount: "\(privateTabs.count)",
+-                                              inactiveTabs: inactiveTabs,
+-                                              isInactiveTabsExpanded: false,
+                                               enableDeleteTabsButton: true)
+         let action = TabPanelMiddlewareAction(tabDisplayModel: tabDisplayModel,
+                                               windowUUID: .XCTestDefaultUUID,
+@@ -66,8 +58,6 @@ final class TabPanelStateTests: XCTestCase {
+         let newState = reducer(initialState, action)
+         XCTAssertEqual(newState.tabs, tabs)
+         XCTAssertTrue(newState.isPrivateMode)
+-        XCTAssertEqual(newState.inactiveTabs, inactiveTabs)
+-        XCTAssertFalse(newState.isInactiveTabsExpanded)
+     }
+ 
+     @MainActor
+@@ -76,9 +66,7 @@ final class TabPanelStateTests: XCTestCase {
+         let expectedIndex = tabs.firstIndex(where: \.isSelected)
+         let initialState = TabsPanelState(windowUUID: .XCTestDefaultUUID,
+                                           isPrivateMode: false,
+-                                          tabs: tabs,
+-                                          inactiveTabs: createInactiveTabs(),
+-                                          isInactiveTabsExpanded: false)
++                                          tabs: tabs)
+         let reducer = tabsPanelReducer()
+         let action = TabPanelMiddlewareAction(
+             windowUUID: .XCTestDefaultUUID,
+@@ -100,8 +88,6 @@ final class TabPanelStateTests: XCTestCase {
+                                               tabs: tabs,
+                                               normalTabsCount: "\(tabs.count)",
+                                               privateTabsCount: "\(privateTabs.count)",
+-                                              inactiveTabs: [InactiveTabsModel](),
+-                                              isInactiveTabsExpanded: false,
+                                               enableDeleteTabsButton: true)
+         let action = TabPanelMiddlewareAction(
+             tabDisplayModel: tabDisplayModel,
+@@ -113,43 +99,6 @@ final class TabPanelStateTests: XCTestCase {
+         XCTAssertEqual(newState.tabs, tabs)
+     }
+ 
+-    @MainActor
+-    func testTabsState_refreshInactiveTabs() throws {
+-        let initialState = createInitialState()
+-        XCTAssertTrue(initialState.inactiveTabs.isEmpty)
+-        let reducer = tabsPanelReducer()
+-        let tabs = createTabs()
+-        let privateTabs = createTabs(isPrivate: true)
+-        let inactiveTabs = createInactiveTabs()
+-        let tabDisplayModel = TabDisplayModel(isPrivateMode: false,
+-                                              tabs: tabs,
+-                                              normalTabsCount: "\(tabs.count)",
+-                                              privateTabsCount: "\(privateTabs.count)",
+-                                              inactiveTabs: [InactiveTabsModel](),
+-                                              isInactiveTabsExpanded: false,
+-                                              enableDeleteTabsButton: true)
+-        let action = TabPanelMiddlewareAction(
+-            tabDisplayModel: tabDisplayModel,
+-            inactiveTabModels: inactiveTabs,
+-            windowUUID: .XCTestDefaultUUID,
+-            actionType: TabPanelMiddlewareActionType.refreshInactiveTabs
+-        )
+-        let newState = reducer(initialState, action)
+-        XCTAssertEqual(newState.inactiveTabs, inactiveTabs, "Expected inactive tabs were: \(inactiveTabs)")
+-    }
+-
+-    @MainActor
+-    func testTabsState_IsInactiveTabsExpanded() {
+-        let initialState = createInitialState()
+-        XCTAssertFalse(initialState.isInactiveTabsExpanded)
+-        let reducer = tabsPanelReducer()
+-        let action = TabPanelViewAction(panelType: .tabs,
+-                                        windowUUID: .XCTestDefaultUUID,
+-                                        actionType: TabPanelViewActionType.toggleInactiveTabs)
+-        let newState = reducer(initialState, action)
+-        XCTAssertTrue(newState.isInactiveTabsExpanded)
+-    }
+-
+     // MARK: - createTabScrollBehavior
+ 
+     func testCreateTabScrollBehavior_forScrollToSelectedTab_noTabs() {
+@@ -158,26 +107,7 @@ final class TabPanelStateTests: XCTestCase {
+         let initialState = TabsPanelState(
+             windowUUID: .XCTestDefaultUUID,
+             isPrivateMode: false,
+-            tabs: [],
+-            inactiveTabs: [],
+-            isInactiveTabsExpanded: true
+-        )
+-
+-        let scrollState = TabsPanelState.createTabScrollBehavior(forState: initialState, withScrollBehavior: scrollBehavior)
+-
+-        XCTAssertNil(scrollState)
+-    }
+-
+-    func testCreateTabScrollBehavior_forScrollToSelectedTab_forOnlyInactiveTabs() {
+-        let inactiveTabModels = createInactiveTabs()
+-        let scrollBehavior: TabScrollBehavior = .scrollToSelectedTab(shouldAnimate: false)
+-
+-        let initialState = TabsPanelState(
+-            windowUUID: .XCTestDefaultUUID,
+-            isPrivateMode: false,
+-            tabs: [],
+-            inactiveTabs: inactiveTabModels,
+-            isInactiveTabsExpanded: true
++            tabs: []
+         )
+ 
+         let scrollState = TabsPanelState.createTabScrollBehavior(forState: initialState, withScrollBehavior: scrollBehavior)
+@@ -185,28 +115,24 @@ final class TabPanelStateTests: XCTestCase {
+         XCTAssertNil(scrollState)
+     }
+ 
+-    func testCreateTabScrollBehavior_forScrollToSelectedTab_forTabsAndInactiveTabs() {
++    func testCreateTabScrollBehavior_forScrollToSelectedTab_forTabs() {
+         let tabCount = 3
+         var tabModels = createTabs(count: tabCount)
+         let selectedTab = TabModel.emptyState(tabUUID: createTabUUID(), title: "Selected Tab", isSelected: true)
+         tabModels.append(selectedTab) // At index tabCount
+ 
+-        let inactiveTabModels = createInactiveTabs()
+         let scrollBehavior: TabScrollBehavior = .scrollToSelectedTab(shouldAnimate: false)
+ 
+         let initialState = TabsPanelState(
+             windowUUID: .XCTestDefaultUUID,
+             isPrivateMode: false,
+-            tabs: tabModels,
+-            inactiveTabs: inactiveTabModels,
+-            isInactiveTabsExpanded: true
++            tabs: tabModels
+         )
+ 
+         let scrollState = TabsPanelState.createTabScrollBehavior(forState: initialState, withScrollBehavior: scrollBehavior)
+ 
+         XCTAssertNotNil(scrollState)
+         XCTAssertEqual(scrollState?.toIndex, tabCount)
+-        XCTAssertEqual(scrollState?.isInactiveTabSection, false)
+     }
+ 
+     func testCreateTabScrollBehavior_forScrollToSelectedTab_noSelectedTab_returnsLastTab_ifTabsNotEmpty() {
+@@ -217,28 +143,22 @@ final class TabPanelStateTests: XCTestCase {
+         let initialState = TabsPanelState(
+             windowUUID: .XCTestDefaultUUID,
+             isPrivateMode: false,
+-            tabs: tabModels,
+-            inactiveTabs: [],
+-            isInactiveTabsExpanded: true
++            tabs: tabModels
+         )
+ 
+         let scrollState = TabsPanelState.createTabScrollBehavior(forState: initialState, withScrollBehavior: scrollBehavior)
+ 
+         XCTAssertNotNil(scrollState)
+         XCTAssertEqual(scrollState?.toIndex, tabCount - 1, "Should return the last tab if there is no selected tab")
+-        XCTAssertEqual(scrollState?.isInactiveTabSection, false)
+     }
+ 
+     func testCreateTabScrollBehavior_forScrollToSelectedTab_noSelectedTab_returnsNil_ifTabsEmpty() {
+-        let inactiveTabModels = createInactiveTabs()
+         let scrollBehavior: TabScrollBehavior = .scrollToSelectedTab(shouldAnimate: false)
+ 
+         let initialState = TabsPanelState(
+             windowUUID: .XCTestDefaultUUID,
+             isPrivateMode: false,
+-            tabs: [],
+-            inactiveTabs: inactiveTabModels,
+-            isInactiveTabsExpanded: true
++            tabs: []
+         )
+ 
+         let scrollState = TabsPanelState.createTabScrollBehavior(forState: initialState, withScrollBehavior: scrollBehavior)
+@@ -252,9 +172,7 @@ final class TabPanelStateTests: XCTestCase {
+         let initialState = TabsPanelState(
+             windowUUID: .XCTestDefaultUUID,
+             isPrivateMode: false,
+-            tabs: [],
+-            inactiveTabs: [],
+-            isInactiveTabsExpanded: true
++            tabs: []
+         )
+ 
+         let scrollState = TabsPanelState.createTabScrollBehavior(forState: initialState, withScrollBehavior: scrollBehavior)
+@@ -262,89 +180,35 @@ final class TabPanelStateTests: XCTestCase {
+         XCTAssertNil(scrollState)
+     }
+ 
+-    func testCreateTabScrollBehavior_forScrollToTab_anInactiveTab_forOnlyInactiveTabs() {
+-        let inactiveTabCount = 3
+-        let testTabUUID = createTabUUID()
+-        var inactiveTabModels = createInactiveTabs(count: inactiveTabCount)
+-        let inactiveTab = InactiveTabsModel.emptyState(tabUUID: testTabUUID, title: "Special")
+-        inactiveTabModels.append(inactiveTab) // At index inactiveTabCount
+-        let scrollBehavior: TabScrollBehavior = .scrollToTab(withTabUUID: testTabUUID, shouldAnimate: false)
+-
+-        let initialState = TabsPanelState(
+-            windowUUID: .XCTestDefaultUUID,
+-            isPrivateMode: false,
+-            tabs: [],
+-            inactiveTabs: inactiveTabModels,
+-            isInactiveTabsExpanded: true
+-        )
+-
+-        let scrollState = TabsPanelState.createTabScrollBehavior(forState: initialState, withScrollBehavior: scrollBehavior)
+-
+-        XCTAssertNotNil(scrollState)
+-        XCTAssertEqual(scrollState?.toIndex, inactiveTabCount)
+-        XCTAssertEqual(scrollState?.isInactiveTabSection, true)
+-    }
+-
+-    func testCreateTabScrollBehavior_forScrollToTab_anInactiveTab_forTabsAndInactiveTabs() {
+-        let inactiveTabCount = 3
+-        let testTabUUID = createTabUUID()
+-        let tabs = createTabs()
+-        var inactiveTabModels = createInactiveTabs(count: inactiveTabCount)
+-        let inactiveTab = InactiveTabsModel.emptyState(tabUUID: testTabUUID, title: "Special")
+-        inactiveTabModels.append(inactiveTab) // At index inactiveTabCount
+-        let scrollBehavior: TabScrollBehavior = .scrollToTab(withTabUUID: testTabUUID, shouldAnimate: false)
+-
+-        let initialState = TabsPanelState(
+-            windowUUID: .XCTestDefaultUUID,
+-            isPrivateMode: false,
+-            tabs: tabs,
+-            inactiveTabs: inactiveTabModels,
+-            isInactiveTabsExpanded: true
+-        )
+-
+-        let scrollState = TabsPanelState.createTabScrollBehavior(forState: initialState, withScrollBehavior: scrollBehavior)
+-
+-        XCTAssertNotNil(scrollState)
+-        XCTAssertEqual(scrollState?.toIndex, inactiveTabCount)
+-        XCTAssertEqual(scrollState?.isInactiveTabSection, true)
+-    }
+-
+-    func testCreateTabScrollBehavior_forScrollToTab_aNormalOrPrivateTab_forTabsAndInactiveTabs() {
++    func testCreateTabScrollBehavior_forScrollToTab_aNormalOrPrivateTab_forTabs() {
+         let testTabUUID = createTabUUID()
+         let tabCount = 3
+         var tabModels = createTabs(count: tabCount)
+         let selectedTab = TabModel.emptyState(tabUUID: testTabUUID, title: "Selected Tab", isSelected: true)
+         tabModels.append(selectedTab) // At index tabCount
+ 
+-        let inactiveTabModels = createInactiveTabs()
+         let scrollBehavior: TabScrollBehavior = .scrollToTab(withTabUUID: testTabUUID, shouldAnimate: false)
+ 
+         let initialState = TabsPanelState(
+             windowUUID: .XCTestDefaultUUID,
+             isPrivateMode: false,
+-            tabs: tabModels,
+-            inactiveTabs: inactiveTabModels,
+-            isInactiveTabsExpanded: true
++            tabs: tabModels
+         )
+ 
+         let scrollState = TabsPanelState.createTabScrollBehavior(forState: initialState, withScrollBehavior: scrollBehavior)
+ 
+         XCTAssertNotNil(scrollState)
+         XCTAssertEqual(scrollState?.toIndex, tabCount)
+-        XCTAssertEqual(scrollState?.isInactiveTabSection, false)
+     }
+ 
+     func testCreateTabScrollBehavior_forScrollToTab_tabDoesntExist() {
+         let tabModels = createTabs()
+-        let inactiveTabModels = createInactiveTabs()
+         let scrollBehavior: TabScrollBehavior = .scrollToTab(withTabUUID: createTabUUID(), shouldAnimate: false)
+ 
+         let initialState = TabsPanelState(
+             windowUUID: .XCTestDefaultUUID,
+             isPrivateMode: false,
+-            tabs: tabModels,
+-            inactiveTabs: inactiveTabModels,
+-            isInactiveTabsExpanded: true
++            tabs: tabModels
+         )
+ 
+         let scrollState = TabsPanelState.createTabScrollBehavior(forState: initialState, withScrollBehavior: scrollBehavior)
+@@ -378,12 +242,4 @@ final class TabPanelStateTests: XCTestCase {
+             .emptyState(tabUUID: createTabUUID(), title: "Tab\(index)", isPrivate: isPrivate)
+         }
+     }
+-
+-    private func createInactiveTabs(count: Int = 3) -> [InactiveTabsModel] {
+-        return (0 ..< count).map { index in
+-            InactiveTabsModel(tabUUID: createTabUUID(),
+-                              title: "InactiveTab\(index)",
+-                              url: URL(string: "https://www.test\(index).com"))
+-        }
+-    }
+ }
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/FxScreenGraph.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/FxScreenGraph.swift
+index 9fc60f936e4aa..94ca7ac791c09 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/FxScreenGraph.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/FxScreenGraph.swift
+@@ -194,7 +194,6 @@ class Action {
+     static let ToggleTrackingProtection = "ToggleTrackingProtection"
+     static let ToggleNoImageMode = "ToggleNoImageMode"
+ 
+-    static let ToggleInactiveTabs = "ToggleInactiveTabs"
+     static let ToggleTabGroups = "ToggleTabGroups"
+ 
+     static let Bookmark = "Bookmark"
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/TabsTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/TabsTests.swift
+index 7329ff5a5cb36..46e523ac3207f 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/TabsTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/TabsTests.swift
+@@ -46,7 +46,7 @@ class TabsTests: BaseTestCase {
+         } else {
+             navigator.goto(TabTray)
+         }
+-        let identifier = "\(AccessibilityIdentifiers.TabTray.tabCell)_1_1"
++        let identifier = "\(AccessibilityIdentifiers.TabTray.tabCell)_0_1"
+         mozWaitForElementToExist(app.cells[identifier])
+         XCTAssertEqual(app.cells[identifier].label, "\(urlLabel). \(selectedTab)")
+     }
+@@ -93,7 +93,7 @@ class TabsTests: BaseTestCase {
+ 
+         // Open tab tray to check that both tabs are there
+         checkNumberOfTabsExpectedToBeOpen(expectedNumberOfTabsOpen: 2)
+-        let identifier = "TabDisplayView.tabCell_1_1"
++        let identifier = "TabDisplayView.tabCell_0_1"
+         XCTAssertEqual(app.cells.matching(identifier: identifier).element.label,
+                        "Example Domains")
+     }
+@@ -350,7 +350,7 @@ class TabsTests: BaseTestCase {
+ 
+         waitForTabsButton()
+         checkNumberOfTabsExpectedToBeOpen(expectedNumberOfTabsOpen: 2)
+-        let identifier = "\(AccessibilityIdentifiers.TabTray.tabCell)_1_0"
++        let identifier = "\(AccessibilityIdentifiers.TabTray.tabCell)_0_0"
+         app.cells[identifier].waitAndTap()
+         mozWaitForElementToExist(
+             app.collectionViews.links[AccessibilityIdentifiers.FirefoxHomepage.TopSites.itemCell]
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerSettingsNavigation.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerSettingsNavigation.swift
+index b59712426d755..68a36631b107f 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerSettingsNavigation.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerSettingsNavigation.swift
+@@ -185,8 +185,7 @@ func registerSettingsNavigation(in map: MMScreenGraph<FxUserState>, app: XCUIApp
+     }
+ 
+     map.addScreenState(TabsSettings) { screenState in
+-        screenState.tap(app.switches.element(boundBy: 0), forAction: Action.ToggleInactiveTabs)
+-        screenState.tap(app.switches.element(boundBy: 1), forAction: Action.ToggleTabGroups)
++        screenState.tap(app.switches.element(boundBy: 0), forAction: Action.ToggleTabGroups)
+         screenState.tap(app.navigationBars.buttons["Settings"], to: SettingsScreen)
+     }
+ 

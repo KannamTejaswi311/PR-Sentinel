@@ -1,0 +1,86 @@
+{
+  "pr_id": "Ghost_pr2",
+  "experiment_id": "E2",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "StaticAnalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/comments-ui/src/components/content/forms/form.tsx",
+      "line_start": 1,
+      "evidence": "",
+      "execution_status": "SUCCESS",
+      "finding_id": "6c58d4b3-e810-40c4-b145-9dfc4d8374c1",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/comments-ui/src/components/content/forms/form.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "FILE",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "StaticAnalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/comments-ui/src/components/content/forms/reply-form.tsx",
+      "line_start": 1,
+      "evidence": "",
+      "execution_status": "SUCCESS",
+      "finding_id": "559d785c-cfe9-4209-843a-0d6e7ebd7ad5",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/comments-ui/src/components/content/forms/reply-form.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "FILE",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "StaticAnalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/comments-ui/test/e2e/actions.test.ts",
+      "line_start": 1,
+      "evidence": "",
+      "execution_status": "SUCCESS",
+      "finding_id": "ad339ced-b138-4049-8548-5a301055961c",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.ts)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/comments-ui/test/e2e/actions.test.ts' has unsupported extension '.ts'.",
+      "recommendation": "Add external static analyzer for '.ts' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "FILE",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    }
+  ],
+  "findings_count": 3,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 0.006,
+  "execution_manifest": {
+    "codebert": "SKIPPED",
+    "static_analyzer": "SUCCESS",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SKIPPED",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

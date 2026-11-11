@@ -1,0 +1,346 @@
+diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs
+index 2ae5fe04f87a..c7df1663834b 100644
+--- a/apps/signup-form/.eslintrc.cjs
++++ b/apps/signup-form/.eslintrc.cjs
+@@ -15,17 +15,20 @@ module.exports = {
+         }
+     },
+     rules: {
+-        // sort multiple import lines into alphabetical groups
++        // Sort multiple import lines into alphabetical groups
+         'ghost/sort-imports-es6-autofix/sort-imports-es6': ['error', {
+             memberSyntaxSortOrder: ['none', 'all', 'single', 'multiple']
+         }],
+ 
+-        // suppress errors for missing 'import React' in JSX files, as we don't need it
++        // Enforce kebab-case (lowercase with hyphens) for all filenames
++        'ghost/filenames/match-regex': ['error', '^[a-z0-9.-]+$', false],
++
++        // Suppress errors for missing 'import React' in JSX files, as we don't need it
+         'react/react-in-jsx-scope': 'off',
+-        // ignore prop-types for now
++        // Ignore prop-types for now
+         'react/prop-types': 'off',
+ 
+-        // custom react rules
++        // Custom react rules
+         'react/jsx-sort-props': ['error', {
+             reservedFirst: true,
+             callbacksLast: true,
+diff --git a/apps/signup-form/.storybook/preview.tsx b/apps/signup-form/.storybook/preview.tsx
+index 9fe273b3b2fa..9cf85afd3cb6 100644
+--- a/apps/signup-form/.storybook/preview.tsx
++++ b/apps/signup-form/.storybook/preview.tsx
+@@ -3,7 +3,7 @@ import i18nLib from '@tryghost/i18n';
+ 
+ import type {Preview} from "@storybook/react";
+ import './storybook.css';
+-import {AppContextProvider, AppContextType} from '../src/AppContext';
++import {AppContextProvider, AppContextType} from '../src/app-context';
+ 
+ const transparencyGrid = `url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ctitle%3ERectangle%3C/title%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cpath fill='%23F2F6F8' d='M0 0h24v24H0z'/%3E%3Cpath fill='%23E5ECF0' d='M0 0h12v12H0zM12 12h12v12H12z'/%3E%3C/g%3E%3C/svg%3E")`
+ 
+diff --git a/apps/signup-form/README.md b/apps/signup-form/README.md
+index 403ea0fc869a..263586188e31 100644
+--- a/apps/signup-form/README.md
++++ b/apps/signup-form/README.md
+@@ -35,7 +35,6 @@ Follow the instructions for the top-level repo.
+ 1. `git clone` this repo & `cd` into it as usual
+ 2. Run `yarn` to install top-level dependencies.
+ 
+-
+ ## Test
+ 
+ - `yarn lint` run just eslint
+@@ -43,3 +42,21 @@ Follow the instructions for the top-level repo.
+ - `yarn test:e2e` run e2e tests on Chromium
+ - `yarn test:slowmo` run e2e tests visually (headed) and slower on Chromium
+ - `yarn test:e2e:full` run e2e tests on all browsers
++
++## Release
++
++A patch release can be rolled out instantly in production, whereas a minor/major release requires the Ghost monorepo to be updated and released.
++In either case, you need sufficient permissions to release `@tryghost` packages on NPM.
++
++### Patch release
++
++1. Run `yarn ship` and select a patch version when prompted
++2. Merge the release commit to `main`
++
++### Minor / major release
++
++1. Run `yarn ship` and select a minor or major version when prompted
++2. Merge the release commit to `main`
++3. Wait until a new version of Ghost is released
++
++To use the new version of signup form in Ghost, update the version in Ghost core's default configuration (currently at `core/shared/config/default.json`)
+diff --git a/apps/signup-form/package.json b/apps/signup-form/package.json
+index b6997fc524f5..767a94eef40e 100644
+--- a/apps/signup-form/package.json
++++ b/apps/signup-form/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@tryghost/signup-form",
+-  "version": "0.3.2",
++  "version": "0.3.3",
+   "license": "MIT",
+   "repository": {
+     "type": "git",
+diff --git a/apps/signup-form/src/AppContext.ts b/apps/signup-form/src/app-context.ts
+similarity index 100%
+rename from apps/signup-form/src/AppContext.ts
+rename to apps/signup-form/src/app-context.ts
+diff --git a/apps/signup-form/src/App.tsx b/apps/signup-form/src/app.tsx
+similarity index 90%
+rename from apps/signup-form/src/App.tsx
+rename to apps/signup-form/src/app.tsx
+index 56f9e4b2acdb..449e0c6c0165 100644
+--- a/apps/signup-form/src/App.tsx
++++ b/apps/signup-form/src/app.tsx
+@@ -1,9 +1,9 @@
+ import React, {ComponentProps} from 'react';
+ import i18nLib from '@tryghost/i18n';
+ import pages, {Page, PageName} from './pages';
+-import {AppContextProvider, AppContextType} from './AppContext';
+-import {ContentBox} from './components/ContentBox';
+-import {Frame} from './components/Frame';
++import {AppContextProvider, AppContextType} from './app-context';
++import {ContentBox} from './components/content-box';
++import {Frame} from './components/frame';
+ import {setupGhostApi} from './utils/api';
+ import {useOptions} from './utils/options';
+ 
+diff --git a/apps/signup-form/src/components/ContentBox.tsx b/apps/signup-form/src/components/content-box.tsx
+similarity index 100%
+rename from apps/signup-form/src/components/ContentBox.tsx
+rename to apps/signup-form/src/components/content-box.tsx
+diff --git a/apps/signup-form/src/components/Frame.tsx b/apps/signup-form/src/components/frame.tsx
+similarity index 97%
+rename from apps/signup-form/src/components/Frame.tsx
+rename to apps/signup-form/src/components/frame.tsx
+index e42a7103ff83..3f43946af1b1 100644
+--- a/apps/signup-form/src/components/Frame.tsx
++++ b/apps/signup-form/src/components/frame.tsx
+@@ -1,8 +1,8 @@
+-import IFrame from './IFrame';
++import IFrame from './iframe';
+ import React, {useCallback, useState} from 'react';
+ import styles from '../styles/iframe.css?inline';
+ import {isMinimal} from '../utils/helpers';
+-import {useAppContext} from '../AppContext';
++import {useAppContext} from '../app-context';
+ 
+ type FrameProps = {
+     children: React.ReactNode
+diff --git a/apps/signup-form/src/components/IFrame.tsx b/apps/signup-form/src/components/iframe.tsx
+similarity index 100%
+rename from apps/signup-form/src/components/IFrame.tsx
+rename to apps/signup-form/src/components/iframe.tsx
+diff --git a/apps/signup-form/src/components/pages/FormPage.tsx b/apps/signup-form/src/components/pages/form-page.tsx
+similarity index 93%
+rename from apps/signup-form/src/components/pages/FormPage.tsx
+rename to apps/signup-form/src/components/pages/form-page.tsx
+index 453ae3c3f52c..685277d14b22 100644
+--- a/apps/signup-form/src/components/pages/FormPage.tsx
++++ b/apps/signup-form/src/components/pages/form-page.tsx
+@@ -1,8 +1,8 @@
+ import React from 'react';
+-import {FormView} from './FormView';
++import {FormView} from './form-view';
+ import {isMinimal} from '../../utils/helpers';
+ import {isValidEmail} from '../../utils/validator';
+-import {useAppContext} from '../../AppContext';
++import {useAppContext} from '../../app-context';
+ 
+ export const FormPage: React.FC = () => {
+     const [error, setError] = React.useState('');
+@@ -27,7 +27,6 @@ export const FormPage: React.FC = () => {
+             if (minimal) {
+                 // Don't go to the success page, but show the success state in the form
+                 setSuccess(true);
+-                setLoading(false);
+             } else {
+                 setPage('SuccessPage', {
+                     email
+diff --git a/apps/signup-form/src/components/pages/FormView.stories.ts b/apps/signup-form/src/components/pages/form-view.stories.ts
+similarity index 98%
+rename from apps/signup-form/src/components/pages/FormView.stories.ts
+rename to apps/signup-form/src/components/pages/form-view.stories.ts
+index 038b081bfe52..c6e84d5815a8 100644
+--- a/apps/signup-form/src/components/pages/FormView.stories.ts
++++ b/apps/signup-form/src/components/pages/form-view.stories.ts
+@@ -1,6 +1,6 @@
+ import type {Meta, StoryObj} from '@storybook/react';
+ 
+-import {FormView} from './FormView';
++import {FormView} from './form-view';
+ 
+ const meta = {
+     title: 'Form View',
+diff --git a/apps/signup-form/src/components/pages/FormView.tsx b/apps/signup-form/src/components/pages/form-view.tsx
+similarity index 97%
+rename from apps/signup-form/src/components/pages/FormView.tsx
+rename to apps/signup-form/src/components/pages/form-view.tsx
+index 200a3475a77a..58d31b1e5d28 100644
+--- a/apps/signup-form/src/components/pages/FormView.tsx
++++ b/apps/signup-form/src/components/pages/form-view.tsx
+@@ -1,6 +1,6 @@
+ import React, {FormEventHandler} from 'react';
+ import {ReactComponent as LoadingIcon} from '../../../assets/icons/spinner.svg';
+-import {useAppContext} from '../../AppContext';
++import {useAppContext} from '../../app-context';
+ 
+ export const FormView: React.FC<FormProps & {
+     isMinimal: boolean
+@@ -53,7 +53,7 @@ const Form: React.FC<FormProps> = ({isMinimal, loading, success, error, buttonCo
+ 
+     const submitHandler: FormEventHandler<HTMLFormElement> = (e) => {
+         e.preventDefault();
+-        onSubmit({email});
++        onSubmit({email: email.trim()});
+     };
+ 
+     // The complicated transitions are here so that we animate visibility: hidden (step-start/step-end), which is required for screen readers to know what is visible (they ignore opacity: 0)
+diff --git a/apps/signup-form/src/components/pages/SuccessPage.tsx b/apps/signup-form/src/components/pages/success-page.tsx
+similarity index 77%
+rename from apps/signup-form/src/components/pages/SuccessPage.tsx
+rename to apps/signup-form/src/components/pages/success-page.tsx
+index 39a7b93122a3..d744d0e8c782 100644
+--- a/apps/signup-form/src/components/pages/SuccessPage.tsx
++++ b/apps/signup-form/src/components/pages/success-page.tsx
+@@ -1,6 +1,6 @@
+ import React from 'react';
+-import {SuccessView} from './SuccessView';
+-import {useAppContext} from '../../AppContext';
++import {SuccessView} from './success-view';
++import {useAppContext} from '../../app-context';
+ 
+ type SuccessPageProps = {
+     email: string;
+diff --git a/apps/signup-form/src/components/pages/SuccessView.stories.ts b/apps/signup-form/src/components/pages/success-view.stories.ts
+similarity index 92%
+rename from apps/signup-form/src/components/pages/SuccessView.stories.ts
+rename to apps/signup-form/src/components/pages/success-view.stories.ts
+index 61185a3f375d..96b5d0ef002b 100644
+--- a/apps/signup-form/src/components/pages/SuccessView.stories.ts
++++ b/apps/signup-form/src/components/pages/success-view.stories.ts
+@@ -1,6 +1,6 @@
+ import type {Meta, StoryObj} from '@storybook/react';
+ 
+-import {SuccessView} from './SuccessView';
++import {SuccessView} from './success-view';
+ 
+ const meta = {
+     title: 'Success View',
+diff --git a/apps/signup-form/src/components/pages/SuccessView.tsx b/apps/signup-form/src/components/pages/success-view.tsx
+similarity index 95%
+rename from apps/signup-form/src/components/pages/SuccessView.tsx
+rename to apps/signup-form/src/components/pages/success-view.tsx
+index 84e4e9fc0857..314d357f4c3e 100644
+--- a/apps/signup-form/src/components/pages/SuccessView.tsx
++++ b/apps/signup-form/src/components/pages/success-view.tsx
+@@ -1,6 +1,6 @@
+ import React from 'react';
+ import {ReactComponent as EmailIcon} from '../../../assets/icons/email.svg';
+-import {useAppContext} from '../../AppContext';
++import {useAppContext} from '../../app-context';
+ 
+ export const SuccessView: React.FC<{
+     email: string;
+diff --git a/apps/signup-form/src/index.tsx b/apps/signup-form/src/index.tsx
+index 3aa4c516adce..5d82352f5eb6 100644
+--- a/apps/signup-form/src/index.tsx
++++ b/apps/signup-form/src/index.tsx
+@@ -1,4 +1,4 @@
+-import App from './App.tsx';
++import App from './app.tsx';
+ import React from 'react';
+ import ReactDOM from 'react-dom/client';
+ import {ROOT_DIV_CLASS} from './utils/constants';
+diff --git a/apps/signup-form/src/pages.tsx b/apps/signup-form/src/pages.tsx
+index f022daa0a0d6..90e6e54f809c 100644
+--- a/apps/signup-form/src/pages.tsx
++++ b/apps/signup-form/src/pages.tsx
+@@ -1,6 +1,6 @@
+ import React from 'react';
+-import {FormPage} from './components/pages/FormPage';
+-import {SuccessPage} from './components/pages/SuccessPage';
++import {FormPage} from './components/pages/form-page';
++import {SuccessPage} from './components/pages/success-page';
+ 
+ const Pages = {
+     FormPage,
+diff --git a/apps/signup-form/src/Preview.stories.tsx b/apps/signup-form/src/preview.stories.tsx
+similarity index 96%
+rename from apps/signup-form/src/Preview.stories.tsx
+rename to apps/signup-form/src/preview.stories.tsx
+index 18feb96c82eb..7c037e0fe0c1 100644
+--- a/apps/signup-form/src/Preview.stories.tsx
++++ b/apps/signup-form/src/preview.stories.tsx
+@@ -1,8 +1,8 @@
+ import React, {useState} from 'react';
+ import i18nLib from '@tryghost/i18n';
+ import pages, {Page, PageName} from './pages';
+-import {AppContextProvider, SignupFormOptions} from './AppContext';
+-import {ContentBox} from './components/ContentBox';
++import {AppContextProvider, SignupFormOptions} from './app-context';
++import {ContentBox} from './components/content-box';
+ import {userEvent, within} from '@storybook/testing-library';
+ import type {Meta, StoryObj} from '@storybook/react';
+ 
+diff --git a/apps/signup-form/src/utils/helpers.tsx b/apps/signup-form/src/utils/helpers.tsx
+index 6c34398f885c..e62cde6a5268 100644
+--- a/apps/signup-form/src/utils/helpers.tsx
++++ b/apps/signup-form/src/utils/helpers.tsx
+@@ -1,4 +1,4 @@
+-import {SignupFormOptions} from '../AppContext';
++import {SignupFormOptions} from '../app-context';
+ 
+ export type URLHistory = {
+     type?: 'post',
+@@ -17,7 +17,7 @@ export function isMinimal(options: SignupFormOptions): boolean {
+  * Get the URL history when the form is embedded on the site itself.
+  */
+ export function getDefaultUrlHistory() {
+-    const STORAGE_KEY = 'ghost-history';
++    const STORAGE_KEY = "ghost-history";
+ 
+     try {
+         const historyString = sessionStorage.getItem(STORAGE_KEY);
+@@ -42,9 +42,7 @@ export function getUrlHistory({siteUrl}: {siteUrl: string}): URLHistory {
+     try {
+         if (window.location.host === new URL(siteUrl).host) {
+             const history = getDefaultUrlHistory();
+-            if (history) {
+-                return history;
+-            }
++            return history;
+         }
+     } catch (error) {
+         // Most likely an invalid siteUrl
+diff --git a/apps/signup-form/src/utils/options.tsx b/apps/signup-form/src/utils/options.tsx
+index bb6c50708292..74d9fb8e9476 100644
+--- a/apps/signup-form/src/utils/options.tsx
++++ b/apps/signup-form/src/utils/options.tsx
+@@ -1,5 +1,5 @@
+ import React from 'react';
+-import {SignupFormOptions} from '../AppContext';
++import {SignupFormOptions} from '../app-context';
+ 
+ export function useOptions(scriptTag: HTMLElement) {
+     const buildOptions = React.useCallback(() => {
+diff --git a/apps/signup-form/test/utils/isTestEnv.js b/apps/signup-form/test/utils/is-test-env.js
+similarity index 100%
+rename from apps/signup-form/test/utils/isTestEnv.js
+rename to apps/signup-form/test/utils/is-test-env.js
+diff --git a/ghost/core/core/shared/config/defaults.json b/ghost/core/core/shared/config/defaults.json
+index 5c2e8a015cd6..b59db42fe83d 100644
+--- a/ghost/core/core/shared/config/defaults.json
++++ b/ghost/core/core/shared/config/defaults.json
+@@ -302,5 +302,5 @@
+         "captureLinkClickBadMemberUuid": false
+     },
+     "disableJSBackups": false,
+-    "memberWelcomeEmailTestInbox" : ""
++    "memberWelcomeEmailTestInbox": ""
+ }

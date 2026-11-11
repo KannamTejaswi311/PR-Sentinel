@@ -1,0 +1,316 @@
+diff --git a/web/app/components/app/configuration/config-var/config-modal/index.tsx b/web/app/components/app/configuration/config-var/config-modal/index.tsx
+index 5ffa87375c9b4d..7ea784baa32865 100644
+--- a/web/app/components/app/configuration/config-var/config-modal/index.tsx
++++ b/web/app/components/app/configuration/config-var/config-modal/index.tsx
+@@ -21,7 +21,6 @@ import CodeEditor from '@/app/components/workflow/nodes/_base/components/editor/
+ import FileUploadSetting from '@/app/components/workflow/nodes/_base/components/file-upload-setting'
+ import { CodeLanguage } from '@/app/components/workflow/nodes/code/types'
+ import { ChangeType, InputVarType, SupportUploadFileTypes } from '@/app/components/workflow/types'
+-import { DEFAULT_VALUE_MAX_LEN } from '@/config'
+ import ConfigContext from '@/context/debug-configuration'
+ import { AppModeEnum, TransferMethod } from '@/types/app'
+ import { checkKeys, getNewVarInWorkflow, replaceSpaceWithUnderscoreInVarNameInput } from '@/utils/var'
+@@ -198,8 +197,6 @@ const ConfigModal: FC<IConfigModalProps> = ({
+         if (type === InputVarType.multiFiles)
+           draft.max_length = DEFAULT_FILE_UPLOAD_SETTING.max_length
+       }
+-      if (type === InputVarType.paragraph)
+-        draft.max_length = DEFAULT_VALUE_MAX_LEN
+     })
+     setTempPayload(newPayload)
+   }, [tempPayload])
+diff --git a/web/app/components/app/configuration/config-var/index.tsx b/web/app/components/app/configuration/config-var/index.tsx
+index 4a38fc92a6a4d7..1a8810f7cd883a 100644
+--- a/web/app/components/app/configuration/config-var/index.tsx
++++ b/web/app/components/app/configuration/config-var/index.tsx
+@@ -15,7 +15,6 @@ import Confirm from '@/app/components/base/confirm'
+ import Toast from '@/app/components/base/toast'
+ import Tooltip from '@/app/components/base/tooltip'
+ import { InputVarType } from '@/app/components/workflow/types'
+-import { DEFAULT_VALUE_MAX_LEN } from '@/config'
+ import ConfigContext from '@/context/debug-configuration'
+ import { useEventEmitterContextContext } from '@/context/event-emitter'
+ import { useModalContext } from '@/context/modal-context'
+@@ -58,8 +57,6 @@ const buildPromptVariableFromInput = (payload: InputVar): PromptVariable => {
+     key: variable,
+     name: label as string,
+   }
+-  if (payload.type === InputVarType.textInput)
+-    nextItem.max_length = nextItem.max_length || DEFAULT_VALUE_MAX_LEN
+ 
+   if (payload.type !== InputVarType.select)
+     delete nextItem.options
+diff --git a/web/app/components/app/configuration/debug/chat-user-input.tsx b/web/app/components/app/configuration/debug/chat-user-input.tsx
+index 11189751e04fab..4bdd7d07f73627 100644
+--- a/web/app/components/app/configuration/debug/chat-user-input.tsx
++++ b/web/app/components/app/configuration/debug/chat-user-input.tsx
+@@ -7,7 +7,6 @@ import Input from '@/app/components/base/input'
+ import Select from '@/app/components/base/select'
+ import Textarea from '@/app/components/base/textarea'
+ import BoolInput from '@/app/components/workflow/nodes/_base/components/before-run-form/bool-input'
+-import { DEFAULT_VALUE_MAX_LEN } from '@/config'
+ import ConfigContext from '@/context/debug-configuration'
+ import { cn } from '@/utils/classnames'
+ 
+@@ -88,7 +87,7 @@ const ChatUserInput = ({
+                     onChange={(e) => { handleInputValueChange(key, e.target.value) }}
+                     placeholder={name}
+                     autoFocus={index === 0}
+-                    maxLength={max_length || DEFAULT_VALUE_MAX_LEN}
++                    maxLength={max_length}
+                   />
+                 )}
+                 {type === 'paragraph' && (
+@@ -97,6 +96,7 @@ const ChatUserInput = ({
+                     placeholder={name}
+                     value={inputs[key] ? `${inputs[key]}` : ''}
+                     onChange={(e) => { handleInputValueChange(key, e.target.value) }}
++                    maxLength={max_length}
+                   />
+                 )}
+                 {type === 'select' && (
+@@ -115,7 +115,7 @@ const ChatUserInput = ({
+                     onChange={(e) => { handleInputValueChange(key, e.target.value) }}
+                     placeholder={name}
+                     autoFocus={index === 0}
+-                    maxLength={max_length || DEFAULT_VALUE_MAX_LEN}
++                    maxLength={max_length}
+                   />
+                 )}
+                 {type === 'checkbox' && (
+diff --git a/web/app/components/app/configuration/prompt-value-panel/index.tsx b/web/app/components/app/configuration/prompt-value-panel/index.tsx
+index 9b61b3c7aa7135..c6e3be2e59934e 100644
+--- a/web/app/components/app/configuration/prompt-value-panel/index.tsx
++++ b/web/app/components/app/configuration/prompt-value-panel/index.tsx
+@@ -20,7 +20,6 @@ import Select from '@/app/components/base/select'
+ import Textarea from '@/app/components/base/textarea'
+ import Tooltip from '@/app/components/base/tooltip'
+ import BoolInput from '@/app/components/workflow/nodes/_base/components/before-run-form/bool-input'
+-import { DEFAULT_VALUE_MAX_LEN } from '@/config'
+ import ConfigContext from '@/context/debug-configuration'
+ import { AppModeEnum, ModelModeType } from '@/types/app'
+ import { cn } from '@/utils/classnames'
+@@ -142,7 +141,7 @@ const PromptValuePanel: FC<IPromptValuePanelProps> = ({
+                         onChange={(e) => { handleInputValueChange(key, e.target.value) }}
+                         placeholder={name}
+                         autoFocus={index === 0}
+-                        maxLength={max_length || DEFAULT_VALUE_MAX_LEN}
++                        maxLength={max_length}
+                       />
+                     )}
+                     {type === 'paragraph' && (
+@@ -165,12 +164,12 @@ const PromptValuePanel: FC<IPromptValuePanelProps> = ({
+                     )}
+                     {type === 'number' && (
+                       <Input
+-                        type="number"
++                        type="text"
+                         value={inputs[key] ? `${inputs[key]}` : ''}
+                         onChange={(e) => { handleInputValueChange(key, e.target.value) }}
+                         placeholder={name}
+                         autoFocus={index === 0}
+-                        maxLength={max_length || DEFAULT_VALUE_MAX_LEN}
++                        maxLength={max_length}
+                       />
+                     )}
+                     {type === 'checkbox' && (
+diff --git a/web/app/components/rag-pipeline/components/panel/input-field/editor/form/hooks.ts b/web/app/components/rag-pipeline/components/panel/input-field/editor/form/hooks.ts
+index 3820d5f1b830ac..80aa879b8f751c 100644
+--- a/web/app/components/rag-pipeline/components/panel/input-field/editor/form/hooks.ts
++++ b/web/app/components/rag-pipeline/components/panel/input-field/editor/form/hooks.ts
+@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next'
+ import { useFileSizeLimit } from '@/app/components/base/file-uploader/hooks'
+ import { InputFieldType } from '@/app/components/base/form/form-scenarios/input-field/types'
+ import { DEFAULT_FILE_UPLOAD_SETTING } from '@/app/components/workflow/constants'
+-import { DEFAULT_VALUE_MAX_LEN } from '@/config'
+ import { PipelineInputVarType } from '@/models/pipeline'
+ import { useFileUploadConfig } from '@/service/use-common'
+ import { formatFileSize } from '@/utils/format'
+@@ -87,8 +86,6 @@ export const useConfigurations = (props: {
+       if (type === PipelineInputVarType.multiFiles)
+         setFieldValue('maxLength', DEFAULT_FILE_UPLOAD_SETTING.max_length)
+     }
+-    if (type === PipelineInputVarType.paragraph)
+-      setFieldValue('maxLength', DEFAULT_VALUE_MAX_LEN)
+   }, [setFieldValue])
+ 
+   const handleVariableNameBlur = useCallback((value: string) => {
+diff --git a/web/app/components/rag-pipeline/components/panel/input-field/editor/form/index.spec.tsx b/web/app/components/rag-pipeline/components/panel/input-field/editor/form/index.spec.tsx
+index 0470bd4c68f13a..48df13acb20316 100644
+--- a/web/app/components/rag-pipeline/components/panel/input-field/editor/form/index.spec.tsx
++++ b/web/app/components/rag-pipeline/components/panel/input-field/editor/form/index.spec.tsx
+@@ -779,27 +779,6 @@ describe('useConfigurations', () => {
+       expect(mockSetFieldValue).toHaveBeenCalledWith('maxLength', expect.any(Number))
+     })
+ 
+-    it('should call setFieldValue when type changes to paragraph', () => {
+-      // Arrange
+-      const mockGetFieldValue = vi.fn()
+-      const mockSetFieldValue = vi.fn()
+-
+-      const { result } = renderHookWithProviders(() =>
+-        useConfigurations({
+-          getFieldValue: mockGetFieldValue,
+-          setFieldValue: mockSetFieldValue,
+-          supportFile: false,
+-        }),
+-      )
+-
+-      // Act
+-      const typeConfig = result.current.find(config => config.variable === 'type')
+-      typeConfig?.listeners?.onChange?.(createMockEvent(PipelineInputVarType.paragraph))
+-
+-      // Assert
+-      expect(mockSetFieldValue).toHaveBeenCalledWith('maxLength', 48) // DEFAULT_VALUE_MAX_LEN
+-    })
+-
+     it('should set label from variable name on blur when label is empty', () => {
+       // Arrange
+       const mockGetFieldValue = vi.fn().mockReturnValue('')
+diff --git a/web/app/components/share/text-generation/index.tsx b/web/app/components/share/text-generation/index.tsx
+index b793a03ce7e9c0..754c097c1f5073 100644
+--- a/web/app/components/share/text-generation/index.tsx
++++ b/web/app/components/share/text-generation/index.tsx
+@@ -26,7 +26,7 @@ import DifyLogo from '@/app/components/base/logo/dify-logo'
+ import Toast from '@/app/components/base/toast'
+ import Res from '@/app/components/share/text-generation/result'
+ import RunOnce from '@/app/components/share/text-generation/run-once'
+-import { appDefaultIconBackground, BATCH_CONCURRENCY, DEFAULT_VALUE_MAX_LEN } from '@/config'
++import { appDefaultIconBackground, BATCH_CONCURRENCY } from '@/config'
+ import { useGlobalPublicStore } from '@/context/global-public-context'
+ import { useWebAppStore } from '@/context/web-app-context'
+ import { useAppFavicon } from '@/hooks/use-app-favicon'
+@@ -196,6 +196,7 @@ const TextGeneration: FC<IMainProps> = ({
+       return false
+     }
+     const headerData = data[0]
++    console.log('Checking batch inputs:', { dataLength: data.length, headerData })
+     let isMapVarName = true
+     promptConfig?.prompt_variables.forEach((item, index) => {
+       if (!isMapVarName)
+@@ -257,10 +258,9 @@ const TextGeneration: FC<IMainProps> = ({
+         if (errorRowIndex !== 0)
+           return
+         if (varItem.type === 'string') {
+-          const maxLen = varItem.max_length || DEFAULT_VALUE_MAX_LEN
+-          if (item[varIndex].length > maxLen) {
++          if (item[varIndex].length > varItem.max_length) {
+             moreThanMaxLengthVarName = varItem.name
+-            maxLength = maxLen
++            maxLength = varItem.max_length
+             errorRowIndex = index + 1
+             return
+           }
+diff --git a/web/app/components/share/text-generation/run-once/index.spec.tsx b/web/app/components/share/text-generation/run-once/index.spec.tsx
+index 8882253d0ea95c..ea5ce3c902af98 100644
+--- a/web/app/components/share/text-generation/run-once/index.spec.tsx
++++ b/web/app/components/share/text-generation/run-once/index.spec.tsx
+@@ -236,4 +236,46 @@ describe('RunOnce', () => {
+     const stopButton = screen.getByTestId('stop-button')
+     expect(stopButton).toBeDisabled()
+   })
++
++  describe('maxLength behavior', () => {
++    it('should not have maxLength attribute when max_length is not set', async () => {
++      const promptConfig: PromptConfig = {
++        prompt_template: 'template',
++        prompt_variables: [
++          createPromptVariable({
++            key: 'textInput',
++            name: 'Text Input',
++            type: 'string',
++            // max_length is not set
++          }),
++        ],
++      }
++      const { onInputsChange } = setup({ promptConfig, visionConfig: { ...baseVisionConfig, enabled: false } })
++      await waitFor(() => {
++        expect(onInputsChange).toHaveBeenCalled()
++      })
++      const input = screen.getByPlaceholderText('Text Input')
++      expect(input).not.toHaveAttribute('maxLength')
++    })
++
++    it('should have maxLength attribute when max_length is set', async () => {
++      const promptConfig: PromptConfig = {
++        prompt_template: 'template',
++        prompt_variables: [
++          createPromptVariable({
++            key: 'textInput',
++            name: 'Text Input',
++            type: 'string',
++            max_length: 100,
++          }),
++        ],
++      }
++      const { onInputsChange } = setup({ promptConfig, visionConfig: { ...baseVisionConfig, enabled: false } })
++      await waitFor(() => {
++        expect(onInputsChange).toHaveBeenCalled()
++      })
++      const input = screen.getByPlaceholderText('Text Input')
++      expect(input).toHaveAttribute('maxLength', '100')
++    })
++  })
+ })
+diff --git a/web/app/components/share/text-generation/run-once/index.tsx b/web/app/components/share/text-generation/run-once/index.tsx
+index b8193fd9440370..ca29ce1a989bfa 100644
+--- a/web/app/components/share/text-generation/run-once/index.tsx
++++ b/web/app/components/share/text-generation/run-once/index.tsx
+@@ -19,7 +19,6 @@ import Textarea from '@/app/components/base/textarea'
+ import BoolInput from '@/app/components/workflow/nodes/_base/components/before-run-form/bool-input'
+ import CodeEditor from '@/app/components/workflow/nodes/_base/components/editor/code-editor'
+ import { CodeLanguage } from '@/app/components/workflow/nodes/code/types'
+-import { DEFAULT_VALUE_MAX_LEN } from '@/config'
+ import useBreakpoints, { MediaType } from '@/hooks/use-breakpoints'
+ import { cn } from '@/utils/classnames'
+ 
+@@ -140,7 +139,7 @@ const RunOnce: FC<IRunOnceProps> = ({
+                         placeholder={item.name}
+                         value={inputs[item.key]}
+                         onChange={(e: ChangeEvent<HTMLInputElement>) => { handleInputsChange({ ...inputsRef.current, [item.key]: e.target.value }) }}
+-                        maxLength={item.max_length || DEFAULT_VALUE_MAX_LEN}
++                        maxLength={item.max_length}
+                       />
+                     )}
+                     {item.type === 'paragraph' && (
+diff --git a/web/config/index.ts b/web/config/index.ts
+index b804629048ad24..08ce14b264971c 100644
+--- a/web/config/index.ts
++++ b/web/config/index.ts
+@@ -208,7 +208,6 @@ export const VAR_ITEM_TEMPLATE = {
+   key: '',
+   name: '',
+   type: 'string',
+-  max_length: DEFAULT_VALUE_MAX_LEN,
+   required: true,
+ }
+ 
+@@ -216,7 +215,6 @@ export const VAR_ITEM_TEMPLATE_IN_WORKFLOW = {
+   variable: '',
+   label: '',
+   type: InputVarType.textInput,
+-  max_length: DEFAULT_VALUE_MAX_LEN,
+   required: true,
+   options: [],
+ }
+@@ -225,7 +223,6 @@ export const VAR_ITEM_TEMPLATE_IN_PIPELINE = {
+   variable: '',
+   label: '',
+   type: PipelineInputVarType.textInput,
+-  max_length: DEFAULT_VALUE_MAX_LEN,
+   required: true,
+   options: [],
+ }
+diff --git a/web/utils/var.ts b/web/utils/var.ts
+index 4f572d776869c3..1851084b2eecb0 100644
+--- a/web/utils/var.ts
++++ b/web/utils/var.ts
+@@ -30,7 +30,7 @@ export const getNewVar = (key: string, type: string) => {
+ }
+ 
+ export const getNewVarInWorkflow = (key: string, type = InputVarType.textInput): InputVar => {
+-  const { max_length: _maxLength, ...rest } = VAR_ITEM_TEMPLATE_IN_WORKFLOW
++  const { ...rest } = VAR_ITEM_TEMPLATE_IN_WORKFLOW
+   if (type !== InputVarType.textInput) {
+     return {
+       ...rest,

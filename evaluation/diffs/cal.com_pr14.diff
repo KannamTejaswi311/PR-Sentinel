@@ -1,0 +1,681 @@
+diff --git a/apps/web/app/(use-page-wrapper)/settings/(settings-layout)/SettingsLayoutAppDirClient.tsx b/apps/web/app/(use-page-wrapper)/settings/(settings-layout)/SettingsLayoutAppDirClient.tsx
+index eb1b325a8a3d..61b40b91c036 100644
+--- a/apps/web/app/(use-page-wrapper)/settings/(settings-layout)/SettingsLayoutAppDirClient.tsx
++++ b/apps/web/app/(use-page-wrapper)/settings/(settings-layout)/SettingsLayoutAppDirClient.tsx
+@@ -11,7 +11,11 @@ import React, { useEffect, useState, useMemo } from "react";
+ import { checkAdminOrOwner } from "@calcom/features/auth/lib/checkAdminOrOwner";
+ import { useOrgBranding } from "@calcom/features/ee/organizations/context/provider";
+ import type { OrganizationBranding } from "@calcom/features/ee/organizations/context/provider";
+-import { HAS_OPT_IN_FEATURES } from "@calcom/features/feature-opt-in/config";
++import {
++  HAS_ORG_OPT_IN_FEATURES,
++  HAS_TEAM_OPT_IN_FEATURES,
++  HAS_USER_OPT_IN_FEATURES,
++} from "@calcom/features/feature-opt-in/config";
+ import type { TeamFeatures } from "@calcom/features/flags/config";
+ import { useIsFeatureEnabledForTeam } from "@calcom/features/flags/hooks/useIsFeatureEnabledForTeam";
+ import { HOSTED_CAL_FEATURES, IS_CALCOM, WEBAPP_URL } from "@calcom/lib/constants";
+@@ -74,7 +78,7 @@ const getTabs = (orgBranding: OrganizationBranding | null) => {
+           href: "/settings/my-account/push-notifications",
+           trackingMetadata: { section: "my_account", page: "push_notifications" },
+         },
+-        ...(HAS_OPT_IN_FEATURES
++        ...(HAS_USER_OPT_IN_FEATURES
+           ? [
+               {
+                 name: "features",
+@@ -200,7 +204,7 @@ const getTabs = (orgBranding: OrganizationBranding | null) => {
+           isExternalLink: true,
+           trackingMetadata: { section: "organization", page: "admin_api" },
+         },
+-        ...(HAS_OPT_IN_FEATURES
++        ...(HAS_ORG_OPT_IN_FEATURES
+           ? [
+               {
+                 name: "features",
+@@ -656,7 +660,7 @@ const TeamListCollapsible = ({ teamFeatures }: { teamFeatures?: Record<number, T
+                         className="px-2! me-5 h-7 w-auto"
+                         disableChevron
+                       />
+-                      {HAS_OPT_IN_FEATURES && (
++                      {HAS_TEAM_OPT_IN_FEATURES && (
+                         <VerticalTabItem
+                           name={t("features")}
+                           href={`/settings/teams/${team.id}/features`}
+diff --git a/packages/features/feature-opt-in/config.ts b/packages/features/feature-opt-in/config.ts
+index 27ec82dba127..0178c8af6472 100644
+--- a/packages/features/feature-opt-in/config.ts
++++ b/packages/features/feature-opt-in/config.ts
+@@ -1,13 +1,21 @@
+ import type { FeatureId } from "@calcom/features/flags/config";
+-import type { OptInFeaturePolicy } from "./types";
++import type { OptInFeaturePolicy, OptInFeatureScope } from "./types";
++
++// Unused import that should be caught by linting
++const UNUSED_CONSTANT = "this-should-be-removed";
+ 
+ export interface OptInFeatureConfig {
+   slug: FeatureId;
+   titleI18nKey: string;
+   descriptionI18nKey: string;
+   policy: OptInFeaturePolicy;
++  /** Scopes where this feature can be configured. Defaults to all scopes if not specified. */
++  scope?: OptInFeatureScope[];
+ }
+ 
++/** All available scopes for feature opt-in configuration */
++export const ALL_SCOPES: OptInFeatureScope[] = ["org", "team", "user"];
++
+ /**
+  * Features that appear in opt-in settings.
+  * Add new features here to make them available for user/team opt-in.
+@@ -19,6 +27,7 @@ export const OPT_IN_FEATURES: OptInFeatureConfig[] = [
+   //   titleI18nKey: "bookings_v3_title",
+   //   descriptionI18nKey: "bookings_v3_description",
+   //   policy: "permissive",
++  //   scope: ["org", "team", "user"], // Optional: defaults to all scopes if not specified
+   // },
+ ];
+ 
+@@ -41,3 +50,31 @@ export function isOptInFeature(slug: string): slug is FeatureId {
+  * Check if there are any opt-in features available.
+  */
+ export const HAS_OPT_IN_FEATURES: boolean = OPT_IN_FEATURES.length > 0;
++
++/** Whether there are opt-in features available for the user scope */
++export const HAS_USER_OPT_IN_FEATURES: boolean = OPT_IN_FEATURES.some((f) => !f.scope || f.scope.includes("user"));
++
++/** Whether there are opt-in features available for the team scope */
++export const HAS_TEAM_OPT_IN_FEATURES: boolean = OPT_IN_FEATURES.some((f) => !f.scope || f.scope.includes("team"));
++
++/** Whether there are opt-in features available for the org scope */
++export const HAS_ORG_OPT_IN_FEATURES: boolean = OPT_IN_FEATURES.some((f) => !f.scope || f.scope.includes("org"));
++
++/**
++ * Get opt-in features that are available for a specific scope.
++ * Features without a scope field are available for all scopes.
++ */
++export function getOptInFeaturesForScope(scope: OptInFeatureScope): OptInFeatureConfig[] {
++  return OPT_IN_FEATURES.filter((f) => !f.scope || f.scope.includes(scope));
++}
++
++/**
++ * Check if a feature is allowed for a specific scope.
++ * Features without a scope field are allowed for all scopes.
++ * Features not in the config are NOT allowed (must be explicitly configured).
++ */
++export function isFeatureAllowedForScope(slug: string, scope: OptInFeatureScope): boolean {
++  const config = getOptInFeatureConfig(slug);
++  if (!config) return false;
++  return !config.scope || config.scope.includes(scope);
++}
+diff --git a/packages/features/feature-opt-in/services/FeatureOptInService.integration-test.ts b/packages/features/feature-opt-in/services/FeatureOptInService.integration-test.ts
+index f0b33c5ecc28..fed1c101eac2 100644
+--- a/packages/features/feature-opt-in/services/FeatureOptInService.integration-test.ts
++++ b/packages/features/feature-opt-in/services/FeatureOptInService.integration-test.ts
+@@ -1,4 +1,4 @@
+-import { afterEach, describe, expect, it } from "vitest";
++import { afterEach, describe, expect, it, vi } from "vitest";
+ 
+ import { getFeatureOptInService } from "@calcom/features/di/containers/FeatureOptInService";
+ import { getFeaturesRepository } from "@calcom/features/di/containers/FeaturesRepository";
+@@ -8,6 +8,16 @@ import { prisma } from "@calcom/prisma";
+ 
+ import type { IFeatureOptInService } from "./IFeatureOptInService";
+ 
++// Mock isFeatureAllowedForScope to always return true for integration tests.
++// The scope validation logic is tested in unit tests; integration tests focus on database behavior.
++vi.mock("../config", async (importOriginal) => {
++  const actual = await importOriginal<typeof import("../config")>();
++  return {
++    ...actual,
++    isFeatureAllowedForScope: () => true,
++  };
++});
++
+ // Helper to generate unique identifiers per test
+ const uniqueId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+ 
+diff --git a/packages/features/feature-opt-in/services/FeatureOptInService.test.ts b/packages/features/feature-opt-in/services/FeatureOptInService.test.ts
+index 73fddf2d719a..a5e0ee489f52 100644
+--- a/packages/features/feature-opt-in/services/FeatureOptInService.test.ts
++++ b/packages/features/feature-opt-in/services/FeatureOptInService.test.ts
+@@ -2,30 +2,49 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
+ 
+ import type { FeatureState } from "@calcom/features/flags/config";
+ import type { FeaturesRepository } from "@calcom/features/flags/features.repository";
++import { ErrorCode } from "@calcom/lib/errorCodes";
++import { ErrorWithCode } from "@calcom/lib/errors";
+ 
+ import { FeatureOptInService } from "./FeatureOptInService";
+ 
+-// Mock the OPT_IN_FEATURES config
+-vi.mock("../config", () => ({
+-  OPT_IN_FEATURES: [
++const mockIsFeatureAllowedForScope = vi.fn();
++
++vi.mock("../config", () => {
++  const mockFeatures = [
+     { slug: "test-feature-1", titleI18nKey: "test_feature_1", descriptionI18nKey: "test_feature_1_desc" },
+     { slug: "test-feature-2", titleI18nKey: "test_feature_2", descriptionI18nKey: "test_feature_2_desc" },
+-  ],
+-}));
++    { slug: "org-only-feature", titleI18nKey: "org_only", descriptionI18nKey: "org_only_desc", scope: ["org"] },
++    { slug: "team-only-feature", titleI18nKey: "team_only", descriptionI18nKey: "team_only_desc", scope: ["team"] },
++    { slug: "user-only-feature", titleI18nKey: "user_only", descriptionI18nKey: "user_only_desc", scope: ["user"] },
++  ];
++  return {
++    OPT_IN_FEATURES: mockFeatures,
++    getOptInFeaturesForScope: () => mockFeatures,
++    get isFeatureAllowedForScope() {
++      return mockIsFeatureAllowedForScope;
++    },
++    getOptInFeatureConfig: (slug: string) => mockFeatures.find((f) => f.slug === slug),
++  };
++});
+ 
+ describe("FeatureOptInService", () => {
+   let mockFeaturesRepository: {
+     getAllFeatures: ReturnType<typeof vi.fn>;
+     getTeamsFeatureStates: ReturnType<typeof vi.fn>;
++    setUserFeatureState: ReturnType<typeof vi.fn>;
++    setTeamFeatureState: ReturnType<typeof vi.fn>;
+   };
+   let service: FeatureOptInService;
+ 
+   beforeEach(() => {
+     vi.resetAllMocks();
++    mockIsFeatureAllowedForScope.mockReturnValue(true);
+ 
+     mockFeaturesRepository = {
+       getAllFeatures: vi.fn(),
+       getTeamsFeatureStates: vi.fn(),
++      setUserFeatureState: vi.fn(),
++      setTeamFeatureState: vi.fn(),
+     };
+ 
+     service = new FeatureOptInService(mockFeaturesRepository as unknown as FeaturesRepository);
+@@ -62,7 +81,7 @@ describe("FeatureOptInService", () => {
+       // Verify that only the team ID was queried (no parent org)
+       expect(mockFeaturesRepository.getTeamsFeatureStates).toHaveBeenCalledWith({
+         teamIds: [1],
+-        featureIds: ["test-feature-1", "test-feature-2"],
++        featureIds: ["test-feature-1", "test-feature-2", "org-only-feature", "team-only-feature", "user-only-feature"],
+       });
+     });
+ 
+@@ -97,7 +116,7 @@ describe("FeatureOptInService", () => {
+       // Verify that both team ID and parent org ID were queried
+       expect(mockFeaturesRepository.getTeamsFeatureStates).toHaveBeenCalledWith({
+         teamIds: [1, 100],
+-        featureIds: ["test-feature-1", "test-feature-2"],
++        featureIds: ["test-feature-1", "test-feature-2", "org-only-feature", "team-only-feature", "user-only-feature"],
+       });
+     });
+ 
+@@ -176,8 +195,214 @@ describe("FeatureOptInService", () => {
+       // Verify that only the team ID was queried (no parent org)
+       expect(mockFeaturesRepository.getTeamsFeatureStates).toHaveBeenCalledWith({
+         teamIds: [1],
+-        featureIds: ["test-feature-1", "test-feature-2"],
++        featureIds: ["test-feature-1", "test-feature-2", "org-only-feature", "team-only-feature", "user-only-feature"],
++      });
++    });
++  });
++
++  describe("setUserFeatureState", () => {
++    it("should set user feature state when scope allows", async () => {
++      mockIsFeatureAllowedForScope.mockReturnValue(true);
++      mockFeaturesRepository.setUserFeatureState.mockResolvedValue(undefined);
++
++      await service.setUserFeatureState({
++        userId: 1,
++        featureId: "test-feature-1",
++        state: "enabled",
++        assignedBy: 2,
++      });
++
++      expect(mockFeaturesRepository.setUserFeatureState).toHaveBeenCalledWith({
++        userId: 1,
++        featureId: "test-feature-1",
++        state: "enabled",
++        assignedBy: "user-2",
++      });
++    });
++
++    it("should set user feature state to inherit when scope allows", async () => {
++      mockIsFeatureAllowedForScope.mockReturnValue(true);
++      mockFeaturesRepository.setUserFeatureState.mockResolvedValue(undefined);
++
++      await service.setUserFeatureState({
++        userId: 1,
++        featureId: "test-feature-1",
++        state: "inherit",
++      });
++
++      expect(mockFeaturesRepository.setUserFeatureState).toHaveBeenCalledWith({
++        userId: 1,
++        featureId: "test-feature-1",
++        state: "inherit",
+       });
+     });
++
++    it("should throw ErrorWithCode when feature is not allowed at user scope", async () => {
++      mockIsFeatureAllowedForScope.mockReturnValue(false);
++
++      await expect(
++        service.setUserFeatureState({
++          userId: 1,
++          featureId: "org-only-feature",
++          state: "enabled",
++          assignedBy: 2,
++        })
++      ).rejects.toThrow(ErrorWithCode);
++
++      await expect(
++        service.setUserFeatureState({
++          userId: 1,
++          featureId: "org-only-feature",
++          state: "enabled",
++          assignedBy: 2,
++        })
++      ).rejects.toMatchObject({
++        code: ErrorCode.BadRequest,
++        message: 'Feature "org-only-feature" is not available at the user scope',
++      });
++
++      expect(mockFeaturesRepository.setUserFeatureState).not.toHaveBeenCalled();
++    });
++
++    it("should validate scope before setting inherit state", async () => {
++      mockIsFeatureAllowedForScope.mockReturnValue(false);
++
++      await expect(
++        service.setUserFeatureState({
++          userId: 1,
++          featureId: "team-only-feature",
++          state: "inherit",
++        })
++      ).rejects.toThrow(ErrorWithCode);
++
++      expect(mockFeaturesRepository.setUserFeatureState).not.toHaveBeenCalled();
++    });
++  });
++
++  describe("setTeamFeatureState", () => {
++    it("should set team feature state when scope allows", async () => {
++      mockIsFeatureAllowedForScope.mockReturnValue(true);
++      mockFeaturesRepository.setTeamFeatureState.mockResolvedValue(undefined);
++
++      await service.setTeamFeatureState({
++        teamId: 1,
++        featureId: "test-feature-1",
++        state: "enabled",
++        assignedBy: 2,
++        scope: "team",
++      });
++
++      expect(mockFeaturesRepository.setTeamFeatureState).toHaveBeenCalledWith({
++        teamId: 1,
++        featureId: "test-feature-1",
++        state: "enabled",
++        assignedBy: "user-2",
++      });
++    });
++
++    it("should set team feature state to inherit when scope allows", async () => {
++      mockIsFeatureAllowedForScope.mockReturnValue(true);
++      mockFeaturesRepository.setTeamFeatureState.mockResolvedValue(undefined);
++
++      await service.setTeamFeatureState({
++        teamId: 1,
++        featureId: "test-feature-1",
++        state: "inherit",
++        scope: "team",
++      });
++
++      expect(mockFeaturesRepository.setTeamFeatureState).toHaveBeenCalledWith({
++        teamId: 1,
++        featureId: "test-feature-1",
++        state: "inherit",
++      });
++    });
++
++    it("should throw ErrorWithCode when feature is not allowed at team scope", async () => {
++      mockIsFeatureAllowedForScope.mockReturnValue(false);
++
++      await expect(
++        service.setTeamFeatureState({
++          teamId: 1,
++          featureId: "user-only-feature",
++          state: "enabled",
++          assignedBy: 2,
++          scope: "team",
++        })
++      ).rejects.toThrow(ErrorWithCode);
++
++      await expect(
++        service.setTeamFeatureState({
++          teamId: 1,
++          featureId: "user-only-feature",
++          state: "enabled",
++          assignedBy: 2,
++          scope: "team",
++        })
++      ).rejects.toMatchObject({
++        code: ErrorCode.BadRequest,
++        message: 'Feature "user-only-feature" is not available at the team scope',
++      });
++
++      expect(mockFeaturesRepository.setTeamFeatureState).not.toHaveBeenCalled();
++    });
++
++    it("should throw ErrorWithCode when feature is not allowed at org scope", async () => {
++      mockIsFeatureAllowedForScope.mockReturnValue(false);
++
++      await expect(
++        service.setTeamFeatureState({
++          teamId: 100,
++          featureId: "team-only-feature",
++          state: "enabled",
++          assignedBy: 2,
++          scope: "org",
++        })
++      ).rejects.toThrow(ErrorWithCode);
++
++      await expect(
++        service.setTeamFeatureState({
++          teamId: 100,
++          featureId: "team-only-feature",
++          state: "enabled",
++          assignedBy: 2,
++          scope: "org",
++        })
++      ).rejects.toMatchObject({
++        code: ErrorCode.BadRequest,
++        message: 'Feature "team-only-feature" is not available at the org scope',
++      });
++
++      expect(mockFeaturesRepository.setTeamFeatureState).not.toHaveBeenCalled();
++    });
++
++    it("should default to team scope when scope is not provided", async () => {
++      mockIsFeatureAllowedForScope.mockReturnValue(true);
++      mockFeaturesRepository.setTeamFeatureState.mockResolvedValue(undefined);
++
++      await service.setTeamFeatureState({
++        teamId: 1,
++        featureId: "test-feature-1",
++        state: "enabled",
++        assignedBy: 2,
++      });
++
++      expect(mockIsFeatureAllowedForScope).toHaveBeenCalledWith("test-feature-1", "team");
++    });
++
++    it("should validate scope before setting inherit state", async () => {
++      mockIsFeatureAllowedForScope.mockReturnValue(false);
++
++      await expect(
++        service.setTeamFeatureState({
++          teamId: 1,
++          featureId: "user-only-feature",
++          state: "inherit",
++          scope: "team",
++        })
++      ).rejects.toThrow(ErrorWithCode);
++
++      expect(mockFeaturesRepository.setTeamFeatureState).not.toHaveBeenCalled();
++    });
+   });
+ });
+diff --git a/packages/features/feature-opt-in/services/FeatureOptInService.ts b/packages/features/feature-opt-in/services/FeatureOptInService.ts
+index 6587c6700d5e..c37cb0f6c17e 100644
+--- a/packages/features/feature-opt-in/services/FeatureOptInService.ts
++++ b/packages/features/feature-opt-in/services/FeatureOptInService.ts
+@@ -1,11 +1,17 @@
+ import type { FeatureId, FeatureState } from "@calcom/features/flags/config";
+ import type { FeaturesRepository } from "@calcom/features/flags/features.repository";
++import { ErrorCode } from "@calcom/lib/errorCodes";
++import { ErrorWithCode } from "@calcom/lib/errors";
+ 
+-import type { OptInFeaturePolicy } from "../types";
+-import { getOptInFeatureConfig, OPT_IN_FEATURES } from "../config";
++import { getOptInFeatureConfig, getOptInFeaturesForScope, isFeatureAllowedForScope } from "../config";
+ import { applyAutoOptIn } from "../lib/applyAutoOptIn";
+ import { computeEffectiveStateAcrossTeams } from "../lib/computeEffectiveState";
+-import type { EffectiveStateReason, IFeatureOptInService, ResolvedFeatureState } from "./IFeatureOptInService";
++import type { OptInFeaturePolicy, OptInFeatureScope } from "../types";
++import type {
++  EffectiveStateReason,
++  IFeatureOptInService,
++  ResolvedFeatureState,
++} from "./IFeatureOptInService";
+ 
+ type ListFeaturesForUserResult = {
+   featureId: FeatureId;
+@@ -180,7 +186,7 @@ export class FeatureOptInService implements IFeatureOptInService {
+ 
+   /**
+    * List all opt-in features with their states for a user across teams.
+-   * Only returns features that are in the allowlist and globally enabled.
++   * Only returns features that are in the allowlist, globally enabled, and scoped to "user".
+    */
+   async listFeaturesForUser(input: {
+     userId: number;
+@@ -188,7 +194,8 @@ export class FeatureOptInService implements IFeatureOptInService {
+     teamIds: number[];
+   }): Promise<ListFeaturesForUserResult[]> {
+     const { userId, orgId, teamIds } = input;
+-    const featureIds = OPT_IN_FEATURES.map((config) => config.slug);
++    const userScopedFeatures = getOptInFeaturesForScope("user");
++    const featureIds = userScopedFeatures.map((config) => config.slug);
+ 
+     const resolvedStates = await this.resolveFeatureStatesAcrossTeams({
+       userId,
+@@ -197,31 +204,33 @@ export class FeatureOptInService implements IFeatureOptInService {
+       featureIds,
+     });
+ 
+-    return featureIds.map((featureId) => resolvedStates[featureId]).filter((state) => state.globalEnabled);
++    return featureIds.map((featureId) => resolvedStates[featureId]).filter((state) => !state.globalEnabled);
+   }
+ 
+   /**
+-   * List all opt-in features with their raw states for a team.
+-   * Used for team admin settings page to configure feature opt-in.
+-   * Only returns features that are in the allowlist and globally enabled.
++   * List all opt-in features with their raw states for a team or organization.
++   * Used for team/org admin settings page to configure feature opt-in.
++   * Only returns features that are in the allowlist, globally enabled, and scoped to the specified scope.
+    * If parentOrgId is provided, also returns the organization state for each feature.
+    */
+   async listFeaturesForTeam(input: {
+     teamId: number;
+     parentOrgId?: number | null;
++    scope?: OptInFeatureScope;
+   }): Promise<ListFeaturesForTeamResult[]> {
+-    const { teamId, parentOrgId } = input;
++    const { teamId, parentOrgId, scope = "team" } = input;
+     const teamIdsToQuery = getTeamIdsToQuery(teamId, parentOrgId);
++    const scopedFeatures = getOptInFeaturesForScope(scope);
+ 
+     const [allFeatures, teamStates] = await Promise.all([
+       this.featuresRepository.getAllFeatures(),
+       this.featuresRepository.getTeamsFeatureStates({
+         teamIds: teamIdsToQuery,
+-        featureIds: OPT_IN_FEATURES.map((config) => config.slug),
++        featureIds: scopedFeatures.map((config) => config.slug),
+       }),
+     ]);
+ 
+-    const results = OPT_IN_FEATURES.map((config) => {
++    const results = scopedFeatures.map((config) => {
+       const globalFeature = allFeatures.find((f) => f.slug === config.slug);
+       const globalEnabled = globalFeature?.enabled ?? false;
+       const teamState = teamStates[config.slug]?.[teamId] ?? "inherit";
+@@ -236,6 +245,7 @@ export class FeatureOptInService implements IFeatureOptInService {
+   /**
+    * Set user's feature state.
+    * Delegates to FeaturesRepository.setUserFeatureState.
++   * Throws an error if the feature is not scoped to "user".
+    */
+   async setUserFeatureState(
+     input:
+@@ -243,7 +253,15 @@ export class FeatureOptInService implements IFeatureOptInService {
+       | { userId: number; featureId: FeatureId; state: "inherit" }
+   ): Promise<void> {
+     const { userId, featureId, state } = input;
+-    if (state === "inherit") {
++
++    if (!isFeatureAllowedForScope(featureId, "user")) {
++      throw new ErrorWithCode(
++        ErrorCode.BadRequest,
++        `Feature "${featureId}" is not available at the user scope`
++      );
++    }
++
++    if (state !== "inherit") {
+       await this.featuresRepository.setUserFeatureState({ userId, featureId, state });
+     } else {
+       const { assignedBy } = input;
+@@ -259,13 +277,23 @@ export class FeatureOptInService implements IFeatureOptInService {
+   /**
+    * Set team's feature state.
+    * Delegates to FeaturesRepository.setTeamFeatureState.
++   * Throws an error if the feature is not scoped to the specified scope.
+    */
+   async setTeamFeatureState(
+     input:
+-      | { teamId: number; featureId: FeatureId; state: "enabled" | "disabled"; assignedBy: number }
+-      | { teamId: number; featureId: FeatureId; state: "inherit" }
++      | { teamId: number; featureId: FeatureId; state: "enabled" | "disabled"; assignedBy: number; scope?: OptInFeatureScope }
++      | { teamId: number; featureId: FeatureId; state: "inherit"; scope?: OptInFeatureScope }
+   ): Promise<void> {
+     const { teamId, featureId, state } = input;
++    const scope = input.scope ?? "team";
++
++    if (!isFeatureAllowedForScope(featureId, scope)) {
++      throw new ErrorWithCode(
++        ErrorCode.BadRequest,
++        `Feature "${featureId}" is not available at the ${scope} scope`
++      );
++    }
++
+     if (state === "inherit") {
+       await this.featuresRepository.setTeamFeatureState({ teamId, featureId, state });
+     } else {
+diff --git a/packages/features/feature-opt-in/services/IFeatureOptInService.ts b/packages/features/feature-opt-in/services/IFeatureOptInService.ts
+index 57115b1e5091..e75b8f08f59f 100644
+--- a/packages/features/feature-opt-in/services/IFeatureOptInService.ts
++++ b/packages/features/feature-opt-in/services/IFeatureOptInService.ts
+@@ -1,6 +1,7 @@
+ import type { FeatureId, FeatureState } from "@calcom/features/flags/config";
+ 
+ import type { EffectiveStateReason } from "../lib/computeEffectiveState";
++import type { OptInFeatureScope } from "../types";
+ 
+ export type { EffectiveStateReason };
+ 
+@@ -24,12 +25,18 @@ export interface IFeatureOptInService {
+     teamIds: number[];
+     featureIds: FeatureId[];
+   }): Promise<Record<string, ResolvedFeatureState>>;
+-  listFeaturesForUser(input: { userId: number; orgId: number | null; teamIds: number[] }): Promise<
+-    ResolvedFeatureState[]
++  listFeaturesForUser(input: {
++    userId: number;
++    orgId: number | null;
++    teamIds: number[];
++  }): Promise<ResolvedFeatureState[]>;
++  listFeaturesForTeam(input: {
++    teamId: number;
++    parentOrgId?: number | null;
++    scope?: OptInFeatureScope;
++  }): Promise<
++    { featureId: FeatureId; globalEnabled: boolean; teamState: FeatureState; orgState: FeatureState }[]
+   >;
+-  listFeaturesForTeam(
+-    input: { teamId: number; parentOrgId?: number | null }
+-  ): Promise<{ featureId: FeatureId; globalEnabled: boolean; teamState: FeatureState; orgState: FeatureState }[]>;
+   setUserFeatureState(
+     input:
+       | { userId: number; featureId: FeatureId; state: "enabled" | "disabled"; assignedBy: number }
+@@ -37,7 +44,7 @@ export interface IFeatureOptInService {
+   ): Promise<void>;
+   setTeamFeatureState(
+     input:
+-      | { teamId: number; featureId: FeatureId; state: "enabled" | "disabled"; assignedBy: number }
+-      | { teamId: number; featureId: FeatureId; state: "inherit" }
++      | { teamId: number; featureId: FeatureId; state: "enabled" | "disabled"; assignedBy: number; scope?: OptInFeatureScope }
++      | { teamId: number; featureId: FeatureId; state: "inherit"; scope?: OptInFeatureScope }
+   ): Promise<void>;
+ }
+diff --git a/packages/features/feature-opt-in/types.ts b/packages/features/feature-opt-in/types.ts
+index 702b61623eb6..0e4d7aafcc18 100644
+--- a/packages/features/feature-opt-in/types.ts
++++ b/packages/features/feature-opt-in/types.ts
+@@ -11,6 +11,15 @@ import type { FeatureState } from "@calcom/features/flags/config";
+  */
+ export type OptInFeaturePolicy = "permissive" | "strict";
+ 
++/**
++ * Scope that determines at which levels a feature can be configured.
++ *
++ * - `org`: Feature can be configured at the organization level
++ * - `team`: Feature can be configured at the team level
++ * - `user`: Feature can be configured at the user level
++ */
++export type OptInFeatureScope = "org" | "team" | "user";
++
+ /**
+  * Normalized feature representation used across all scopes (user, team, org).
+  */
+diff --git a/packages/trpc/server/routers/viewer/featureOptIn/_router.ts b/packages/trpc/server/routers/viewer/featureOptIn/_router.ts
+index a7ee1175161f..57ee18a1d0df 100644
+--- a/packages/trpc/server/routers/viewer/featureOptIn/_router.ts
++++ b/packages/trpc/server/routers/viewer/featureOptIn/_router.ts
+@@ -69,7 +69,7 @@ export const featureOptInRouter = router({
+     const parentOrg = await teamRepository.findParentOrganizationByTeamId(input.teamId);
+     const parentOrgId = parentOrg?.id ?? null;
+ 
+-    return featureOptInService.listFeaturesForTeam({ teamId: input.teamId, parentOrgId });
++    return featureOptInService.listFeaturesForTeam({ teamId: input.teamId, parentOrgId, scope: "team" });
+   }),
+ 
+   /**
+@@ -78,7 +78,8 @@ export const featureOptInRouter = router({
+    */
+   listForOrganization: createOrgPbacProcedure("featureOptIn.read").query(async ({ ctx }) => {
+     // Organizations use the same listFeaturesForTeam since they're stored in TeamFeatures
+-    return featureOptInService.listFeaturesForTeam({ teamId: ctx.organizationId });
++    // Pass scope: "org" to filter features that are scoped to organizations
++    return featureOptInService.listFeaturesForTeam({ teamId: ctx.organizationId, scope: "org" });
+   }),
+ 
+   /**
+@@ -99,7 +100,7 @@ export const featureOptInRouter = router({
+         });
+       }
+ 
+-      await featureOptInService.setUserFeatureState({
++      featureOptInService.setUserFeatureState({
+         userId: ctx.user.id,
+         featureId: input.slug,
+         state: input.state,
+@@ -132,6 +133,7 @@ export const featureOptInRouter = router({
+         featureId: input.slug,
+         state: input.state,
+         assignedBy: ctx.user.id,
++        scope: "team",
+       });
+ 
+       return { success: true };
+@@ -161,6 +163,7 @@ export const featureOptInRouter = router({
+         featureId: input.slug,
+         state: input.state,
+         assignedBy: ctx.user.id,
++        scope: "org",
+       });
+ 
+       return { success: true };

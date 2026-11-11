@@ -1,0 +1,199 @@
+diff --git a/.github/workflows/python-package.yaml b/.github/workflows/python-package.yaml
+index 352bbc8d93e9..5ec99c4ae76c 100644
+--- a/.github/workflows/python-package.yaml
++++ b/.github/workflows/python-package.yaml
+@@ -43,6 +43,13 @@ jobs:
+         run: |
+           uv run prefect dev build-ui
+ 
++      - name: Build UI v2
++        working-directory: ui-v2
++        run: |
++          npm ci
++          npm run build
++          cp -r dist ../src/prefect/server/ui-v2
++
+       - name: Check git diff
+         run: |
+           git diff --exit-code
+diff --git a/Dockerfile b/Dockerfile
+index daa01d8eb29b..c11d69a5bff6 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -8,8 +8,10 @@ ARG PYTHON_VERSION=3.10
+ ARG BASE_IMAGE=python:${PYTHON_VERSION}-slim
+ # The version used to build the Python distributable.
+ ARG BUILD_PYTHON_VERSION=3.10
+-# THe version used to build the UI distributable.
++# The version used to build the V1 UI distributable.
+ ARG NODE_VERSION=20.19.0
++# The version used to build the V2 UI distributable (requires Node 22+).
++ARG NODE_V2_VERSION=22.12.0
+ # SQLite version to install (format: X.YY.Z becomes XYYZZOO in filename)
+ ARG SQLITE_VERSION=3.50.4
+ ARG SQLITE_YEAR=2025
+@@ -40,7 +42,7 @@ RUN wget -q https://sqlite.org/${SQLITE_YEAR}/sqlite-autoconf-${SQLITE_FILE_VERS
+     cd .. && \
+     rm -rf sqlite-autoconf-${SQLITE_FILE_VERSION} sqlite-autoconf-${SQLITE_FILE_VERSION}.tar.gz
+ 
+-# Build the UI distributable.
++# Build the V1 UI distributable.
+ FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-bullseye-slim AS ui-builder
+ 
+ WORKDIR /opt/ui
+@@ -59,6 +61,25 @@ RUN npm ci
+ COPY ./ui .
+ RUN npm run build
+ 
++# Build the V2 UI distributable.
++FROM --platform=$BUILDPLATFORM node:${NODE_V2_VERSION}-bullseye-slim AS ui-v2-builder
++
++WORKDIR /opt/ui-v2
++
++RUN apt-get update && \
++    apt-get install --no-install-recommends -y \
++    # Required for arm64 builds
++    chromium \
++    && apt-get clean && rm -rf /var/lib/apt/lists/*
++
++# Install dependencies separately so they cache
++COPY ./ui-v2/package*.json ./
++RUN npm ci
++
++# Build static UI files
++COPY ./ui-v2 .
++RUN npm run build
++
+ 
+ # Build the Python distributable.
+ # Without this build step, versioningit cannot infer the version without git
+@@ -78,9 +99,12 @@ COPY --from=ghcr.io/astral-sh/uv:0.6.17 /uv /bin/uv
+ # Copy the repository in; requires full git history for versions to generate correctly
+ COPY . ./
+ 
+-# Package the UI into the distributable.
++# Package the V1 UI into the distributable.
+ COPY --from=ui-builder /opt/ui/dist ./src/prefect/server/ui
+ 
++# Package the V2 UI into the distributable.
++COPY --from=ui-v2-builder /opt/ui-v2/dist ./src/prefect/server/ui-v2
++
+ # Create a source distributable archive; ensuring existing dists are removed first
+ RUN rm -rf dist && uv build --sdist --out-dir dist
+ RUN mv "dist/prefect-"*".tar.gz" "dist/prefect.tar.gz"
+diff --git a/pyproject.toml b/pyproject.toml
+index 7db05a8d7b43..3efe6fc05931 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -229,7 +229,7 @@ dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+ distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+ 
+ [tool.hatch.build]
+-artifacts = ["src/prefect/_build_info.py", "src/prefect/server/ui"]
++artifacts = ["src/prefect/_build_info.py", "src/prefect/server/ui", "src/prefect/server/ui-v2"]
+ 
+ [tool.hatch.build.targets.sdist]
+ include = ["/src/prefect", "/README.md", "/LICENSE", "/pyproject.toml"]
+diff --git a/src/prefect/__init__.py b/src/prefect/__init__.py
+index 8f185b1efc92..2acdbd4dabf3 100644
+--- a/src/prefect/__init__.py
++++ b/src/prefect/__init__.py
+@@ -64,6 +64,13 @@ class VersionInfo(TypedDict("_FullRevisionId", {"full-revisionid": str})):
+ # The absolute path to the built UI within the Python module
+ __ui_static_path__: pathlib.Path = __module_path__ / "server" / "ui"
+ 
++# The absolute path to the built V2 UI within the Python module, used by
++# `prefect server start` to serve a dynamic build of the V2 UI
++__ui_v2_static_subpath__: pathlib.Path = __module_path__ / "server" / "ui_v2_build"
++
++# The absolute path to the built V2 UI within the Python module
++__ui_v2_static_path__: pathlib.Path = __module_path__ / "server" / "ui_v2"
++
+ del _build_info, pathlib
+ 
+ 
+diff --git a/src/prefect/server/api/server.py b/src/prefect/server/api/server.py
+index 745cd76d996a..1519e6624ad3 100644
+--- a/src/prefect/server/api/server.py
++++ b/src/prefect/server/api/server.py
+@@ -455,11 +455,22 @@ async def token_validation(request: Request, call_next: Any):  # type: ignore[re
+ def create_ui_app(ephemeral: bool) -> FastAPI:
+     ui_app = FastAPI(title=UI_TITLE)
+     base_url = prefect.settings.PREFECT_UI_SERVE_BASE.value()
+-    cache_key = f"{prefect.__version__}:{base_url}"
++
++    # Determine which UI to serve based on setting
++    v2_enabled = prefect.settings.get_current_settings().server.ui.v2_enabled
++
++    if v2_enabled:
++        source_static_path = prefect.__ui_v2_static_path__
++        static_subpath = prefect.__ui_static_subpath__
++        cache_key = f"v2:{prefect.__version__}:{base_url}"
++    else:
++        source_static_path = prefect.__ui_static_path__
++        static_subpath = prefect.__ui_static_subpath__
++        cache_key = f"v1:{prefect.__version__}:{base_url}"
++
+     stripped_base_url = base_url.rstrip("/")
+-    static_dir = (
+-        prefect.settings.PREFECT_UI_STATIC_DIRECTORY.value()
+-        or prefect.__ui_static_subpath__
++    static_dir = prefect.settings.PREFECT_UI_STATIC_DIRECTORY.value() or str(
++        static_subpath
+     )
+     reference_file_name = "UI_SERVE_BASE"
+ 
+@@ -495,7 +506,7 @@ def create_ui_static_subpath() -> None:
+         if not os.path.exists(static_dir):
+             os.makedirs(static_dir)
+ 
+-        copy_directory(str(prefect.__ui_static_path__), str(static_dir))
++        copy_directory(str(source_static_path), str(static_dir))
+         replace_placeholder_string_in_files(
+             str(static_dir),
+             "/PREFECT_UI_SERVE_BASE_REPLACE_PLACEHOLDER",
+@@ -511,10 +522,15 @@ def create_ui_static_subpath() -> None:
+     ui_app.add_middleware(GZipMiddleware)
+ 
+     if (
+-        os.path.exists(prefect.__ui_static_path__)
++        os.path.exists(source_static_path)
+         and prefect.settings.PREFECT_UI_ENABLED.value()
+         and not ephemeral
+     ):
++        # Log which UI version is being served
++        if v2_enabled:
++            ui_logger = logging.getLogger("ui_server")
++            ui_logger.info("Serving experimental V2 UI")
++
+         # If the static files have already been copied, check if the base_url has changed
+         # If it has, we delete the subpath directory and copy the files again
+         if not reference_file_matches_base_url():
+diff --git a/src/prefect/settings/models/server/ui.py b/src/prefect/settings/models/server/ui.py
+index bb9bcece2f95..f730e49bfc1d 100644
+--- a/src/prefect/settings/models/server/ui.py
++++ b/src/prefect/settings/models/server/ui.py
+@@ -19,6 +19,11 @@ class ServerUISettings(PrefectBaseSettings):
+         ),
+     )
+ 
++    v2_enabled: bool = Field(
++        default=True,
++        description="Whether to serve the experimental V2 UI instead of the default V1 UI.",
++    )
++
+     api_url: Optional[str] = Field(
+         default=None,
+         description="The connection url for communication from the UI to the API. Defaults to `PREFECT_API_URL` if set. Otherwise, the default URL is generated from `PREFECT_SERVER_API_HOST` and `PREFECT_SERVER_API_PORT`.",
+diff --git a/tests/test_settings.py b/tests/test_settings.py
+index 758358fcdf29..88b35559f24f 100644
+--- a/tests/test_settings.py
++++ b/tests/test_settings.py
+@@ -490,6 +490,7 @@
+     "PREFECT_SERVER_UI_SERVE_BASE": {"test_value": "/base"},
+     "PREFECT_SERVER_UI_SHOW_PROMOTIONAL_CONTENT": {"test_value": False},
+     "PREFECT_SERVER_UI_STATIC_DIRECTORY": {"test_value": "/path/to/static"},
++    "PREFECT_SERVER_UI_V2_ENABLED": {"test_value": True},
+     "PREFECT_SILENCE_API_URL_MISCONFIGURATION": {"test_value": True},
+     "PREFECT_SQLALCHEMY_MAX_OVERFLOW": {"test_value": 10, "legacy": True},
+     "PREFECT_SQLALCHEMY_POOL_SIZE": {"test_value": 10, "legacy": True},

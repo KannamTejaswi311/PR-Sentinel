@@ -1,0 +1,1491 @@
+diff --git a/firefox-ios/Client.xcodeproj/project.pbxproj b/firefox-ios/Client.xcodeproj/project.pbxproj
+index 935ecbabed1ff..220e98cba42c4 100644
+--- a/firefox-ios/Client.xcodeproj/project.pbxproj
++++ b/firefox-ios/Client.xcodeproj/project.pbxproj
+@@ -629,7 +629,6 @@
+ 		5A70EF10295DFD4900790249 /* Common in Frameworks */ = {isa = PBXBuildFile; productRef = 5A70EF0F295DFD4900790249 /* Common */; };
+ 		5A70EF16295DFD9000790249 /* Common in Frameworks */ = {isa = PBXBuildFile; productRef = 5A70EF15295DFD9000790249 /* Common */; };
+ 		5A70EF19295E2E1600790249 /* DependencyHelperMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A70EF18295E2E1600790249 /* DependencyHelperMock.swift */; };
+-		5A70EF1D295E3C3500790249 /* TestSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A70EF1C295E3C3500790249 /* TestSetup.swift */; };
+ 		5A70EF1F295E3DFC00790249 /* UnitTestAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A70EF1E295E3DFC00790249 /* UnitTestAppDelegate.swift */; };
+ 		5A70EF21295E3E0B00790249 /* UnitTestSceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A70EF20295E3E0B00790249 /* UnitTestSceneDelegate.swift */; };
+ 		5A8017E029CE15D90047120D /* TabManagerImplementation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A8017DF29CE15D90047120D /* TabManagerImplementation.swift */; };
+@@ -1350,8 +1349,8 @@
+ 		AAB4321B2E8187190075E47F /* RecentSearchProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB4321A2E8187130075E47F /* RecentSearchProvider.swift */; };
+ 		AAB4321D2E8189390075E47F /* DefaultRecentSearchProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB4321C2E8189310075E47F /* DefaultRecentSearchProviderTests.swift */; };
+ 		AAB434062E82F0600075E47F /* MockTrendingSearchProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB434052E82F05C0075E47F /* MockTrendingSearchProvider.swift */; };
+-		AAB5B7882EE077BB0051EF6E /* TranslationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB5B7872EE077BB0051EF6E /* TranslationTests.swift */; };
+ 		AAB5AF382EDDCF600051EF6E /* MockLocaleProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB5AF372EDDCF5A0051EF6E /* MockLocaleProvider.swift */; };
++		AAB5B7882EE077BB0051EF6E /* TranslationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB5B7872EE077BB0051EF6E /* TranslationTests.swift */; };
+ 		AAD1CD872EAABA8100BEC90A /* TranslationsConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD1CD862EAABA7C00BEC90A /* TranslationsConfiguration.swift */; };
+ 		AAD861A82E9E748700F6E0E0 /* TranslationSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD861A72E9E748100F6E0E0 /* TranslationSetting.swift */; };
+ 		AAD861AB2E9E75AB00F6E0E0 /* TranslationSettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD861AA2E9E75A100F6E0E0 /* TranslationSettingsViewController.swift */; };
+@@ -8314,7 +8313,6 @@
+ 		5A64225029CB506500EEC3E5 /* TabManagerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabManagerDelegate.swift; sourceTree = "<group>"; };
+ 		5A679E4A2B239FAE004F2B0D /* TabPeekViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabPeekViewController.swift; sourceTree = "<group>"; };
+ 		5A70EF18295E2E1600790249 /* DependencyHelperMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DependencyHelperMock.swift; sourceTree = "<group>"; };
+-		5A70EF1C295E3C3500790249 /* TestSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSetup.swift; sourceTree = "<group>"; };
+ 		5A70EF1E295E3DFC00790249 /* UnitTestAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnitTestAppDelegate.swift; sourceTree = "<group>"; };
+ 		5A70EF20295E3E0B00790249 /* UnitTestSceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnitTestSceneDelegate.swift; sourceTree = "<group>"; };
+ 		5A8017DF29CE15D90047120D /* TabManagerImplementation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabManagerImplementation.swift; sourceTree = "<group>"; };
+@@ -9567,8 +9565,8 @@
+ 		AAB4321A2E8187130075E47F /* RecentSearchProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentSearchProvider.swift; sourceTree = "<group>"; };
+ 		AAB4321C2E8189310075E47F /* DefaultRecentSearchProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultRecentSearchProviderTests.swift; sourceTree = "<group>"; };
+ 		AAB434052E82F05C0075E47F /* MockTrendingSearchProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockTrendingSearchProvider.swift; sourceTree = "<group>"; };
+-		AAB5B7872EE077BB0051EF6E /* TranslationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationTests.swift; sourceTree = "<group>"; };
+ 		AAB5AF372EDDCF5A0051EF6E /* MockLocaleProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockLocaleProvider.swift; sourceTree = "<group>"; };
++		AAB5B7872EE077BB0051EF6E /* TranslationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationTests.swift; sourceTree = "<group>"; };
+ 		AAD1CD862EAABA7C00BEC90A /* TranslationsConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationsConfiguration.swift; sourceTree = "<group>"; };
+ 		AAD861A72E9E748100F6E0E0 /* TranslationSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationSetting.swift; sourceTree = "<group>"; };
+ 		AAD861AA2E9E75A100F6E0E0 /* TranslationSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationSettingsViewController.swift; sourceTree = "<group>"; };
+@@ -13747,7 +13745,6 @@
+ 				E14BF33D2950B1230039758D /* MailProvidersTests.swift */,
+ 				E1463D032982D0240074E16E /* NotificationManagerTests.swift */,
+ 				8AEE284A276A973400C7104D /* RatingPromptManagerTests.swift */,
+-				5A70EF1C295E3C3500790249 /* TestSetup.swift */,
+ 			);
+ 			path = Helpers;
+ 			sourceTree = "<group>";
+@@ -14847,7 +14844,6 @@
+ 			isa = PBXGroup;
+ 			children = (
+ 				21A7C44D283539170071D996 /* IntroViewModel.swift */,
+-				81055B552BAB7CE200E166B3 /* OnboardingMultipeChoiceButtonModel.swift */,
+ 				8C51ED6F2DE0A4D700B3E58A /* OnboardingKitCardInfoModel.swift */,
+ 				8C51ED712DE0A5B500B3E58A /* OnboardingKitViewModel.swift */,
+ 				435D660423D794B90046EFA2 /* UpdateViewModel.swift */,
+@@ -18986,7 +18982,6 @@
+ 				8A89046D2D52874600A5BB29 /* SyncedTabCell.swift in Sources */,
+ 				8A4490952BF3C42B00E7E682 /* MicrosurveyConfirmationView.swift in Sources */,
+ 				1DA6F6512B48B42900BB5AD6 /* WindowEventCoordinator.swift in Sources */,
+-				ED07C0E62CCACD7E006C0627 /* Locale+possibilitiesForLanguageIdentifier.swift in Sources */,
+ 				437A857827E43FE100E42764 /* FxAWebViewTelemetry.swift in Sources */,
+ 				613489A32D942A020009AF01 /* ToastTelemetry.swift in Sources */,
+ 				C7F051692DB2F38000EC52C0 /* ContextMenuPreviewViewController.swift in Sources */,
+@@ -19459,7 +19454,6 @@
+ 				ED6D46E02D3573F80045E4ED /* TitleActivityItemProviderTests.swift in Sources */,
+ 				C736C9C72E9D7C4800658045 /* StoriesFeedStateTests.swift in Sources */,
+ 				C8501F5128510DA1003B09AB /* WallpaperMigrationUtilityTests.swift in Sources */,
+-				5A70EF1D295E3C3500790249 /* TestSetup.swift in Sources */,
+ 				E1442FDA294782F7003680B0 /* UIPasteboard+Extension.swift in Sources */,
+ 				C2D80BEB2AAF395200CDF7A9 /* CredentialAutofillCoordinatorTests.swift in Sources */,
+ 				F98CB66E2A4123F1005F38E9 /* EnhancedTrackingProtectionMenuVMTests.swift in Sources */,
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Autofill/FormAutofillHelperTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Autofill/FormAutofillHelperTests.swift
+index fa5aff36c3820..f655fbbe85d6b 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Autofill/FormAutofillHelperTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Autofill/FormAutofillHelperTests.swift
+@@ -48,7 +48,7 @@ class FormAutofillHelperTests: XCTestCase {
+     override func setUp() async throws {
+         try await super.setUp()
+         profile = MockProfile()
+-        DependencyHelperMock().bootstrapDependencies()
++        await DependencyHelperMock().bootstrapDependencies()
+         LegacyFeatureFlagsManager.shared.initializeDeveloperFeatures(with: profile)
+         tab = await Tab(profile: profile, windowUUID: windowUUID)
+         formAutofillHelper = FormAutofillHelper(tab: tab)
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/Launch/LaunchTypeTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/Launch/LaunchTypeTests.swift
+index 4c566da1ea866..03f120a338a26 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/Launch/LaunchTypeTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/Launch/LaunchTypeTests.swift
+@@ -9,14 +9,14 @@ import XCTest
+ final class LaunchTypeTests: XCTestCase {
+     let windowUUID: WindowUUID = .XCTestDefaultUUID
+ 
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func testCanLaunch_surveyFromBrowserCoordinator() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/LaunchView/LaunchScreenViewModelTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/LaunchView/LaunchScreenViewModelTests.swift
+index 208b4da4bb9f0..d53e6ddc5545d 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/LaunchView/LaunchScreenViewModelTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/LaunchView/LaunchScreenViewModelTests.swift
+@@ -14,8 +14,8 @@ final class LaunchScreenViewModelTests: XCTestCase {
+     private var delegate: MockLaunchFinishedLoadingDelegate!
+     let windowUUID: WindowUUID = .XCTestDefaultUUID
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         DependencyHelperMock().bootstrapDependencies()
+         profile = MockProfile()
+         delegate = MockLaunchFinishedLoadingDelegate()
+@@ -25,13 +25,13 @@ final class LaunchScreenViewModelTests: XCTestCase {
+         UserDefaults.standard.set(true, forKey: PrefsKeys.NimbusUserEnabledFeatureTestsOverride)
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         AppContainer.shared.reset()
+         UserDefaults.standard.removeObject(forKey: PrefsKeys.NimbusUserEnabledFeatureTestsOverride)
+         profile = nil
+         messageManager = nil
+         delegate = nil
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func testLaunchDoesntCallLoadedIfNotStarted() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/CreditCard/CreditCardSettingsViewControllerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/CreditCard/CreditCardSettingsViewControllerTests.swift
+index c9201980740a0..089e71e94e170 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/CreditCard/CreditCardSettingsViewControllerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/CreditCard/CreditCardSettingsViewControllerTests.swift
+@@ -11,15 +11,15 @@ final class CreditCardSettingsViewControllerTests: XCTestCase {
+     var profile: MockProfile!
+     var viewModel: CreditCardInputViewModel!
+ 
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+         profile = MockProfile()
+         viewModel = CreditCardInputViewModel(profile: profile, creditCardProvider: MockCreditCardProvider())
+     }
+ 
+-    override func tearDown() {
+-        super.tearDown()
++    override func tearDown() async throws {
++        try await super.tearDown()
+         DependencyHelperMock().reset()
+         profile = nil
+         viewModel = nil
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/CustomSearchEnginesTest.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/CustomSearchEnginesTest.swift
+index 87d7b5dd885df..40a364413f9ad 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/CustomSearchEnginesTest.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/CustomSearchEnginesTest.swift
+@@ -9,14 +9,14 @@ import XCTest
+ 
+ class CustomSearchEnginesTest: XCTestCase {
+     let windowUUID: WindowUUID = .XCTestDefaultUUID
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         AppContainer.shared.reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     @MainActor
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/DependencyInjection/DependencyHelperMock.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/DependencyInjection/DependencyHelperMock.swift
+index f6b20a7a4194c..95dbb6e64ac1d 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/DependencyInjection/DependencyHelperMock.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/DependencyInjection/DependencyHelperMock.swift
+@@ -6,7 +6,9 @@ import Common
+ import Storage
+ @testable import Client
+ 
+-class DependencyHelperMock {
++final class DependencyHelperMock {
++
++    @MainActor
+     func bootstrapDependencies(
+         injectedWindowManager: WindowManager? = nil,
+         injectedTabManager: TabManager? = nil,
+@@ -36,32 +38,15 @@ class DependencyHelperMock {
+         let appSessionProvider: AppSessionProvider = AppSessionManager()
+         AppContainer.shared.register(service: appSessionProvider as AppSessionProvider)
+ 
+-        // FIXME: FXIOS-13151 We need to handle main actor synchronized state in this setup method used across all unit tests
+-        if Thread.isMainThread {
+-            MainActor.assumeIsolated {
+-                tabManager = injectedTabManager ?? MockTabManager()
+-                AppContainer.shared.register(service: MockThemeManager() as ThemeManager)
+-
+-                let searchEnginesManager = SearchEnginesManager(
+-                    prefs: profile.prefs,
+-                    files: profile.files,
+-                    engineProvider: MockSearchEngineProvider()
+-                )
+-                AppContainer.shared.register(service: searchEnginesManager)
+-            }
+-        } else {
+-            DispatchQueue.main.sync {
+-                tabManager = injectedTabManager ??  MockTabManager()
+-                AppContainer.shared.register(service: MockThemeManager() as ThemeManager)
+-
+-                let searchEnginesManager = SearchEnginesManager(
+-                    prefs: profile.prefs,
+-                    files: profile.files,
+-                    engineProvider: MockSearchEngineProvider()
+-                )
+-                AppContainer.shared.register(service: searchEnginesManager)
+-            }
+-        }
++        tabManager = injectedTabManager ?? MockTabManager()
++        AppContainer.shared.register(service: MockThemeManager() as ThemeManager)
++
++        let searchEnginesManager = SearchEnginesManager(
++            prefs: profile.prefs,
++            files: profile.files,
++            engineProvider: MockSearchEngineProvider()
++        )
++        AppContainer.shared.register(service: searchEnginesManager)
+ 
+         let downloadQueue = DownloadQueue()
+         AppContainer.shared.register(service: downloadQueue)
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/DownloadProgressManagerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/DownloadProgressManagerTests.swift
+index 3bb28abf42742..c1435543918e6 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/DownloadProgressManagerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/DownloadProgressManagerTests.swift
+@@ -9,14 +9,14 @@ import Common
+ 
+ @MainActor
+ class DownloadProgressManagerTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func testSingleDownloadIntialization() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/FirefoxAccountSignInViewControllerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/FirefoxAccountSignInViewControllerTests.swift
+index 6edb031332deb..38b5786f36b75 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/FirefoxAccountSignInViewControllerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/FirefoxAccountSignInViewControllerTests.swift
+@@ -12,16 +12,16 @@ final class FirefoxAccountSignInViewControllerTests: XCTestCase {
+     private var mockProfile: MockProfile!
+     var deeplinkParams: FxALaunchParams!
+ 
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+         mockProfile = MockProfile()
+         deeplinkParams = FxALaunchParams(entrypoint: .browserMenu, query: ["test_key": "test_value"])
+     }
+ 
+-    override func tearDown() {
+-        super.tearDown()
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
++        try await super.tearDown()
+     }
+ 
+     @MainActor
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Browser/BrowserViewControllerWebViewDelegateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Browser/BrowserViewControllerWebViewDelegateTests.swift
+index 218bd66acf056..28c8fb2350895 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Browser/BrowserViewControllerWebViewDelegateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Browser/BrowserViewControllerWebViewDelegateTests.swift
+@@ -18,9 +18,9 @@ class BrowserViewControllerWebViewDelegateTests: XCTestCase {
+     }
+     private lazy var allowBlockingUniversalLinksPolicy = WKNavigationActionPolicy(rawValue: allowPolicyRawValue + 2)
+ 
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+         profile = MockProfile()
+         LegacyFeatureFlagsManager.shared.initializeDeveloperFeatures(with: profile)
+         tabManager = MockTabManager()
+@@ -28,12 +28,12 @@ class BrowserViewControllerWebViewDelegateTests: XCTestCase {
+         setWebEngineIntegrationEnabled(false)
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         profile = nil
+         tabManager = nil
+         fileManager = nil
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     @MainActor
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Browser/SearchEngines/SearchEngineSelectionStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Browser/SearchEngines/SearchEngineSelectionStateTests.swift
+index aa6ba414f8787..c84ddd43491f8 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Browser/SearchEngines/SearchEngineSelectionStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Browser/SearchEngines/SearchEngineSelectionStateTests.swift
+@@ -8,14 +8,14 @@ import XCTest
+ @testable import Client
+ 
+ final class SearchEngineSelectionStateTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func testInitialization() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/PrivateHomepageViewControllerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/PrivateHomepageViewControllerTests.swift
+index ac9c6c74dc672..482749c8fbf71 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/PrivateHomepageViewControllerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/PrivateHomepageViewControllerTests.swift
+@@ -11,14 +11,14 @@ import Common
+ final class PrivateHomepageViewControllerTests: XCTestCase {
+     let windowUUID: WindowUUID = .XCTestDefaultUUID
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func testPrivateHomepageViewController_simpleCreation_hasNoLeaks() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/BookmarksSectionStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/BookmarksSectionStateTests.swift
+index 058cefc2104eb..4fd554e53d2bd 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/BookmarksSectionStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/BookmarksSectionStateTests.swift
+@@ -12,17 +12,17 @@ import XCTest
+ final class BookmarksSectionStateTests: XCTestCase {
+     private var mockProfile: MockProfile!
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         mockProfile = MockProfile()
+-        DependencyHelperMock().bootstrapDependencies()
++        await DependencyHelperMock().bootstrapDependencies()
+         LegacyFeatureFlagsManager.shared.initializeDeveloperFeatures(with: mockProfile)
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+         mockProfile = nil
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func tests_initialState_returnsExpectedState() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/HomepageStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/HomepageStateTests.swift
+index db9f5a1b4917f..ede6dc9f17a6a 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/HomepageStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/HomepageStateTests.swift
+@@ -8,14 +8,14 @@ import XCTest
+ @testable import Client
+ 
+ final class HomepageStateTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func tests_initialState_returnsExpectedState() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/JumpBackInSectionStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/JumpBackInSectionStateTests.swift
+index 9dd23815e9ca7..f1dd0e9dcc654 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/JumpBackInSectionStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/JumpBackInSectionStateTests.swift
+@@ -12,17 +12,17 @@ import XCTest
+ final class JumpBackInSectionStateTests: XCTestCase {
+     var mockProfile: MockProfile!
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         mockProfile = MockProfile()
+-        DependencyHelperMock().bootstrapDependencies()
++        await DependencyHelperMock().bootstrapDependencies()
+         LegacyFeatureFlagsManager.shared.initializeDeveloperFeatures(with: MockProfile())
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         mockProfile = nil
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func tests_initialState_returnsExpectedState() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/MerinoStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/MerinoStateTests.swift
+index 79cd1168ab893..aab9016141725 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/MerinoStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/MerinoStateTests.swift
+@@ -9,15 +9,15 @@ import XCTest
+ @testable import Client
+ 
+ final class MerinoStateTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+         LegacyFeatureFlagsManager.shared.initializeDeveloperFeatures(with: MockProfile())
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func tests_initialState_returnsExpectedState() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/TopSitesSectionStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/TopSitesSectionStateTests.swift
+index 3655e97b4a0f1..9f4307c8ff7cb 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/TopSitesSectionStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/Homepage/Redux/TopSitesSectionStateTests.swift
+@@ -9,15 +9,15 @@ import XCTest
+ @testable import Client
+ 
+ final class TopsSitesSectionStateTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+         LegacyFeatureFlagsManager.shared.initializeDeveloperFeatures(with: MockProfile())
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func tests_initialState_returnsExpectedState() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/ShortcutsLibrary/Redux/ShortcutsLibraryStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/ShortcutsLibrary/Redux/ShortcutsLibraryStateTests.swift
+index 32923fe66cea7..cd88e084a5dde 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/ShortcutsLibrary/Redux/ShortcutsLibraryStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/ShortcutsLibrary/Redux/ShortcutsLibraryStateTests.swift
+@@ -9,14 +9,14 @@ import XCTest
+ @testable import Client
+ 
+ final class ShortcutsLibraryStateTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func tests_initialState_returnsExpectedState() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/GleanPlumbContextProviderTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/GleanPlumbContextProviderTests.swift
+index 9cb0cec9e0225..9eedc72233bbb 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/GleanPlumbContextProviderTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/GleanPlumbContextProviderTests.swift
+@@ -12,21 +12,21 @@ class GleanPlumbContextProviderTests: XCTestCase {
+     private var contextProvider: GleanPlumbContextProvider!
+     private var profile: MockProfile!
+ 
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+         userDefaults = MockUserDefaults()
+         profile = MockProfile()
+         contextProvider = GleanPlumbContextProvider(profile: profile)
+         contextProvider.userDefaults = userDefaults
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         profile = nil
+         userDefaults = nil
+         contextProvider = nil
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func testNumberOfLaunches_withFirstLaunch() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Helpers/TestSetup.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Helpers/TestSetup.swift
+deleted file mode 100644
+index dad3ebdf126b3..0000000000000
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Helpers/TestSetup.swift
++++ /dev/null
+@@ -1,11 +0,0 @@
+-// This Source Code Form is subject to the terms of the Mozilla Public
+-// License, v. 2.0. If a copy of the MPL was not distributed with this
+-// file, You can obtain one at http://mozilla.org/MPL/2.0/
+-
+-import Foundation
+-
+-class TestSetup: NSObject {
+-    override init() {
+-        DependencyHelperMock().bootstrapDependencies()
+-    }
+-}
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Library/DownloadsPanelTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Library/DownloadsPanelTests.swift
+index 0498c91d151c4..eb9b63e18a0b9 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Library/DownloadsPanelTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Library/DownloadsPanelTests.swift
+@@ -10,14 +10,14 @@ import Common
+ @MainActor
+ class DownloadsPanelTests: XCTestCase {
+     let windowUUID: WindowUUID = .XCTestDefaultUUID
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         LegacyFeatureFlagsManager.shared.initializeDeveloperFeatures(with: MockProfile())
+         DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
+-        super.tearDown()
++    override func tearDown() async throws {
++        try await super.tearDown()
+         DependencyHelperMock().reset()
+     }
+ 
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Library/LibraryViewModelTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Library/LibraryViewModelTests.swift
+index c568419d8f159..efa49dcb692cf 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Library/LibraryViewModelTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Library/LibraryViewModelTests.swift
+@@ -10,20 +10,20 @@ class LibraryViewModelTests: XCTestCase {
+     private var subject: LibraryViewModel!
+     private var profile: MockProfile!
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+ 
+-        DependencyHelperMock().bootstrapDependencies()
++        await DependencyHelperMock().bootstrapDependencies()
+         profile = MockProfile(databasePrefix: "libraryViewModel_tests")
+         profile.reopen()
+         LegacyFeatureFlagsManager.shared.initializeDeveloperFeatures(with: profile)
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+         profile.shutdown()
+         profile = nil
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func testInitialState_Init() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Library/ReadingListPanelTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Library/ReadingListPanelTests.swift
+index 93d210e0f6459..07bf63a6f7da1 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Library/ReadingListPanelTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Library/ReadingListPanelTests.swift
+@@ -9,14 +9,14 @@ import Common
+ @MainActor
+ class ReadingListPanelTests: XCTestCase {
+     let windowUUID: WindowUUID = .XCTestDefaultUUID
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         LegacyFeatureFlagsManager.shared.initializeDeveloperFeatures(with: MockProfile())
+         DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
+-        super.tearDown()
++    override func tearDown() async throws {
++        try await super.tearDown()
+         DependencyHelperMock().reset()
+     }
+ 
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/MainMenu/MainMenuStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/MainMenu/MainMenuStateTests.swift
+index adb29150c397e..52d9387e8662a 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/MainMenu/MainMenuStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/MainMenu/MainMenuStateTests.swift
+@@ -9,14 +9,14 @@ import SummarizeKit
+ @testable import Client
+ 
+ final class MainMenuStateTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func testInitialization() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/MainMenu/MainMenuViewControllerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/MainMenu/MainMenuViewControllerTests.swift
+index 95f4ec8771d27..e0450e3ce15c4 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/MainMenu/MainMenuViewControllerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/MainMenu/MainMenuViewControllerTests.swift
+@@ -11,14 +11,14 @@ import Common
+ final class MainMenuViewControllerTests: XCTestCase {
+     let windowUUID: WindowUUID = .XCTestDefaultUUID
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func testMainMenuViewController_simpleCreation_hasNoLeaks() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Messaging/NimbusMessagingMessageTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Messaging/NimbusMessagingMessageTests.swift
+index 9d635a563382b..776ead78dbe1c 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Messaging/NimbusMessagingMessageTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Messaging/NimbusMessagingMessageTests.swift
+@@ -10,14 +10,14 @@ import Foundation
+ @testable import Client
+ 
+ final class NimbusMessagingMessageTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     lazy var feature = {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Messaging/NimbusMessagingTriggerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Messaging/NimbusMessagingTriggerTests.swift
+index 1e91a02373d4f..cec7ae2f7d3d3 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Messaging/NimbusMessagingTriggerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Messaging/NimbusMessagingTriggerTests.swift
+@@ -11,14 +11,14 @@ import MozillaAppServices
+ @testable import Client
+ 
+ final class NimbusMessagingTriggerTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     lazy var feature: Messaging = {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveyPromptStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveyPromptStateTests.swift
+index 9e67452bdbbc7..3b3cc6ce991f5 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveyPromptStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveyPromptStateTests.swift
+@@ -8,14 +8,14 @@ import XCTest
+ @testable import Client
+ 
+ final class MicrosurveyPromptStateTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     @MainActor
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveyStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveyStateTests.swift
+index e0d8674369686..9b005a2a154ce 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveyStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveyStateTests.swift
+@@ -8,14 +8,14 @@ import XCTest
+ @testable import Client
+ 
+ final class MicrosurveyStateTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     @MainActor
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveySurfaceManagerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveySurfaceManagerTests.swift
+index 1220a3e6ba0f3..615427579ff15 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveySurfaceManagerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveySurfaceManagerTests.swift
+@@ -9,16 +9,16 @@ import XCTest
+ 
+ final class MicrosurveySurfaceManagerTests: XCTestCase {
+     private var messageManager: MockGleanPlumbMessageManagerProtocol!
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+         messageManager = MockGleanPlumbMessageManagerProtocol()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+         messageManager = nil
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func testNilMessage_microsurveyShouldNotShow() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveyViewControllerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveyViewControllerTests.swift
+index 811ed38b1138f..fb025b1200674 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveyViewControllerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Microsurvey/MicrosurveyViewControllerTests.swift
+@@ -11,14 +11,14 @@ import Common
+ final class MicrosurveyViewControllerTests: XCTestCase {
+     let windowUUID: WindowUUID = .XCTestDefaultUUID
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func testMicrosurveyViewController_simpleCreation_hasNoLeaks() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/NativeErrorPage/NativeErrorPageViewControllerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/NativeErrorPage/NativeErrorPageViewControllerTests.swift
+index 74eb44d4cec6b..cd835b721c864 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/NativeErrorPage/NativeErrorPageViewControllerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/NativeErrorPage/NativeErrorPageViewControllerTests.swift
+@@ -11,13 +11,13 @@ import Common
+ final class NativeErrorPageViewControllerTests: XCTestCase {
+     let windowUUID: WindowUUID = .XCTestDefaultUUID
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
+-        super.tearDown()
++    override func tearDown() async throws {
++        try await super.tearDown()
+         DependencyHelperMock().reset()
+     }
+ 
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/NotificationSurface/NotificationSurfaceManagerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/NotificationSurface/NotificationSurfaceManagerTests.swift
+index b287f2e3f1393..6d780845951f7 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/NotificationSurface/NotificationSurfaceManagerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/NotificationSurface/NotificationSurfaceManagerTests.swift
+@@ -9,15 +9,15 @@ class NotificationSurfaceManagerTests: XCTestCase {
+     private var messageManager: MockGleanPlumbMessageManagerProtocol!
+     private var notificationManager: MockNotificationManager!
+ 
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+         notificationManager = MockNotificationManager()
+         messageManager = MockGleanPlumbMessageManagerProtocol()
+     }
+ 
+-    override func tearDown() {
+-        super.tearDown()
++    override func tearDown() async throws {
++        try await super.tearDown()
+         messageManager = nil
+         notificationManager = nil
+     }
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/NotificationSurface/OnboardingNotificationCardHelperTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/NotificationSurface/OnboardingNotificationCardHelperTests.swift
+index f56ed45401dfc..1f420b06d6f75 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/NotificationSurface/OnboardingNotificationCardHelperTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/NotificationSurface/OnboardingNotificationCardHelperTests.swift
+@@ -12,16 +12,16 @@ class OnboardingNotificationCardHelperTests: XCTestCase {
+     var nimbusUtility: NimbusOnboardingTestingConfigUtility!
+     typealias cards = NimbusOnboardingTestingConfigUtility.CardOrder
+ 
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+         nimbusUtility = NimbusOnboardingTestingConfigUtility()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+         nimbusUtility = nil
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func testHelper_fromOnboarding_withNotificationCard_returnsTrue() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/OnboardingTests/OnboardingTelemetryUtilityTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/OnboardingTests/OnboardingTelemetryUtilityTests.swift
+index 0bc5d13604d88..4ba3761f2414e 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/OnboardingTests/OnboardingTelemetryUtilityTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/OnboardingTests/OnboardingTelemetryUtilityTests.swift
+@@ -11,16 +11,16 @@ final class OnboardingTelemetryUtilityTests: XCTestCase {
+     typealias CardNames = NimbusOnboardingTestingConfigUtility.CardOrder
+     var mockGleanWrapper: MockGleanWrapper!
+ 
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+         mockGleanWrapper = MockGleanWrapper()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         mockGleanWrapper = nil
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     // MARK: - Card View telemetry
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/OnboardingTests/UpdateViewModelTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/OnboardingTests/UpdateViewModelTests.swift
+index 5de2e86671b22..c4d45b60d78eb 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/OnboardingTests/UpdateViewModelTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/OnboardingTests/UpdateViewModelTests.swift
+@@ -13,14 +13,14 @@ class UpdateViewModelTests: XCTestCase {
+     private var profile: MockProfile!
+     let windowUUID: WindowUUID = .XCTestDefaultUUID
+ 
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+         profile = MockProfile()
+     }
+ 
+-    override func tearDown() {
+-        super.tearDown()
++    override func tearDown() async throws {
++        try await super.tearDown()
+         profile = nil
+         UserDefaults.standard.removeObject(forKey: PrefsKeys.NimbusUserEnabledFeatureTestsOverride)
+     }
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/PasswordGenerator/PasswordGeneratorStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/PasswordGenerator/PasswordGeneratorStateTests.swift
+index 61a9bec8649b1..904551dda7090 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/PasswordGenerator/PasswordGeneratorStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/PasswordGenerator/PasswordGeneratorStateTests.swift
+@@ -8,14 +8,14 @@ import XCTest
+ @testable import Client
+ 
+ final class PasswordGeneratorStateTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     @MainActor
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/PasswordGenerator/PasswordGeneratorTelemetryTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/PasswordGenerator/PasswordGeneratorTelemetryTests.swift
+index aacb552300451..73b7b0e135f0b 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/PasswordGenerator/PasswordGeneratorTelemetryTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/PasswordGenerator/PasswordGeneratorTelemetryTests.swift
+@@ -10,15 +10,15 @@ import XCTest
+ final class PasswordGeneratorTelemetryTests: XCTestCase {
+     var gleanWrapper: MockGleanWrapper!
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         gleanWrapper = MockGleanWrapper()
+-        DependencyHelperMock().bootstrapDependencies()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         gleanWrapper = nil
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func testShowPasswordGeneratorDialog() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/PasswordGenerator/PasswordGeneratorViewControllerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/PasswordGenerator/PasswordGeneratorViewControllerTests.swift
+index 539f31cd2d5a1..c37f8a10cd5a4 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/PasswordGenerator/PasswordGeneratorViewControllerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/PasswordGenerator/PasswordGeneratorViewControllerTests.swift
+@@ -10,14 +10,14 @@ import Common
+ final class PasswordGeneratorViewControllerTests: XCTestCase {
+     let windowUUID: WindowUUID = .XCTestDefaultUUID
+ 
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     @MainActor
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/SearchBarLocationSaverTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/SearchBarLocationSaverTests.swift
+index cf00eeb2f87c9..d59107b5826c7 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/SearchBarLocationSaverTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/SearchBarLocationSaverTests.swift
+@@ -11,20 +11,20 @@ import XCTest
+ class SearchBarLocationSaverTests: XCTestCase {
+     private var profile: MockProfile!
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         profile = MockProfile()
+-        DependencyHelperMock().bootstrapDependencies()
++        await DependencyHelperMock().bootstrapDependencies()
+         LegacyFeatureFlagsManager.shared.initializeDeveloperFeatures(with: profile)
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         profile.shutdown()
+         profile = nil
+ 
+         DependencyHelperMock().reset()
+         resetNimbusToolbarLayoutTesting()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     // MARK: - Toolbar Refactor - Version layout
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Sharing/URLActivityItemProviderTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Sharing/URLActivityItemProviderTests.swift
+index f61bb57081342..d748b5a4e0d2c 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Sharing/URLActivityItemProviderTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Sharing/URLActivityItemProviderTests.swift
+@@ -11,12 +11,17 @@ final class URLActivityItemProviderTests: XCTestCase {
+     let testFileURL = URL(string: "file://some/file/url")!
+     let testWebURL = URL(string: "https://mozilla.org")!
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         DependencyHelperMock().bootstrapDependencies()
+         LegacyFeatureFlagsManager.shared.initializeDeveloperFeatures(with: MockProfile())
+     }
+ 
++    override func tearDown() async throws {
++        DependencyHelperMock().reset()
++        try await super.tearDown()
++    }
++
+     func testWebURL_forMailActivity() {
+         let testActivityType = UIActivity.ActivityType.mail
+ 
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/StartAtHome/StartAtHomeHelperTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/StartAtHome/StartAtHomeHelperTests.swift
+index 29e7505d93dae..0c1b5de5ebf25 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/StartAtHome/StartAtHomeHelperTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/StartAtHome/StartAtHomeHelperTests.swift
+@@ -12,25 +12,24 @@ class StartAtHomeHelperTests: XCTestCase {
+     private var profile: MockProfile!
+     private var tabManager: MockTabManager!
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+ 
+-        DependencyHelperMock().bootstrapDependencies()
+         profile = MockProfile()
+         tabManager = MockTabManager()
+ 
+-        DependencyHelperMock().bootstrapDependencies()
++        await DependencyHelperMock().bootstrapDependencies()
+         LegacyFeatureFlagsManager.shared.initializeDeveloperFeatures(with: profile)
+     }
+ 
+-    override func tearDown() {
+-        super.tearDown()
++    override func tearDown() async throws {
++        DependencyHelperMock().reset()
+ 
+         profile = nil
+         tabManager = nil
+         helper = nil
+ 
+-        DependencyHelperMock().reset()
++        try await super.tearDown()
+     }
+ 
+     func testShouldNotSkipStartAtHome() throws {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/SurveySurface/SurveySurfaceManagerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/SurveySurface/SurveySurfaceManagerTests.swift
+index 6747aae306291..358d018e252b8 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/SurveySurface/SurveySurfaceManagerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/SurveySurface/SurveySurfaceManagerTests.swift
+@@ -11,14 +11,14 @@ class SurveySurfaceManagerTests: XCTestCase {
+     private var messageManager: MockGleanPlumbMessageManagerProtocol!
+     let windowUUID: WindowUUID = .XCTestDefaultUUID
+ 
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+         messageManager = MockGleanPlumbMessageManagerProtocol()
+     }
+ 
+-    override func tearDown() {
+-        super.tearDown()
++    override func tearDown() async throws {
++        try await super.tearDown()
+         messageManager = nil
+     }
+ 
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabManagement/TabEventHandlerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabManagement/TabEventHandlerTests.swift
+index 7c165ae5618fb..042c5d14e40ca 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabManagement/TabEventHandlerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabManagement/TabEventHandlerTests.swift
+@@ -12,14 +12,14 @@ import Common
+ class TabEventHandlerTests: XCTestCase {
+     let windowUUID: WindowUUID = .XCTestDefaultUUID
+ 
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     @MainActor
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabManagement/TabManagerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabManagement/TabManagerTests.swift
+index bbc5f107d5393..f7d3dce47cd51 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabManagement/TabManagerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabManagement/TabManagerTests.swift
+@@ -25,10 +25,10 @@ class TabManagerTests: XCTestCase {
+     /// 9 Sep 2001 8:00 pm GMT + 0
+     let testDate = Date(timeIntervalSince1970: 1_000_065_600)
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+ 
+-        DependencyHelperMock().bootstrapDependencies()
++        await DependencyHelperMock().bootstrapDependencies()
+         LegacyFeatureFlagsManager.shared.initializeDeveloperFeatures(with: MockProfile())
+         // For this test suite, use a consistent window UUID for all test cases
+         let uuid: WindowUUID = .XCTestDefaultUUID
+@@ -41,12 +41,13 @@ class TabManagerTests: XCTestCase {
+         setIsDeeplinkOptimizationRefactorEnabled(false)
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
++        DependencyHelperMock().reset()
+         mockProfile = nil
+         mockDiskImageStore = nil
+         mockTabStore = nil
+         mockSessionStore = nil
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     @MainActor
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/Redux/TabPeekStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/Redux/TabPeekStateTests.swift
+index 5a5a7e8078dd8..148d6bf1891d7 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/Redux/TabPeekStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/Redux/TabPeekStateTests.swift
+@@ -8,14 +8,14 @@ import XCTest
+ @testable import Client
+ 
+ final class TabPeekStateTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     @MainActor
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/RemoteTabPanelStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/RemoteTabPanelStateTests.swift
+index 8f80c9b3c5084..72ae0eb7a145d 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/RemoteTabPanelStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/RemoteTabPanelStateTests.swift
+@@ -12,13 +12,13 @@ import struct MozillaAppServices.Device
+ @testable import Client
+ 
+ final class RemoteTabPanelStateTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
+-        super.tearDown()
++    override func tearDown() async throws {
++        try await super.tearDown()
+         DependencyHelperMock().reset()
+     }
+ 
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/RemoteTabPanelTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/RemoteTabPanelTests.swift
+index 0dcdad5b86184..a3122814249de 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/RemoteTabPanelTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/RemoteTabPanelTests.swift
+@@ -9,14 +9,14 @@ import XCTest
+ @testable import Client
+ 
+ final class RemoteTabPanelTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
+-        super.tearDown()
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
++        try await super.tearDown()
+     }
+ 
+     @MainActor
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabDisplayPanelTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabDisplayPanelTests.swift
+index dd4674408c2aa..b6a32300cfddc 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabDisplayPanelTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabDisplayPanelTests.swift
+@@ -7,13 +7,13 @@ import XCTest
+ 
+ @testable import Client
+ final class TabDisplayPanelTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
+-        super.tearDown()
++    override func tearDown() async throws {
++        try await super.tearDown()
+         DependencyHelperMock().reset()
+     }
+ 
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabsPanelStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabsPanelStateTests.swift
+index 31ddbcdd3dd2e..76e3f47e20e59 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabsPanelStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TabTray/TabsPanelStateTests.swift
+@@ -9,14 +9,14 @@ import XCTest
+ @testable import Client
+ 
+ final class TabPanelStateTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
+-        super.tearDown()
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
++        try await super.tearDown()
+     }
+ 
+     // MARK: - TabPanelMiddlewareActionType
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TelemetryContextualIdentifierTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TelemetryContextualIdentifierTests.swift
+index 70d2472b789e1..44e4d6084ef6b 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TelemetryContextualIdentifierTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TelemetryContextualIdentifierTests.swift
+@@ -8,15 +8,15 @@ import Glean
+ import XCTest
+ 
+ class TelemetryContextualIdentifierTests: XCTestCase {
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+         clearTest()
+     }
+ 
+-    override func tearDown() {
+-        super.tearDown()
++    override func tearDown() async throws {
+         clearTest()
++        try await super.tearDown()
+     }
+ 
+     // MARK: Context id
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Toolbar/AddressToolbarContainerModelTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Toolbar/AddressToolbarContainerModelTests.swift
+index bc9efe5584605..65bc29354b71e 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Toolbar/AddressToolbarContainerModelTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Toolbar/AddressToolbarContainerModelTests.swift
+@@ -14,7 +14,7 @@ final class AddressToolbarContainerModelTests: XCTestCase {
+ 
+     override func setUp() async throws {
+         try await super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++        await DependencyHelperMock().bootstrapDependencies()
+ 
+         mockProfile = MockProfile()
+         searchEnginesManager = await SearchEnginesManager(
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TrackingProtectionTests/BlockedTrackersTableViewControllerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TrackingProtectionTests/BlockedTrackersTableViewControllerTests.swift
+index 20f22ad3bd650..0fc98204025a8 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TrackingProtectionTests/BlockedTrackersTableViewControllerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TrackingProtectionTests/BlockedTrackersTableViewControllerTests.swift
+@@ -16,14 +16,14 @@ class BlockedTrackersTableViewControllerTests: XCTestCase {
+         connectionSecure: true
+     )
+ 
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     @MainActor
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TrackingProtectionTests/TrackingProtectionStateTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TrackingProtectionTests/TrackingProtectionStateTests.swift
+index b221460fa42d8..b024572df3d48 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/TrackingProtectionTests/TrackingProtectionStateTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/TrackingProtectionTests/TrackingProtectionStateTests.swift
+@@ -10,14 +10,14 @@ import Redux
+ final class TrackingProtectionStateTests: XCTestCase {
+     private var mockProfile: MockProfile!
+ 
+-    override func setUp() {
+-        super.setUp()
+-        DependencyHelperMock().bootstrapDependencies()
++    override func setUp() async throws {
++        try await super.setUp()
++        await DependencyHelperMock().bootstrapDependencies()
+         mockProfile = MockProfile()
+     }
+ 
+-    override func tearDown() {
+-        super.tearDown()
++    override func tearDown() async throws {
++        try await super.tearDown()
+         mockProfile = nil
+     }
+ 
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Utils/SponsoredContentFilterUtilityTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Utils/SponsoredContentFilterUtilityTests.swift
+index cc238a0278e3d..6a5abad2f881f 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Utils/SponsoredContentFilterUtilityTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Utils/SponsoredContentFilterUtilityTests.swift
+@@ -16,16 +16,16 @@ class SponsoredContentFilterUtilityTests: XCTestCase {
+     let windowUUID: WindowUUID = .XCTestDefaultUUID
+ 
+     private var profile: MockProfile!
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         profile = MockProfile()
+-        DependencyHelperMock().bootstrapDependencies()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         profile = nil
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     // MARK: - Sites
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/WindowManagerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/WindowManagerTests.swift
+index b24c580677bb1..a07fdbb74c009 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/WindowManagerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/WindowManagerTests.swift
+@@ -13,14 +13,14 @@ class WindowManagerTests: XCTestCase {
+     let secondTabManager = MockTabManager(windowUUID: WindowUUID())
+     let mockTabDataStore = MockTabDataStore()
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         DependencyHelperMock().bootstrapDependencies(injectedTabManager: tabManager)
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func testConfiguringAndConnectingSingleAppWindow() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/ZoomPageManagerTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/ZoomPageManagerTests.swift
+index 1eaab417a63b2..b90411d4b7ef0 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/ZoomPageManagerTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/ZoomPageManagerTests.swift
+@@ -13,18 +13,18 @@ class ZoomPageManagerTests: XCTestCase {
+     private var zoomStore: MockZoomStore!
+     private let windowUUID: WindowUUID = .XCTestDefaultUUID
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         self.profile = MockProfile()
+         self.zoomStore = MockZoomStore()
+-        DependencyHelperMock().bootstrapDependencies()
++        await DependencyHelperMock().bootstrapDependencies()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         self.profile = nil
+         self.zoomStore = nil
+         DependencyHelperMock().reset()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     @MainActor

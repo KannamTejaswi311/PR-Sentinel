@@ -1,0 +1,281 @@
+diff --git a/00-RELEASENOTES b/00-RELEASENOTES
+index 79e8dbe443f..bfc81c7dc53 100644
+--- a/00-RELEASENOTES
++++ b/00-RELEASENOTES
+@@ -19,6 +19,25 @@ The release notes contain PRs from multiple repositories:
+ #Tn = Time Series (https://github.com/RedisTimeSeries/RedisTimeSeries)
+ #Pn = Probabilistic (https://github.com/RedisBloom/RedisBloom)
+ 
++
++=============================================================
++8.2.1 (v8.2.1)    Committed  Mon 18 Aug 2025 12:00:00 IST
++=============================================================
++
++Update urgency: `MODERATE`: Program an upgrade of the server, but it's not urgent.
++
++### Bug fixes
++
++- #14240 `INFO KEYSIZES` - potential incorrect histogram updates on cluster mode with modules
++- #14274 Disable Active Defrag during flushing replica
++- #14276 `XADD` or `XTRIM` can crash the server after loading RDB
++- #Q6601 Potential crash when running `FLUSHDB` (MOD-10681)
++
++### Performance and resource utilization
++
++- Query Engine - LeanVec and LVQ proprietary Intel optimizations were removed from Redis Open Source
++- #Q6621 Fix regression in `INFO` (MOD-10779)
++
+ ===========================================================
+ 8.2 GA (v8.2.0)    Released Mon 4 Aug 2025 15:00:00 IST
+ ===========================================================
+diff --git a/src/replication.c b/src/replication.c
+index 486d94a5dc1..21d7f6d5157 100644
+--- a/src/replication.c
++++ b/src/replication.c
+@@ -1949,7 +1949,17 @@ static void rdbLoadEmptyDbFunc(void) {
+     serverLog(LL_NOTICE, "MASTER <-> REPLICA sync: Flushing old data");
+     int empty_db_flags = server.repl_slave_lazy_flush ? EMPTYDB_ASYNC :
+                                                         EMPTYDB_NO_FLAGS;
++
++    /* Temporarily disable active defragmentation during database flush.
++     * This prevents defrag from being triggered in replicationEmptyDbCallback()
++     * which could modify the database while it's being emptied. */
++    int orig_active_defrag = server.active_defrag_enabled;
++    server.active_defrag_enabled = 0;
++
+     emptyData(-1, empty_db_flags, replicationEmptyDbCallback);
++
++    /* Restore the original active defragmentation setting. */
++    server.active_defrag_enabled = 1;
+ }
+ 
+ /* Once we have a link with the master and the synchronization was
+diff --git a/src/t_stream.c b/src/t_stream.c
+index e9b52fd96d7..2f40494b2a7 100644
+--- a/src/t_stream.c
++++ b/src/t_stream.c
+@@ -2705,6 +2705,7 @@ int streamEntryIsReferenced(stream *s, streamID *id) {
+         return 1;
+ 
+     /* Check if the message is in any consumer group's PEL */
++    if (!s->cgroups_ref) return 1;
+     unsigned char buf[sizeof(streamID)];
+     streamEncodeID(buf, id);
+     return raxFind(s->cgroups_ref, buf, sizeof(streamID), NULL);
+diff --git a/src/version.h b/src/version.h
+index 53dd09f245b..d417d619e66 100644
+--- a/src/version.h
++++ b/src/version.h
+@@ -1,2 +1,3 @@
+-#define REDIS_VERSION "8.2.0"
+-#define REDIS_VERSION_NUM 0x00080200
++/* Version information */
++#define REDIS_VERSION "8.2.1"
++#define REDIS_VERSION_NUM 0x00080201
+diff --git a/tests/unit/memefficiency.tcl b/tests/unit/memefficiency.tcl
+index 68c44c6b484..b2d7b4fa320 100644
+--- a/tests/unit/memefficiency.tcl
++++ b/tests/unit/memefficiency.tcl
+@@ -67,6 +67,14 @@ run_solo {defrag} {
+         }
+     }
+ 
++    proc discard_replies_every {rd count frequency discard_num} {
++        if {$count % $frequency != 0} {
++            for {set k 0} {$k < $discard_num} {incr k} {
++                $rd read ; # Discard replies
++            }
++        }
++    }
++
+     proc test_active_defrag {type} {
+     if {[string match {*jemalloc*} [s mem_allocator]] && [r debug mallctl arenas.page] <= 8192} {
+         test "Active defrag main dictionary: $type" {
+@@ -339,11 +347,7 @@ run_solo {defrag} {
+                     $rd hset bighash $j [concat "asdfasdfasdf" $j]
+ 
+                     incr count
+-                    if {$count % 10000 == 0} {
+-                        for {set k 0} {$k < 10000} {incr k} {
+-                            $rd read ; # Discard replies
+-                        }
+-                    }
++                    discard_replies_every $rd $count 10000 10000
+                 }
+                 # creating that big hash, increased used_memory, so the relative frag goes down
+                 set expected_frag 1.3
+@@ -355,11 +359,7 @@ run_solo {defrag} {
+                 $rd setrange $j 150 a
+ 
+                 incr count
+-                if {$count % 10000 == 0} {
+-                    for {set k 0} {$k < 10000} {incr k} {
+-                        $rd read ; # Discard replies
+-                    }
+-                }
++                discard_replies_every $rd $count 10000 10000
+             }
+             assert_equal [r dbsize] 500016
+ 
+@@ -369,11 +369,7 @@ run_solo {defrag} {
+                 $rd del $j
+ 
+                 incr count
+-                if {$count % 10000 == 0} {
+-                    for {set k 0} {$k < 10000} {incr k} {
+-                        $rd read ; # Discard replies
+-                    }
+-                }
++                discard_replies_every $rd $count 10000 10000
+             }
+             assert_equal [r dbsize] 250016
+ 
+@@ -769,12 +765,7 @@ run_solo {defrag} {
+                 $rd lpush biglist2 $val
+ 
+                 incr count
+-                if {$count % 10000 == 0} {
+-                    for {set k 0} {$k < 10000} {incr k} {
+-                        $rd read ; # Discard replies
+-                        $rd read ; # Discard replies
+-                    }
+-                }
++                discard_replies_every $rd $count 10000 20000
+             }
+ 
+             # create some fragmentation
+@@ -884,11 +875,7 @@ run_solo {defrag} {
+                     $rd setrange $j 600 x
+ 
+                     incr count
+-                    if {$count % 10000 == 0} {
+-                        for {set k 0} {$k < 10000} {incr k} {
+-                            $rd read ; # Discard replies
+-                        }
+-                    }
++                    discard_replies_every $rd $count 10000 10000
+                 }
+ 
+                 # create some fragmentation of 50%
+@@ -898,11 +885,7 @@ run_solo {defrag} {
+                     incr sent
+                     incr j 1
+ 
+-                    if {$sent % 10000 == 0} {
+-                        for {set k 0} {$k < 10000} {incr k} {
+-                            $rd read ; # Discard replies
+-                        }
+-                    }
++                    discard_replies_every $rd $sent 10000 10000
+                 }
+ 
+                 # create higher fragmentation in the first slab
+@@ -959,6 +942,70 @@ run_solo {defrag} {
+     }
+     }
+ 
++    test "Active defrag can't be triggered during replicaof database flush. See issue #14267" {
++        start_server {tags {"repl"} overrides {save ""}} {
++            set master_host [srv 0 host]
++            set master_port [srv 0 port]
++
++            start_server {overrides {save ""}} {
++                set replica [srv 0 client]
++                set rd [redis_deferring_client 0]
++
++                $replica config set hz 100
++                $replica config set activedefrag no
++                $replica config set active-defrag-threshold-lower 5
++                $replica config set active-defrag-cycle-min 65
++                $replica config set active-defrag-cycle-max 75
++                $replica config set active-defrag-ignore-bytes 2mb
++
++                # add a mass of string keys
++                set count 0
++                for {set j 0} {$j < 500000} {incr j} {
++                    $rd setrange $j 150 a
++
++                    incr count
++                    discard_replies_every $rd $count 10000 10000
++                }
++                assert_equal [$replica dbsize] 500000
++
++                # create some fragmentation
++                set count 0
++                for {set j 0} {$j < 500000} {incr j 2} {
++                    $rd del $j
++
++                    incr count
++                    discard_replies_every $rd $count 10000 10000
++                }
++                $rd close
++                assert_equal [$replica dbsize] 250000
++
++                catch {$replica config set activedefrag yes} e
++                if {[$replica config get activedefrag] eq "activedefrag yes"} {
++                    # Start replication sync which will flush the replica's database,
++                    # then enable defrag to run concurrently with the database flush.
++                    $replica replicaof $master_host $master_port
++
++                    # wait for the active defrag to start working (decision once a second)
++                    wait_for_condition 50 100 {
++                        [s total_active_defrag_time] ne 0
++                    } else {
++                        after 120 ;# serverCron only updates the info once in 100ms
++                        puts [$replica info memory]
++                        puts [$replica info stats]
++                        puts [$replica memory malloc-stats]
++                        fail "defrag not started."
++                    }
++
++                    wait_for_sync $replica
++
++                    # wait for the active defrag to stop working (db has been emptied during replication sync)
++                    wait_for_defrag_stop 500 100
++                    assert_equal [$replica dbsize] 0
++                }
++            }
++        }
++    } {} {defrag external:skip tsan:skip cluster}
++
+     start_cluster 1 0 {tags {"defrag external:skip tsan:skip cluster"} overrides {appendonly yes auto-aof-rewrite-percentage 0 save "" loglevel notice}} {
+         test_active_defrag "cluster"
+     }
+diff --git a/tests/unit/type/stream.tcl b/tests/unit/type/stream.tcl
+index cbd0f7ce0f9..9d888589d6b 100644
+--- a/tests/unit/type/stream.tcl
++++ b/tests/unit/type/stream.tcl
+@@ -244,6 +244,33 @@ start_server {
+         assert {[r XLEN mystream] == 1} ;# Successfully trimmed to 1 entries
+     }
+ 
++    test {XADD with ACKED option doesn't crash after DEBUG RELOAD} {
++        r DEL mystream
++        r XADD mystream 1-0 f v
++
++        # Create a consumer group and read one message
++        r XGROUP CREATE mystream mygroup 0
++        set records [r XREADGROUP GROUP mygroup consumer1 COUNT 1 STREAMS mystream >]
++        assert_equal [lindex [r XPENDING mystream mygroup] 0] 1
++
++        # After reload, the reference relationship between consumer groups and messages
++        # is correctly rebuilt, so the previously read but unacked message still cannot be deleted.
++        r DEBUG RELOAD
++        r XADD mystream MAXLEN = 1 ACKED 2-0 f v
++        assert_equal [r XLEN mystream] 2
++
++        # Acknowledge the read message so the PEL becomes empty
++        r XACK mystream mygroup [lindex [lindex [lindex [lindex $records 0] 1] 0] 0]
++        assert {[lindex [r XPENDING mystream mygroup] 0] == 0}
++
++        # After reload, since PEL is empty, no cgroup references will be recreated.
++        r DEBUG RELOAD
++
++        # ACKED option should work correctly even without cgroup references.
++        r XADD mystream MAXLEN = 1 ACKED 3-0 f v
++        assert_equal [r XLEN mystream] 2
++    } {} {needs:debug}
++
+     test {XADD with MAXLEN option and DELREF option} {
+         r DEL mystream
+         r XADD mystream 1-0 f v

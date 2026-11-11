@@ -1,0 +1,200 @@
+diff --git a/BrowserKit/Tests/WebEngineTests/Mock/MockWKFrameInfo.swift b/BrowserKit/Tests/WebEngineTests/Mock/MockWKFrameInfo.swift
+deleted file mode 100644
+index 0806ba107261d..0000000000000
+--- a/BrowserKit/Tests/WebEngineTests/Mock/MockWKFrameInfo.swift
++++ /dev/null
+@@ -1,25 +0,0 @@
+-// This Source Code Form is subject to the terms of the Mozilla Public
+-// License, v. 2.0. If a copy of the MPL was not distributed with this
+-// file, You can obtain one at http://mozilla.org/MPL/2.0/
+-
+-import Foundation
+-import WebKit
+-@testable import WebEngine
+-
+-class MockWKFrameInfo: WKFrameInfo {
+-    let overridenWebView: WKWebView?
+-    let overridenIsMainFrame: Bool
+-
+-    init(webView: MockWKWebView? = nil, isMainFrame: Bool = true) {
+-        overridenWebView = webView
+-        overridenIsMainFrame = isMainFrame
+-    }
+-
+-    override var isMainFrame: Bool {
+-        return overridenIsMainFrame
+-    }
+-
+-    override var webView: WKWebView? {
+-        return overridenWebView
+-    }
+-}
+diff --git a/BrowserKit/Tests/WebEngineTests/Mock/MockWKSecurityOrigin.swift b/BrowserKit/Tests/WebEngineTests/Mock/MockWKSecurityOrigin.swift
+deleted file mode 100644
+index 8365569c8de7d..0000000000000
+--- a/BrowserKit/Tests/WebEngineTests/Mock/MockWKSecurityOrigin.swift
++++ /dev/null
+@@ -1,31 +0,0 @@
+-// This Source Code Form is subject to the terms of the Mozilla Public
+-// License, v. 2.0. If a copy of the MPL was not distributed with this
+-// file, You can obtain one at http://mozilla.org/MPL/2.0/
+-
+-import Foundation
+-import WebKit
+-@testable import WebEngine
+-
+-class MockWKSecurityOrigin: WKSecurityOrigin {
+-    var overridenProtocol: String!
+-    var overridenHost: String!
+-    var overridenPort: Int!
+-
+-    class func new(_ url: URL?) -> MockWKSecurityOrigin {
+-        // Dynamically allocate a WKSecurityOriginMock instance because the initializer for WKSecurityOrigin is unavailable
+-        //  https://github.com/WebKit/WebKit/blob/52222cf447b7215dd9bcddee659884f704001827/Source/WebKit/UIProcess/API/Cocoa/WKSecurityOrigin.h#L40
+-        guard let instance = self.perform(NSSelectorFromString("alloc"))?.takeUnretainedValue()
+-                as? MockWKSecurityOrigin
+-        else {
+-            fatalError("Could not allocate WKSecurityOriginMock instance")
+-        }
+-        instance.overridenProtocol = url?.scheme ?? ""
+-        instance.overridenHost = url?.host ?? ""
+-        instance.overridenPort = url?.port ?? 0
+-        return instance
+-    }
+-
+-    override var `protocol`: String { overridenProtocol }
+-    override var host: String { overridenHost }
+-    override var port: Int { overridenPort }
+-}
+diff --git a/BrowserKit/Tests/WebEngineTests/Utilities/WebKitTestHelpers.swift b/BrowserKit/Tests/WebEngineTests/Utilities/WebKitTestHelpers.swift
+new file mode 100644
+index 0000000000000..6e60874b9990a
+--- /dev/null
++++ b/BrowserKit/Tests/WebEngineTests/Utilities/WebKitTestHelpers.swift
+@@ -0,0 +1,50 @@
++// This Source Code Form is subject to the terms of the Mozilla Public
++// License, v. 2.0. If a copy of the MPL was not distributed with this
++// file, You can obtain one at http://mozilla.org/MPL/2.0/
++
++import WebKit
++import XCTest
++
++/// Provides real `WKFrameInfo` and `WKSecurityOrigin` objects for tests.
++/// These types can no longer be created or mocked safely, as WebKit now requires
++/// fully initialized instances. This helper loads a lightweight `WKWebView`
++/// navigation and captures the frame and origin values that WebKit supplies.
++final class WebKitTestHelpers {
++    class FakeWKNavigationDelegate: NSObject, WKNavigationDelegate {
++        let expect: XCTestExpectation
++        var capturedFrame: WKFrameInfo?
++        var capturedOrigin: WKSecurityOrigin?
++
++        init(expect: XCTestExpectation) { self.expect = expect }
++
++        func webView(_ webView: WKWebView,
++                     decidePolicyFor navigationAction: WKNavigationAction,
++                     decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
++            let frame = navigationAction.targetFrame
++            capturedFrame = frame
++            capturedOrigin = frame?.securityOrigin
++            decisionHandler(.allow)
++            expect.fulfill()
++            return
++        }
++    }
++
++    // Loads a URL in a real WKWebView and returns the first valid
++    // WKFrameInfo and WKSecurityOrigin from a navigation action.
++    static func captureFrameAndOrigin(for url: URL, timeout: TimeInterval = 3.0) -> (WKFrameInfo, WKSecurityOrigin)? {
++        let webView = WKWebView(frame: .zero)
++        let expect = XCTestExpectation(description: "capture frame & origin")
++
++        let delegate = FakeWKNavigationDelegate(expect: expect)
++        webView.navigationDelegate = delegate
++
++        // load a real https URL (use example.com to be safe)
++        webView.load(URLRequest(url: url))
++
++        let waiter = XCTWaiter.wait(for: [expect], timeout: timeout)
++        if let frame = delegate.capturedFrame, let origin = delegate.capturedOrigin {
++            return (frame, origin)
++        }
++        return nil
++    }
++}
+diff --git a/BrowserKit/Tests/WebEngineTests/WKUIHandlerTests.swift b/BrowserKit/Tests/WebEngineTests/WKUIHandlerTests.swift
+index b0a696c3a482f..ebf4ab28ff117 100644
+--- a/BrowserKit/Tests/WebEngineTests/WKUIHandlerTests.swift
++++ b/BrowserKit/Tests/WebEngineTests/WKUIHandlerTests.swift
+@@ -35,32 +35,40 @@ final class WKUIHandlerTests: XCTestCase {
+     func testRequestMediaCaptureSuccess() {
+         let subject = createSubject(isActive: true)
+ 
+-        let expectation = expectation(description: "Wait for the decision handler to be called")
++        guard let (frame, origin) = WebKitTestHelpers.captureFrameAndOrigin(for: URL(string: "https://example.com")!) else {
++            XCTFail("Could not obtain WKFrameInfo")
++            return
++        }
+ 
+         let decisionHandler = { (decision: WKPermissionDecision) in
+             XCTAssertEqual(decision, .prompt)
+-            expectation.fulfill()
+         }
++
++        let expectation = expectation(description: "Wait for the decision handler to be called")
+         subject.webView(MockWKWebView(),
+-                        requestMediaCapturePermissionFor: MockWKSecurityOrigin.new(nil),
+-                        initiatedByFrame: MockWKFrameInfo(),
++                        requestMediaCapturePermissionFor: origin,
++                        initiatedByFrame: frame,
+                         type: .cameraAndMicrophone,
+-                        decisionHandler: decisionHandler
+-        )
++                        decisionHandler: decisionHandler)
+         wait(for: [expectation])
++        expectation.fulfill()
+     }
+ 
+     func testRequestMediaCaptureIsActiveFalse() {
+         let subject = createSubject(isActive: false)
+-        let expectation = expectation(description: "Wait for the decision handler to be called")
++        guard let (frame, origin) = WebKitTestHelpers.captureFrameAndOrigin(for: URL(string: "https://example.com")!) else {
++            XCTFail("Could not obtain WKFrameInfo")
++            return
++        }
+ 
++        let expectation = expectation(description: "Wait for the decision handler to be called")
+         let decisionHandler = { (decision: WKPermissionDecision) in
+             XCTAssertEqual(decision, .deny)
+             expectation.fulfill()
+         }
+         subject.webView(MockWKWebView(),
+-                        requestMediaCapturePermissionFor: MockWKSecurityOrigin.new(nil),
+-                        initiatedByFrame: MockWKFrameInfo(),
++                        requestMediaCapturePermissionFor: origin,
++                        initiatedByFrame: frame,
+                         type: .cameraAndMicrophone,
+                         decisionHandler: decisionHandler
+         )
+@@ -70,6 +78,10 @@ final class WKUIHandlerTests: XCTestCase {
+     func testRequestMediaCaptureDelegateReturnsFalse() {
+         sessionDelegate.hasMediaCapturePermission = false
+         let subject = createSubject(isActive: true)
++        guard let (frame, origin) = WebKitTestHelpers.captureFrameAndOrigin(for: URL(string: "https://example.com")!) else {
++            XCTFail("Could not obtain WKFrameInfo")
++            return
++        }
+         let expectation = expectation(description: "Wait for the decision handler to be called")
+ 
+         let decisionHandler = { (decision: WKPermissionDecision) in
+@@ -77,8 +89,8 @@ final class WKUIHandlerTests: XCTestCase {
+             expectation.fulfill()
+         }
+         subject.webView(MockWKWebView(),
+-                        requestMediaCapturePermissionFor: MockWKSecurityOrigin.new(nil),
+-                        initiatedByFrame: MockWKFrameInfo(),
++                        requestMediaCapturePermissionFor: origin,
++                        initiatedByFrame: frame,
+                         type: .cameraAndMicrophone,
+                         decisionHandler: decisionHandler
+         )

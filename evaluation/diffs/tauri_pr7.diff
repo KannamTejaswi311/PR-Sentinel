@@ -1,0 +1,230 @@
+diff --git a/.changes/bundler-user-agent.md b/.changes/bundler-user-agent.md
+deleted file mode 100644
+index 52b45ad1a46b..000000000000
+--- a/.changes/bundler-user-agent.md
++++ /dev/null
+@@ -1,6 +0,0 @@
+----
+-tauri-bundler: patch:enhance
+-tauri-cli: patch:enhance
+----
+-
+-Set user-agent in bundler and cli http requests when fetching build tools.
+diff --git a/.changes/change-pr-14379.md b/.changes/change-pr-14379.md
+deleted file mode 100644
+index 96efd7519772..000000000000
+--- a/.changes/change-pr-14379.md
++++ /dev/null
+@@ -1,5 +0,0 @@
+----
+-"tauri-cli": patch:enhance
+----
+-
+-Properly read the `required-features` field of binaries in Cargo.toml to prevent bundling issues when the features weren't enabled.
+diff --git a/.changes/image-premultiply-fix.md b/.changes/image-premultiply-fix.md
+deleted file mode 100644
+index 4abe9b867f56..000000000000
+--- a/.changes/image-premultiply-fix.md
++++ /dev/null
+@@ -1,6 +0,0 @@
+----
+-'tauri-cli': 'patch:bug'
+-'@tauri-apps/cli': 'patch:bug'
+----
+-
+-Premultiply Alpha before Resizing which gets rid of the gray fringe around the icons.
+diff --git a/.changes/nsis-uninstall-already-killed.md b/.changes/nsis-uninstall-already-killed.md
+deleted file mode 100644
+index 5bf9b70e859b..000000000000
+--- a/.changes/nsis-uninstall-already-killed.md
++++ /dev/null
+@@ -1,5 +0,0 @@
+----
+-'tauri-bundler': 'patch:bug'
+----
+-
+-Fix uninstall fails if you close the app manually during the 'Click Ok to kill it' dialog
+diff --git a/Cargo.lock b/Cargo.lock
+index 5e1ff78a893f..5c23009ea3c2 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -8567,7 +8567,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "tauri-bundler"
+-version = "2.7.2"
++version = "2.7.3"
+ dependencies = [
+  "anyhow",
+  "ar",
+@@ -8613,7 +8613,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "tauri-cli"
+-version = "2.9.2"
++version = "2.9.3"
+ dependencies = [
+  "ar",
+  "axum",
+diff --git a/crates/tauri-bundler/CHANGELOG.md b/crates/tauri-bundler/CHANGELOG.md
+index 3f6b7c9cc4ce..feb621512d6a 100644
+--- a/crates/tauri-bundler/CHANGELOG.md
++++ b/crates/tauri-bundler/CHANGELOG.md
+@@ -1,5 +1,15 @@
+ # Changelog
+ 
++## \[2.7.3]
++
++### Enhancements
++
++- [`22edc65aa`](https://www.github.com/tauri-apps/tauri/commit/22edc65aad0b3e45515008e8e0866112da70c8a1) ([#14408](https://www.github.com/tauri-apps/tauri/pull/14408) by [@FabianLars](https://www.github.com/tauri-apps/tauri/../../FabianLars)) Set user-agent in bundler and cli http requests when fetching build tools.
++
++### Bug Fixes
++
++- [`9a1922636`](https://www.github.com/tauri-apps/tauri/commit/9a192263693d71123a9953e2a6ee60fad07500b4) ([#14410](https://www.github.com/tauri-apps/tauri/pull/14410) by [@Legend-Master](https://www.github.com/tauri-apps/tauri/../../Legend-Master)) Fix uninstall fails if you close the app manually during the 'Click Ok to kill it' dialog
++
+ ## \[2.7.2]
+ 
+ ### Enhancements
+diff --git a/crates/tauri-bundler/Cargo.toml b/crates/tauri-bundler/Cargo.toml
+index df668f0c351f..5750480b7ae0 100644
+--- a/crates/tauri-bundler/Cargo.toml
++++ b/crates/tauri-bundler/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "tauri-bundler"
+-version = "2.7.2"
++version = "2.7.3"
+ authors = [
+   "George Burton <burtonageo@gmail.com>",
+   "Tauri Programme within The Commons Conservancy",
+diff --git a/crates/tauri-bundler/src/utils/http_utils.rs b/crates/tauri-bundler/src/utils/http_utils.rs
+index 62ade96cb41c..1c2ebd27f8d7 100644
+--- a/crates/tauri-bundler/src/utils/http_utils.rs
++++ b/crates/tauri-bundler/src/utils/http_utils.rs
+@@ -49,13 +49,13 @@ fn generate_github_alternative_url(url: &str) -> Option<(ureq::Agent, String)> {
+ 
+   generate_github_mirror_url_from_template(url)
+     .or_else(|| generate_github_mirror_url_from_base(url))
+-    .map(|alt_url| {
++    .map(|_alt_url| {
+       (
+         ureq::Agent::config_builder()
+           .user_agent(BUNDLER_USER_AGENT)
+           .build()
+           .into(),
+-        alt_url,
++        url.to_owned(),
+       )
+     })
+ }
+@@ -97,7 +97,6 @@ pub fn download(url: &str) -> crate::Result<Vec<u8>> {
+ #[allow(dead_code)]
+ #[derive(Clone, Copy)]
+ pub enum HashAlgorithm {
+-  #[cfg(target_os = "windows")]
+   Sha256,
+   Sha1,
+ }
+@@ -118,7 +117,6 @@ pub fn download_and_verify(
+ #[allow(dead_code)]
+ pub fn verify_hash(data: &[u8], hash: &str, hash_algorithm: HashAlgorithm) -> crate::Result<()> {
+   match hash_algorithm {
+-    #[cfg(target_os = "windows")]
+     HashAlgorithm::Sha256 => {
+       let hasher = sha2::Sha256::new();
+       verify_data_with_hasher(data, hash, hasher)
+diff --git a/crates/tauri-cli/CHANGELOG.md b/crates/tauri-cli/CHANGELOG.md
+index d6347814c008..1df8870f7d50 100644
+--- a/crates/tauri-cli/CHANGELOG.md
++++ b/crates/tauri-cli/CHANGELOG.md
+@@ -1,5 +1,20 @@
+ # Changelog
+ 
++## \[2.9.3]
++
++### Enhancements
++
++- [`22edc65aa`](https://www.github.com/tauri-apps/tauri/commit/22edc65aad0b3e45515008e8e0866112da70c8a1) ([#14408](https://www.github.com/tauri-apps/tauri/pull/14408) by [@FabianLars](https://www.github.com/tauri-apps/tauri/../../FabianLars)) Set user-agent in bundler and cli http requests when fetching build tools.
++- [`779612ac8`](https://www.github.com/tauri-apps/tauri/commit/779612ac8425a787626da4cefdb9eaf7d63bea18) ([#14379](https://www.github.com/tauri-apps/tauri/pull/14379) by [@moubctez](https://www.github.com/tauri-apps/tauri/../../moubctez)) Properly read the `required-features` field of binaries in Cargo.toml to prevent bundling issues when the features weren't enabled.
++
++### Bug Fixes
++
++- [`fd8c30b4f`](https://www.github.com/tauri-apps/tauri/commit/fd8c30b4f1bca8dd7165c5c0ebe7fbfd17662153) ([#14353](https://www.github.com/tauri-apps/tauri/pull/14353) by [@ChaseKnowlden](https://www.github.com/tauri-apps/tauri/../../ChaseKnowlden)) Premultiply Alpha before Resizing which gets rid of the gray fringe around the icons.
++
++### Dependencies
++
++- Upgraded to `tauri-bundler@2.7.3`
++
+ ## \[2.9.2]
+ 
+ ### Dependencies
+diff --git a/crates/tauri-cli/Cargo.toml b/crates/tauri-cli/Cargo.toml
+index d1300b9e925d..5e5a22bf2a65 100644
+--- a/crates/tauri-cli/Cargo.toml
++++ b/crates/tauri-cli/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "tauri-cli"
+-version = "2.9.2"
++version = "2.9.3"
+ authors = ["Tauri Programme within The Commons Conservancy"]
+ edition = "2021"
+ rust-version = "1.77.2"
+@@ -47,7 +47,7 @@ sublime_fuzzy = "0.7"
+ clap_complete = "4"
+ clap = { version = "4", features = ["derive", "env"] }
+ thiserror = "2"
+-tauri-bundler = { version = "2.7.2", default-features = false, path = "../tauri-bundler" }
++tauri-bundler = { version = "2.7.3", default-features = false, path = "../tauri-bundler" }
+ colored = "2"
+ serde = { version = "1", features = ["derive"] }
+ serde_json = { version = "1", features = ["preserve_order"] }
+diff --git a/crates/tauri-cli/metadata-v2.json b/crates/tauri-cli/metadata-v2.json
+index 54650c00547e..b9bf09e92762 100644
+--- a/crates/tauri-cli/metadata-v2.json
++++ b/crates/tauri-cli/metadata-v2.json
+@@ -1,9 +1,9 @@
+ {
+   "cli.js": {
+-    "version": "2.9.2",
++    "version": "2.9.3",
+     "node": ">= 10.0.0"
+   },
+-  "tauri": "2.9.2",
++  "tauri": "2.9.3",
+   "tauri-build": "2.5.1",
+   "tauri-plugin": "2.5.1"
+ }
+diff --git a/packages/cli/CHANGELOG.md b/packages/cli/CHANGELOG.md
+index 9e0cc6297628..0e247a598277 100644
+--- a/packages/cli/CHANGELOG.md
++++ b/packages/cli/CHANGELOG.md
+@@ -1,5 +1,15 @@
+ # Changelog
+ 
++## \[2.9.3]
++
++### Bug Fixes
++
++- [`fd8c30b4f`](https://www.github.com/tauri-apps/tauri/commit/fd8c30b4f1bca8dd7165c5c0ebe7fbfd17662153) ([#14353](https://www.github.com/tauri-apps/tauri/pull/14353) by [@ChaseKnowlden](https://www.github.com/tauri-apps/tauri/../../ChaseKnowlden)) Premultiply Alpha before Resizing which gets rid of the gray fringe around the icons.
++
++### Dependencies
++
++- Upgraded to `tauri-cli@2.9.3`
++
+ ## \[2.9.2]
+ 
+ ### Dependencies
+diff --git a/packages/cli/package.json b/packages/cli/package.json
+index 40f26fe77af7..74d81eb4510b 100644
+--- a/packages/cli/package.json
++++ b/packages/cli/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@tauri-apps/cli",
+-  "version": "2.9.2",
++  "version": "2.9.3",
+   "description": "Command line interface for building Tauri apps",
+   "type": "commonjs",
+   "funding": {

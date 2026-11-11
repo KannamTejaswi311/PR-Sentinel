@@ -1,0 +1,22 @@
+{
+  "pr_id": "Ghost_pr1",
+  "experiment_id": "E3",
+  "status": "SUCCESS",
+  "findings": [],
+  "findings_count": 0,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 0.006,
+  "execution_manifest": {
+    "codebert": "ERROR: CodeBERT pretrained weights 'microsoft/codebert-base' failed to load: No module named 'torch'. Per Frozen Protocol v1.0, silent fallback is strictly prohibited in research mode.",
+    "static_analyzer": "SKIPPED",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SKIPPED",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

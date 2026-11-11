@@ -1,0 +1,38 @@
+pr_url,issue_title,matched_lines,total_lines,match_percentage,status
+https://github.com/agentic-review-benchmarks/Ghost/pull/4,Delete comment functionality completely removed from UI,0,14,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/Ghost/pull/8,Deletion of comments.json breaks comments-ui build for Chinese locale,5,6,83.33,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/Ghost/pull/9,Test-to-implementation mismatch: integration test helper uses Math.round while implementation uses Math.floor,0,3,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/Ghost/pull/11,autoCloseOnSelect fails to close popover in non-inline multiselect mode,1,3,33.33,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/Ghost/pull/12,Type mismatch in _isJWTExpired call after token caching change,3,4,75.0,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/Ghost/pull/13,"Version suffix applied in local development mode, breaking local Tinybird instances",1,6,16.67,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/1,Test methods missing required Arrange-Act-Assert pattern comments,0,8,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,Test method missing required AAA pattern comments,0,9,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/9,Invalid C# extension syntax causing compilation error,0,3,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/9,Nginx installation script incompatible with macOS,0,5,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/cal.com/pull/3,Repository files violate naming convention using dot-suffix pattern,1,6,16.67,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/cal.com/pull/7,Incomplete class rename breaks all imports and causes runtime failures,1,2,50.0,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/cal.com/pull/15,Zod schema validation replaced with unsafe manual validation,0,7,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/dify/pull/4,Conversation variable persistence failures are silently ignored,0,2,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/dify/pull/7,Missing returnObjects support breaks production components and tests,0,14,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/dify/pull/8,console.error violates Frontend Code Must Not Use console Statements rule,0,6,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/1,SettingsTextFormatter class missing final keyword,0,5,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/4,Public methods lack required documentation comments,3,6,50.0,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/10,Unsafe concurrency annotation on non-thread-safe static property,1,3,33.33,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/prefect/pull/2,Validation incorrectly rejects proactive triggers with automation_triggered_event_id,0,5,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/prefect/pull/6,Missing required `from __future__ import annotations` import,0,3,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/prefect/pull/9,Unused import violates Rule #12 noUnusedImports configuration,0,7,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/prefect/pull/11,Test file deleted violating mandatory test coverage requirement,3,4,75.0,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/prefect/pull/12,Missing test file for new use-state-favicon hook violates repository testing rules,0,4,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/prefect/pull/12,Flow run link displays empty or undefined text when flow_run_name is missing,2,8,25.0,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/redis/pull/2,slotRangeArrayIsEqual mutates input arrays causing data corruption,4,7,57.14,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/redis/pull/2,Helper function asmCountKeysInSlots violates static function encapsulation rule,1,8,12.5,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/redis/pull/4,Internal helper function clusterDeleteKeysInUnownedSlots missing static declaration,0,4,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/redis/pull/5,Unused variable 'elecount' causes build failure with -Werror,6,9,66.67,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/tauri/pull/1,Auto-increment version code lacks maximum value validation,0,2,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/tauri/pull/2,Missing From<FileWriteError> implementation causes compilation failure,1,9,11.11,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/tauri/pull/6,Exit command not registered in build.rs permissions,3,13,23.08,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/tauri/pull/10,User-facing API change without a .changes entry,0,2,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/tauri/pull/11,crate_latest_version missing proxy configuration with platform-certs,0,3,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/tauri/pull/11,GitHub mirror downloads bypass platform certificate verification,0,3,0.0,NO_CODE_MATCH
+https://github.com/agentic-review-benchmarks/tauri/pull/13,Public Error enum missing #[non_exhaustive] attribute,2,3,66.67,CODE_MATCH_FOUND
+https://github.com/agentic-review-benchmarks/tauri/pull/13,Missing error source for Plist variant breaks error chain,0,6,0.0,NO_CODE_MATCH

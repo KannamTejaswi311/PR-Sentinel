@@ -1,0 +1,752 @@
+diff --git a/.github/oasdiff-err-ignore.txt b/.github/oasdiff-err-ignore.txt
+index a0388c01e358..b6f23b66e639 100644
+--- a/.github/oasdiff-err-ignore.txt
++++ b/.github/oasdiff-err-ignore.txt
+@@ -2,3 +2,9 @@ GET /v2/event-types/{eventTypeId} added to the 'data' response property 'oneOf'
+ GET /v2/event-types/{eventTypeId} added '#/components/schemas/EventTypeOutput_2024_06_14, #/components/schemas/TeamEventTypeOutput_2024_06_14' to the 'data' response property 'oneOf' list for the response status '200'
+ GET /v2/bookings/{bookingUid}/recordings added the new required 'header' request parameter 'Authorization'
+ GET /v2/bookings/{bookingUid}/transcripts added the new required 'header' request parameter 'Authorization'
++POST /v2/bookings added 'subschema #2, subschema #4' to the 'data' response property 'oneOf' list for the response status '201'
++GET /v2/bookings/{bookingUid} added 'subschema #3, subschema #6' to the 'data' response property 'oneOf' list for the response status '200'
++POST /v2/bookings/{bookingUid}/cancel added 'subschema #3, subschema #6' to the 'data' response property 'oneOf' list for the response status '200'
++POST /v2/bookings/{bookingUid}/confirm added 'subschema #3, subschema #6' to the 'data' response property 'oneOf' list for the response status '200'
++POST /v2/bookings/{bookingUid}/decline added 'subschema #3, subschema #6' to the 'data' response property 'oneOf' list for the response status '200'
++POST /v2/bookings/{bookingUid}/guests added 'subschema #3, subschema #6' to the 'data' response property 'oneOf' list for the response status '200'
+\ No newline at end of file
+diff --git a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/api-key-bookings.e2e-spec.ts b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/api-key-bookings.e2e-spec.ts
+index c24648dce428..00e82d98c820 100644
+--- a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/api-key-bookings.e2e-spec.ts
++++ b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/api-key-bookings.e2e-spec.ts
+@@ -177,6 +177,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+             expect(data.attendees[0]).toEqual({
+               name: body.attendee.name,
+               email: body.attendee.email,
++              displayEmail: body.attendee.email,
+               timeZone: body.attendee.timeZone,
+               language: body.attendee.language,
+               absent: false,
+diff --git a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/managed-user-bookings.e2e-spec.ts b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/managed-user-bookings.e2e-spec.ts
+index 5d4903b07727..162051d18139 100644
+--- a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/managed-user-bookings.e2e-spec.ts
++++ b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/managed-user-bookings.e2e-spec.ts
+@@ -624,6 +624,91 @@ describe("Managed user bookings 2024-08-13", () => {
+     });
+   });
+ 
++  describe("displayEmail fields", () => {
++    it("should return displayEmail without CUID suffix for host", async () => {
++      const body: CreateBookingInput_2024_08_13 = {
++        start: new Date(Date.UTC(2030, 0, 7, 10, 0, 0)).toISOString(),
++        eventTypeId: firstManagedUserEventTypeId,
++        attendee: {
++          name: "External Attendee",
++          email: "external-display-email-test@example.com",
++          timeZone: "Europe/Rome",
++          language: "en",
++        },
++        location: "https://meet.google.com/abc-def-ghi",
++      };
++
++      const response = await request(app.getHttpServer())
++        .post("/v2/bookings")
++        .send(body)
++        .set(CAL_API_VERSION_HEADER, VERSION_2024_08_13)
++        .expect(201);
++
++      const bookingData = response.body.data;
++
++      // Host email should have CUID, displayEmail should not
++      expect(bookingData.hosts[0].email).toEqual(firstManagedUser.user.email);
++      expect(bookingData.hosts[0].displayEmail).toEqual(firstManagedUserEmail);
++    });
++
++    it("should return displayEmail without CUID suffix for attendee", async () => {
++      const body: CreateBookingInput_2024_08_13 = {
++        start: new Date(Date.UTC(2030, 0, 7, 10, 30, 0)).toISOString(),
++        eventTypeId: firstManagedUserEventTypeId,
++        attendee: {
++          name: secondManagedUser.user.name!,
++          email: secondManagedUser.user.email,
++          timeZone: secondManagedUser.user.timeZone,
++          language: secondManagedUser.user.locale,
++        },
++        location: "https://meet.google.com/abc-def-ghi",
++      };
++
++      const response = await request(app.getHttpServer())
++        .post("/v2/bookings")
++        .send(body)
++        .set(CAL_API_VERSION_HEADER, VERSION_2024_08_13)
++        .expect(201);
++
++      const bookingData = response.body.data;
++
++      // Attendee email should have CUID, displayEmail should not
++      expect(bookingData.attendees[0].email).toEqual(secondManagedUser.user.email);
++      expect(bookingData.attendees[0].displayEmail).toEqual(secondManagedUserEmail);
++
++      // bookingFieldsResponses should also have displayEmail
++      expect(bookingData.bookingFieldsResponses.email).toEqual(secondManagedUser.user.email);
++      expect(bookingData.bookingFieldsResponses.displayEmail).toEqual(secondManagedUserEmail);
++    });
++
++    it("should return displayGuests without CUID suffix", async () => {
++      const body: CreateBookingInput_2024_08_13 = {
++        start: new Date(Date.UTC(2030, 0, 7, 11, 0, 0)).toISOString(),
++        eventTypeId: firstManagedUserEventTypeId,
++        attendee: {
++          name: "External Attendee",
++          email: "external-display-guests-test@example.com",
++          timeZone: "Europe/Rome",
++          language: "en",
++        },
++        guests: [secondManagedUser.user.email],
++        location: "https://meet.google.com/abc-def-ghi",
++      };
++
++      const response = await request(app.getHttpServer())
++        .post("/v2/bookings")
++        .send(body)
++        .set(CAL_API_VERSION_HEADER, VERSION_2024_08_13)
++        .expect(201);
++
++      const bookingData = response.body.data;
++
++      // guests should have CUID, displayGuests should not
++      expect(bookingData.bookingFieldsResponses.guests).toContain(secondManagedUser.user.email);
++      expect(bookingData.bookingFieldsResponses.displayGuests).toContain(secondManagedUserEmail);
++    });
++  });
++
+   describe("booking confirmation by org admin", () => {
+     it("should allow org admin managed user to confirm booking using access token", async () => {
+       const bookingRequiringConfirmation = await bookingsRepositoryFixture.create({
+diff --git a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/reassign-bookings.e2e-spec.ts b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/reassign-bookings.e2e-spec.ts
+index ec615650bed6..3f0c7eb352a4 100644
+--- a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/reassign-bookings.e2e-spec.ts
++++ b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/reassign-bookings.e2e-spec.ts
+@@ -492,6 +492,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+             id: teamUser2.id,
+             name: teamUser2.name,
+             email: teamUser2.email,
++            displayEmail: teamUser2.email,
+           });
+ 
+           const reassigned = await bookingsRepositoryFixture.getByUid(roundRobinBooking.uid);
+@@ -532,6 +533,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+             id: teamUser1.id,
+             name: teamUser1.name,
+             email: teamUser1.email,
++            displayEmail: teamUser1.email,
+           });
+ 
+           const reassigned = await bookingsRepositoryFixture.getByUid(roundRobinBooking.uid);
+diff --git a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/recurring-bookings.e2e-spec.ts b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/recurring-bookings.e2e-spec.ts
+index 5b45927471f1..a16508cc4f81 100644
+--- a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/recurring-bookings.e2e-spec.ts
++++ b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/recurring-bookings.e2e-spec.ts
+@@ -185,6 +185,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+             expect(firstBooking.attendees[0]).toEqual({
+               name: body.attendee.name,
+               email: body.attendee.email,
++              displayEmail: body.attendee.email,
+               timeZone: body.attendee.timeZone,
+               language: body.attendee.language,
+               absent: false,
+@@ -206,6 +207,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+             expect(secondBooking.attendees[0]).toEqual({
+               name: body.attendee.name,
+               email: body.attendee.email,
++              displayEmail: body.attendee.email,
+               timeZone: body.attendee.timeZone,
+               language: body.attendee.language,
+               absent: false,
+@@ -262,6 +264,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+             expect(firstBooking.attendees[0]).toEqual({
+               name: body.attendee.name,
+               email: body.attendee.email,
++              displayEmail: body.attendee.email,
+               timeZone: body.attendee.timeZone,
+               language: body.attendee.language,
+               absent: false,
+@@ -284,6 +287,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+             expect(secondBooking.attendees[0]).toEqual({
+               name: body.attendee.name,
+               email: body.attendee.email,
++              displayEmail: body.attendee.email,
+               timeZone: body.attendee.timeZone,
+               language: body.attendee.language,
+               absent: false,
+@@ -304,6 +308,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+             expect(thirdBooking.attendees[0]).toEqual({
+               name: body.attendee.name,
+               email: body.attendee.email,
++              displayEmail: body.attendee.email,
+               timeZone: body.attendee.timeZone,
+               language: body.attendee.language,
+               absent: false,
+diff --git a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/seated-bookings.e2e-spec.ts b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/seated-bookings.e2e-spec.ts
+index 88a446e3d7b5..e55cedc91159 100644
+--- a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/seated-bookings.e2e-spec.ts
++++ b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/seated-bookings.e2e-spec.ts
+@@ -201,6 +201,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+             expect(data.attendees[0]).toEqual({
+               name: body.attendee.name,
+               email: body.attendee.email,
++              displayEmail: body.attendee.email,
+               timeZone: body.attendee.timeZone,
+               language: body.attendee.language,
+               absent: false,
+@@ -276,6 +277,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+             expect(firstAttendee).toEqual({
+               name: createdSeatedBooking.attendees[0].name,
+               email: createdSeatedBooking.attendees[0].email,
++              displayEmail: createdSeatedBooking.attendees[0].displayEmail,
+               timeZone: createdSeatedBooking.attendees[0].timeZone,
+               language: createdSeatedBooking.attendees[0].language,
+               absent: false,
+@@ -291,6 +293,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+             expect(secondAttendee).toEqual({
+               name: body.attendee.name,
+               email: body.attendee.email,
++              displayEmail: body.attendee.email,
+               timeZone: body.attendee.timeZone,
+               language: body.attendee.language,
+               absent: false,
+@@ -418,6 +421,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+             expect(data.attendees[0]).toEqual({
+               name: attendee?.name,
+               email: attendee?.email,
++              displayEmail: attendee?.displayEmail,
+               timeZone: attendee?.timeZone,
+               language: attendee?.language,
+               absent: false,
+@@ -841,6 +845,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+                 expect(data.attendees[0]).toEqual({
+                   name: body.attendee.name,
+                   email: body.attendee.email,
++                  displayEmail: body.attendee.email,
+                   timeZone: body.attendee.timeZone,
+                   language: body.attendee.language,
+                   absent: false,
+diff --git a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/team-bookings.e2e-spec.ts b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/team-bookings.e2e-spec.ts
+index 4221ddfbe981..99243c9ea28a 100644
+--- a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/team-bookings.e2e-spec.ts
++++ b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/team-bookings.e2e-spec.ts
+@@ -519,6 +519,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+@@ -573,6 +574,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: "919876543210@sms.cal.com",
++                displayEmail: "919876543210@sms.cal.com",
+                 phoneNumber: body.attendee.phoneNumber,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+@@ -629,6 +631,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+@@ -636,6 +639,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[1]).toEqual({
+                 name: teamUser2.name,
+                 email: teamUser2.email,
++                displayEmail: teamUser2.email,
+                 timeZone: teamUser2.timeZone,
+                 language: teamUser2.locale,
+                 absent: false,
+@@ -690,6 +694,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+@@ -744,6 +749,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+@@ -927,6 +933,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: phoneBasedBooking.attendees[0].name,
+                 email: phoneBasedBooking.attendees[0].email,
++                displayEmail: phoneBasedBooking.attendees[0].displayEmail,
+                 phoneNumber: phoneBasedBooking.attendees[0].phoneNumber,
+                 timeZone: phoneBasedBooking.attendees[0].timeZone,
+                 language: phoneBasedBooking.attendees[0].language,
+@@ -1010,6 +1017,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+diff --git a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/user-bookings.e2e-spec.ts b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/user-bookings.e2e-spec.ts
+index 5a5a6e0e94fa..e7a1763c2ee7 100644
+--- a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/user-bookings.e2e-spec.ts
++++ b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/user-bookings.e2e-spec.ts
+@@ -483,6 +483,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+@@ -493,8 +494,10 @@ describe("Bookings Endpoints 2024-08-13", () => {
+               expect(data.bookingFieldsResponses).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 ...body.bookingFieldsResponses,
+                 guests: body.guests,
++                displayGuests: body.guests,
+                 location: {
+                   optionValue: googleMeetUrl,
+                   value: "link",
+@@ -566,6 +569,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+               expect(firstBooking.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+@@ -588,6 +592,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+               expect(secondBooking.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+@@ -609,6 +614,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+               expect(thirdBooking.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+@@ -2077,6 +2083,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+@@ -2087,8 +2094,10 @@ describe("Bookings Endpoints 2024-08-13", () => {
+               expect(data.bookingFieldsResponses).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 ...body.bookingFieldsResponses,
+                 guests: body.guests,
++                displayGuests: body.guests,
+                 location: {
+                   optionValue: googleMeetUrl,
+                   value: "link",
+@@ -2527,6 +2536,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+           expect(data.attendees[0]).toEqual({
+             name: body.attendee.name,
+             email: body.attendee.email,
++            displayEmail: body.attendee.email,
+             timeZone: body.attendee.timeZone,
+             language: body.attendee.language,
+             phoneNumber: body.attendee.phoneNumber,
+@@ -2535,6 +2545,7 @@ describe("Bookings Endpoints 2024-08-13", () => {
+           expect(data.bookingFieldsResponses).toEqual({
+             name: body.attendee.name,
+             email: body.attendee.email,
++            displayEmail: body.attendee.email,
+             attendeePhoneNumber: body.attendee.phoneNumber,
+             smsReminderNumber: body.attendee.phoneNumber,
+           });
+diff --git a/apps/api/v2/src/ee/bookings/2024-08-13/services/output.service.ts b/apps/api/v2/src/ee/bookings/2024-08-13/services/output.service.ts
+index d3033eeb1db3..1efd26184f79 100644
+--- a/apps/api/v2/src/ee/bookings/2024-08-13/services/output.service.ts
++++ b/apps/api/v2/src/ee/bookings/2024-08-13/services/output.service.ts
+@@ -93,6 +93,10 @@ type DatabaseMetadata = z.infer<typeof bookingMetadataSchema>;
+ export class OutputBookingsService_2024_08_13 {
+   constructor(private readonly bookingsRepository: BookingsRepository_2024_08_13) {}
+ 
++  private getDisplayEmail(email: string): string {
++    return email.replace(/\+[a-zA-Z0-9]{25}/, "");
++  }
++
+   async getOutputBooking(databaseBooking: DatabaseBooking) {
+     const dateStart = DateTime.fromISO(databaseBooking.startTime.toISOString());
+     const dateEnd = DateTime.fromISO(databaseBooking.endTime.toISOString());
+@@ -127,6 +131,7 @@ export class OutputBookingsService_2024_08_13 {
+       attendees: databaseBooking.attendees.map((attendee) => ({
+         name: attendee.name,
+         email: attendee.email,
++        displayEmail: this.getDisplayEmail(attendee.email),
+         timeZone: attendee.timeZone,
+         language: attendee.locale,
+         absent: !!attendee.noShow,
+@@ -149,6 +154,25 @@ export class OutputBookingsService_2024_08_13 {
+     // note(Lauris): I don't know why plainToClass erases bookings responses and metadata so attaching manually
+     bookingTransformed.bookingFieldsResponses = bookingResponses;
+     bookingTransformed.metadata = this.getUserDefinedMetadata(metadata);
++
++    if (
++      bookingTransformed.bookingFieldsResponses?.email &&
++      typeof bookingTransformed.bookingFieldsResponses.email === "string"
++    ) {
++      bookingTransformed.bookingFieldsResponses.displayEmail = this.getDisplayEmail(
++        bookingTransformed.bookingFieldsResponses.email
++      );
++    }
++
++    if (
++      bookingTransformed.bookingFieldsResponses?.guests &&
++      Array.isArray(bookingTransformed.bookingFieldsResponses.guests)
++    ) {
++      bookingTransformed.bookingFieldsResponses.displayGuests = bookingTransformed.bookingFieldsResponses.guests.map(
++        this.getDisplayEmail
++      );
++    }
++
+     return bookingTransformed;
+   }
+ 
+@@ -192,12 +216,14 @@ export class OutputBookingsService_2024_08_13 {
+         id: "unknown",
+         name: "unknown",
+         email: "unknown",
++        displayEmail: this.getDisplayEmail("unknown"),
+         username: "unknown",
+       };
+     }
+ 
+     return {
+       ...user,
++      displayEmail: this.getDisplayEmail(user.email),
+       username: user.username || "unknown",
+     };
+   }
+@@ -249,6 +275,7 @@ export class OutputBookingsService_2024_08_13 {
+       attendees: databaseBooking.attendees.map((attendee) => ({
+         name: attendee.name,
+         email: attendee.email,
++        displayEmail: this.getDisplayEmail(attendee.email),
+         timeZone: attendee.timeZone,
+         language: attendee.locale,
+         absent: !!attendee.noShow,
+@@ -272,6 +299,25 @@ export class OutputBookingsService_2024_08_13 {
+     // note(Lauris): I don't know why plainToClass erases bookings responses and metadata so attaching manually
+     bookingTransformed.bookingFieldsResponses = bookingResponses;
+     bookingTransformed.metadata = this.getUserDefinedMetadata(metadata);
++
++    if (
++      bookingTransformed.bookingFieldsResponses?.email &&
++      typeof bookingTransformed.bookingFieldsResponses.email === "string"
++    ) {
++      bookingTransformed.bookingFieldsResponses.displayEmail = this.getDisplayEmail(
++        bookingTransformed.bookingFieldsResponses.email
++      );
++    }
++
++    if (
++      bookingTransformed.bookingFieldsResponses?.guests &&
++      Array.isArray(bookingTransformed.bookingFieldsResponses.guests)
++    ) {
++      bookingTransformed.bookingFieldsResponses.displayGuests = bookingTransformed.bookingFieldsResponses.guests.map(
++        (guest: string) => this.getDisplayEmail(guest)
++      );
++    }
++
+     return bookingTransformed;
+   }
+ 
+@@ -337,6 +383,7 @@ export class OutputBookingsService_2024_08_13 {
+           const attendeeData = {
+             name: attendee.name,
+             email: attendee.email,
++            displayEmail: this.getDisplayEmail(attendee.email),
+             timeZone: attendee.timeZone,
+             language: attendee.locale,
+             absent: !!attendee.noShow,
+@@ -363,9 +410,9 @@ export class OutputBookingsService_2024_08_13 {
+ 
+   async getOutputRecurringSeatedBookings(bookingsIds: number[], showAttendees: boolean) {
+     const databaseBookings = await this.bookingsRepository.getByIdsWithAttendeesWithBookingSeatAndUserAndEvent(bookingsIds);
+-    
++
+     const bookingsMap = new Map(databaseBookings.map(booking => [booking.id, booking]));
+-    
++
+     const transformed = bookingsIds.map(bookingId => {
+       const databaseBooking = bookingsMap.get(bookingId);
+       if (!databaseBooking) {
+@@ -374,7 +421,7 @@ export class OutputBookingsService_2024_08_13 {
+       return this.getOutputRecurringSeatedBooking(databaseBooking, showAttendees);
+     });
+ 
+-    return transformed.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
++    return transformed;
+   }
+ 
+   async getOutputCreateRecurringSeatedBookings(
+@@ -465,6 +512,7 @@ export class OutputBookingsService_2024_08_13 {
+           const attendeeData = {
+             name: attendee.name,
+             email: attendee.email,
++            displayEmail: this.getDisplayEmail(attendee.email),
+             timeZone: attendee.timeZone,
+             language: attendee.locale,
+             absent: !!attendee.noShow,
+@@ -497,6 +545,9 @@ export class OutputBookingsService_2024_08_13 {
+         id: databaseBooking?.user?.id || 0,
+         name: databaseBooking?.user?.name || "unknown",
+         email: databaseBooking?.user?.email || "unknown",
++        displayEmail: databaseBooking?.user?.email
++          ? this.getDisplayEmail(databaseBooking.user.email)
++          : "unknown",
+       },
+     };
+   }
+diff --git a/apps/api/v2/src/modules/organizations/bookings/organizations-bookings.controller.e2e-spec.ts b/apps/api/v2/src/modules/organizations/bookings/organizations-bookings.controller.e2e-spec.ts
+index 60fa7b181c02..979ae9a9bc59 100644
+--- a/apps/api/v2/src/modules/organizations/bookings/organizations-bookings.controller.e2e-spec.ts
++++ b/apps/api/v2/src/modules/organizations/bookings/organizations-bookings.controller.e2e-spec.ts
+@@ -335,6 +335,7 @@ describe("Organizations Bookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+@@ -388,6 +389,7 @@ describe("Organizations Bookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+@@ -441,6 +443,7 @@ describe("Organizations Bookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: orgUserEmail,
++                displayEmail: orgUserEmail,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+@@ -494,6 +497,7 @@ describe("Organizations Bookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: orgUserEmail2,
++                displayEmail: orgUserEmail2,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+diff --git a/apps/api/v2/src/modules/organizations/teams/bookings/organizations-teams-bookings.controller.e2e-spec.ts b/apps/api/v2/src/modules/organizations/teams/bookings/organizations-teams-bookings.controller.e2e-spec.ts
+index 6813792eb42a..7518e73a330b 100644
+--- a/apps/api/v2/src/modules/organizations/teams/bookings/organizations-teams-bookings.controller.e2e-spec.ts
++++ b/apps/api/v2/src/modules/organizations/teams/bookings/organizations-teams-bookings.controller.e2e-spec.ts
+@@ -250,6 +250,7 @@ describe("Organizations TeamsBookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+diff --git a/apps/api/v2/src/modules/organizations/users/bookings/controllers/organizations-users-bookings.e2e-spec.ts b/apps/api/v2/src/modules/organizations/users/bookings/controllers/organizations-users-bookings.e2e-spec.ts
+index dd6b1041d433..6998ddb8a14b 100644
+--- a/apps/api/v2/src/modules/organizations/users/bookings/controllers/organizations-users-bookings.e2e-spec.ts
++++ b/apps/api/v2/src/modules/organizations/users/bookings/controllers/organizations-users-bookings.e2e-spec.ts
+@@ -233,6 +233,7 @@ describe("Organizations UsersBookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+@@ -291,6 +292,7 @@ describe("Organizations UsersBookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+@@ -347,6 +349,7 @@ describe("Organizations UsersBookings Endpoints 2024-08-13", () => {
+               expect(data.attendees[0]).toEqual({
+                 name: body.attendee.name,
+                 email: body.attendee.email,
++                displayEmail: body.attendee.email,
+                 timeZone: body.attendee.timeZone,
+                 language: body.attendee.language,
+                 absent: false,
+diff --git a/docs/api-reference/v2/openapi.json b/docs/api-reference/v2/openapi.json
+index e0684a0920de..abf6d5e1bc38 100644
+--- a/docs/api-reference/v2/openapi.json
++++ b/docs/api-reference/v2/openapi.json
+@@ -31712,6 +31712,11 @@
+             "type": "string",
+             "example": "jane100@example.com"
+           },
++          "displayEmail": {
++            "type": "string",
++            "example": "jane100@example.com",
++            "description": "Clean email for display purposes"
++          },
+           "username": {
+             "type": "string",
+             "example": "jane100"
+@@ -31721,10 +31726,11 @@
+             "example": "America/Los_Angeles"
+           }
+         },
+-        "required": [
++"required": [
+           "id",
+           "name",
+           "email",
++          "displayEmail",
+           "username",
+           "timeZone"
+         ]
+@@ -31757,6 +31763,11 @@
+             "type": "string",
+             "example": "john@example.com"
+           },
++          "displayEmail": {
++            "type": "string",
++            "example": "john@example.com",
++            "description": "Clean email for display purposes"
++          },
+           "timeZone": {
+             "type": "string",
+             "example": "America/New_York"
+@@ -31819,9 +31830,10 @@
+             "example": "+1234567890"
+           }
+         },
+-        "required": [
++"required": [
+           "name",
+           "email",
++          "displayEmail",
+           "timeZone",
+           "absent"
+         ]
+@@ -32168,6 +32180,11 @@
+             "type": "string",
+             "example": "john@example.com"
+           },
++          "displayEmail": {
++            "type": "string",
++            "example": "john@example.com",
++            "description": "Clean email for display purposes"
++          },
+           "timeZone": {
+             "type": "string",
+             "example": "America/New_York"
+@@ -32247,9 +32264,10 @@
+             }
+           }
+         },
+-        "required": [
++"required": [
+           "name",
+           "email",
++          "displayEmail",
+           "timeZone",
+           "absent",
+           "seatUid",
+@@ -33342,12 +33360,18 @@
+           "email": {
+             "type": "string",
+             "example": "john.doe@example.com"
++          },
++          "displayEmail": {
++            "type": "string",
++            "example": "john.doe@example.com",
++            "description": "Clean email for display purposes"
+           }
+         },
+-        "required": [
++"required": [
+           "id",
+           "name",
+-          "email"
++          "email",
++          "displayEmail"
+         ]
+       },
+       "ReassignBookingOutput_2024_08_13": {
+diff --git a/packages/platform/types/bookings/2024-08-13/outputs/booking.output.ts b/packages/platform/types/bookings/2024-08-13/outputs/booking.output.ts
+index 103478aaa7db..44d1f4e7f142 100644
+--- a/packages/platform/types/bookings/2024-08-13/outputs/booking.output.ts
++++ b/packages/platform/types/bookings/2024-08-13/outputs/booking.output.ts
+@@ -29,6 +29,11 @@ class BookingAttendee {
+   @Expose()
+   email!: string;
+ 
++  @ApiProperty({ type: String, example: "john@example.com", description: "Clean email for display purposes" })
++  @IsString()
++  @Expose()
++  displayEmail!: string;
++
+   @ApiProperty({ type: String, example: "America/New_York" })
+   @IsTimeZone()
+   @Expose()
+@@ -50,6 +55,11 @@ class BookingAttendee {
+   @Expose()
+   @IsOptional()
+   phoneNumber?: string;
++
++  // Validate and clean email for display purposes
++  static cleanEmailForDisplay(email: string): string {
++    return email.replace(/\+[a-zA-Z0-9]{25}/, "");
++  }
+ }
+ 
+ export class SeatedAttendee extends BookingAttendee {
+@@ -95,6 +105,11 @@ class BookingHost {
+   @Expose()
+   email!: string;
+ 
++  @ApiProperty({ type: String, example: "jane100@example.com", description: "Clean email for display purposes" })
++  @IsString()
++  @Expose()
++  displayEmail!: string;
++
+   @ApiProperty({ type: String, example: "jane100" })
+   @IsString()
+   @Expose()
+@@ -395,6 +410,11 @@ class ReassignedToDto {
+   @IsEmail()
+   @Expose()
+   email!: string;
++
++  @ApiProperty({ type: String, example: "john.doe@example.com", description: "Clean email for display purposes" })
++  @IsString()
++  @Expose()
++  displayEmail!: string;
+ }
+ 
+ export class ReassignBookingOutput_2024_08_13 {

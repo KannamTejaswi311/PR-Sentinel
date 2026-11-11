@@ -1,0 +1,952 @@
+diff --git a/companion/app/(tabs)/(availability)/availability-detail.tsx b/companion/app/(tabs)/(availability)/availability-detail.tsx
+index f31ab0aecb2a..ca62bc228c6b 100644
+--- a/companion/app/(tabs)/(availability)/availability-detail.tsx
++++ b/companion/app/(tabs)/(availability)/availability-detail.tsx
+@@ -88,7 +88,7 @@ export default function AvailabilityDetail() {
+                       marginRight: -8,
+                     }}
+                   >
+-                    <Ionicons name="ellipsis-horizontal-circle" size={24} color="#007AFF" />
++                    <Ionicons name="ellipsis-horizontal-circle" size={24} color="#000000" />
+                   </TouchableOpacity>
+                 </DropdownMenuTrigger>
+                 <DropdownMenuContent align="end" className="w-56">
+diff --git a/companion/app/(tabs)/(bookings)/index.ios.tsx b/companion/app/(tabs)/(bookings)/index.ios.tsx
+index 7f6e4d83d0e7..36e57d70f09f 100644
+--- a/companion/app/(tabs)/(bookings)/index.ios.tsx
++++ b/companion/app/(tabs)/(bookings)/index.ios.tsx
+@@ -62,7 +62,7 @@ export default function Bookings() {
+       label: currentFilterOption?.label || "Filter",
+       labelStyle: {
+         fontWeight: "600",
+-        color: "#007AFF",
++        color: "#000000",
+       },
+       menu: {
+         title: "Filter by Status",
+@@ -123,7 +123,7 @@ export default function Bookings() {
+       },
+       labelStyle: {
+         fontWeight: "600",
+-        color: "#007AFF",
++        color: "#000000",
+       },
+       menu: {
+         title: menuItems.length > 0 ? "Filter by Event Type" : "No Event Types",
+diff --git a/companion/app/(tabs)/(bookings)/index.tsx b/companion/app/(tabs)/(bookings)/index.tsx
+index aec5e06d3d2e..d6e8c7ec7485 100644
+--- a/companion/app/(tabs)/(bookings)/index.tsx
++++ b/companion/app/(tabs)/(bookings)/index.tsx
+@@ -62,11 +62,16 @@ export default function Bookings() {
+             <DropdownMenuTrigger asChild>
+               <AppPressable
+                 className="flex-row items-center rounded-lg border border-gray-200 bg-white"
+-                style={{ paddingHorizontal: 8, paddingVertical: 6 }}
++                style={{
++                  paddingHorizontal: 8,
++                  paddingVertical: 6,
++                  flexDirection: "row",
++                  alignItems: "center",
++                }}
+               >
+                 <Ionicons name="options-outline" size={14} color="#333" />
+                 <Text
+-                  className={`text-sm ${selectedEventTypeId !== null ? "text-[#007AFF] font-semibold" : "text-[#333]"}`}
++                  className={`text-sm ${selectedEventTypeId !== null ? "text-[#000000] font-semibold" : "text-[#333]"}`}
+                   style={{ marginLeft: 4 }}
+                   numberOfLines={1}
+                 >
+diff --git a/companion/app/(tabs)/(event-types)/event-type-detail.tsx b/companion/app/(tabs)/(event-types)/event-type-detail.tsx
+index fd1b7baea0b2..46aa4cfd6b69 100644
+--- a/companion/app/(tabs)/(event-types)/event-type-detail.tsx
++++ b/companion/app/(tabs)/(event-types)/event-type-detail.tsx
+@@ -177,6 +177,7 @@ export default function EventTypeDetail() {
+   const [conferencingOptions, setConferencingOptions] = useState<ConferencingOption[]>([]);
+   const [conferencingLoading, setConferencingLoading] = useState(false);
+   const [eventTypeData, setEventTypeData] = useState<EventType | null>(null);
++  const [bookingUrl, setBookingUrl] = useState<string>("");
+   const [saving, setSaving] = useState(false);
+   const [beforeEventBuffer, setBeforeEventBuffer] = useState("No buffer time");
+   const [afterEventBuffer, setAfterEventBuffer] = useState("No buffer time");
+@@ -945,29 +946,19 @@ export default function EventTypeDetail() {
+   };
+ 
+   const handlePreview = async () => {
+-    const eventTypeSlug = eventSlug || "preview";
+-    let link: string;
+-    try {
+-      link = await CalComAPIService.buildEventTypeLink(eventTypeSlug);
+-    } catch (error) {
+-      safeLogError("Failed to generate preview link:", error);
+-      showErrorAlert("Error", "Failed to generate preview link. Please try again.");
++    if (!bookingUrl) {
++      showErrorAlert("Error", "Booking URL not available. Please save the event type first.");
+       return;
+     }
+-    await openInAppBrowser(link, "event type preview");
++    await openInAppBrowser(bookingUrl, "event type preview");
+   };
+ 
+   const handleCopyLink = async () => {
+-    const eventTypeSlug = eventSlug || "event-link";
+-    let link: string;
+-    try {
+-      link = await CalComAPIService.buildEventTypeLink(eventTypeSlug);
+-    } catch (error) {
+-      safeLogError("Failed to copy link:", error);
+-      showErrorAlert("Error", "Failed to copy link. Please try again.");
++    if (!bookingUrl) {
++      showErrorAlert("Error", "Booking URL not available. Please save the event type first.");
+       return;
+     }
+-    await Clipboard.setStringAsync(link);
++    await Clipboard.setStringAsync(bookingUrl);
+     showSuccessAlert("Success", "Link copied!");
+   };
+ 
+@@ -1279,7 +1270,10 @@ export default function EventTypeDetail() {
+         {/* Tab Navigation Dropdown Menu */}
+         <DropdownMenu>
+           <DropdownMenuTrigger asChild>
+-            <AppPressable className="flex-row items-center gap-1 px-2 py-2">
++            <AppPressable
++              className="flex-row items-center gap-1 px-2 py-2"
++              style={{ flexDirection: "row", alignItems: "center" }}
++            >
+               <Text className="text-[16px] font-semibold text-[#000000]" numberOfLines={1}>
+                 {tabs.find((tab) => tab.id === activeTab)?.label ?? "Basics"}
+               </Text>
+@@ -1433,6 +1427,7 @@ export default function EventTypeDetail() {
+               onUpdateLocation={handleUpdateLocation}
+               locationOptions={getLocationOptionsForDropdown()}
+               conferencingLoading={conferencingLoading}
++              bookingUrl={bookingUrl}
+             />
+           ) : null}
+ 
+@@ -2342,15 +2337,17 @@ export default function EventTypeDetail() {
+                   <View className="bg-white pl-4">
+                     <View
+                       className="flex-row items-center justify-between pr-4"
+-                      style={{ height: 44 }}
++                      style={{ height: 44, flexDirection: "row", alignItems: "center" }}
+                     >
+                       <Text className="text-[17px] text-black">Hidden</Text>
+-                      <Switch
+-                        value={isHidden}
+-                        onValueChange={setIsHidden}
+-                        trackColor={{ false: "#E5E5EA", true: "#000000" }}
+-                        thumbColor="#FFFFFF"
+-                      />
++                      <View style={{ justifyContent: "center", height: "100%" }}>
++                        <Switch
++                          value={isHidden}
++                          onValueChange={setIsHidden}
++                          trackColor={{ false: "#E5E5EA", true: "#000000" }}
++                          thumbColor="#FFFFFF"
++                        />
++                      </View>
+                     </View>
+                   </View>
+                 </View>
+diff --git a/companion/app/(tabs)/(event-types)/index.ios.tsx b/companion/app/(tabs)/(event-types)/index.ios.tsx
+index 8c9898b7ac3e..c4e8fb57dc3d 100644
+--- a/companion/app/(tabs)/(event-types)/index.ios.tsx
++++ b/companion/app/(tabs)/(event-types)/index.ios.tsx
+@@ -1,6 +1,6 @@
+-import { Button, ContextMenu, Host, HStack, Image as SwiftUIImage } from "@expo/ui/swift-ui";
++import { Button, Host, Image as SwiftUIImage } from "@expo/ui/swift-ui";
+ import * as Haptics from "expo-haptics";
+-import { buttonStyle, controlSize, fixedSize, frame, padding } from "@expo/ui/swift-ui/modifiers";
++import { buttonStyle, controlSize, frame, padding } from "@expo/ui/swift-ui/modifiers";
+ import { Ionicons } from "@expo/vector-icons";
+ import * as Clipboard from "expo-clipboard";
+ import { isLiquidGlassAvailable } from "expo-glass-effect";
+@@ -28,7 +28,7 @@ import {
+   useUserProfile,
+ } from "@/hooks";
+ import { useEventTypeFilter } from "@/hooks/useEventTypeFilter";
+-import { CalComAPIService, type EventType } from "@/services/calcom";
++import type { EventType } from "@/services/calcom";
+ import { showErrorAlert, showSuccessAlert } from "@/utils/alerts";
+ import { openInAppBrowser } from "@/utils/browser";
+ import { getAvatarUrl } from "@/utils/getAvatarUrl";
+@@ -111,9 +111,12 @@ export default function EventTypesIOS() {
+   };
+ 
+   const handleCopyLink = async (eventType: EventType) => {
++    if (!eventType.bookingUrl) {
++      showErrorAlert("Error", "Booking URL not available for this event type.");
++      return;
++    }
+     try {
+-      const link = await CalComAPIService.buildEventTypeLink(eventType.slug);
+-      await Clipboard.setStringAsync(link);
++      await Clipboard.setStringAsync(eventType.bookingUrl);
+       showSuccessAlert("Link Copied", "Event type link copied!");
+     } catch {
+       showErrorAlert("Error", "Failed to copy link. Please try again.");
+@@ -121,11 +124,14 @@ export default function EventTypesIOS() {
+   };
+ 
+   const _handleShare = async (eventType: EventType) => {
++    if (!eventType.bookingUrl) {
++      showErrorAlert("Error", "Booking URL not available for this event type.");
++      return;
++    }
+     try {
+-      const link = await CalComAPIService.buildEventTypeLink(eventType.slug);
+       await Share.share({
+         message: `Book a meeting: ${eventType.title}`,
+-        url: link,
++        url: eventType.bookingUrl,
+       });
+     } catch {
+       showErrorAlert("Error", "Failed to share link. Please try again.");
+@@ -226,10 +232,12 @@ export default function EventTypesIOS() {
+   };
+ 
+   const handlePreview = async (eventType: EventType) => {
++    if (!eventType.bookingUrl) {
++      showErrorAlert("Error", "Booking URL not available for this event type.");
++      return;
++    }
+     try {
+-      const link = await CalComAPIService.buildEventTypeLink(eventType.slug);
+-      // For mobile, use in-app browser
+-      await openInAppBrowser(link, "event type preview");
++      await openInAppBrowser(eventType.bookingUrl, "event type preview");
+     } catch {
+       console.error("Failed to open preview");
+       showErrorAlert("Error", "Failed to open preview. Please try again.");
+diff --git a/companion/app/(tabs)/(event-types)/index.tsx b/companion/app/(tabs)/(event-types)/index.tsx
+index 246b8ed04ddc..ec7c486a73b5 100644
+--- a/companion/app/(tabs)/(event-types)/index.tsx
++++ b/companion/app/(tabs)/(event-types)/index.tsx
+@@ -37,7 +37,7 @@ import {
+   useEventTypes,
+ } from "@/hooks";
+ import { useEventTypeFilter } from "@/hooks/useEventTypeFilter";
+-import { CalComAPIService, type EventType } from "@/services/calcom";
++import type { EventType } from "@/services/calcom";
+ import { showErrorAlert, showSuccessAlert } from "@/utils/alerts";
+ import { openInAppBrowser } from "@/utils/browser";
+ import { getEventDuration } from "@/utils/getEventDuration";
+@@ -133,10 +133,12 @@ export default function EventTypes() {
+   };
+ 
+   const handleCopyLink = async (eventType: EventType) => {
++    if (!eventType.bookingUrl) {
++      showErrorAlert("Error", "Booking URL not available for this event type.");
++      return;
++    }
+     try {
+-      const link = await CalComAPIService.buildEventTypeLink(eventType.slug);
+-      await Clipboard.setStringAsync(link);
+-
++      await Clipboard.setStringAsync(eventType.bookingUrl);
+       showSuccessAlert("Link Copied", "Event type link copied!");
+     } catch {
+       showErrorAlert("Error", "Failed to copy link. Please try again.");
+@@ -144,11 +146,14 @@ export default function EventTypes() {
+   };
+ 
+   const _handleShare = async (eventType: EventType) => {
++    if (!eventType.bookingUrl) {
++      showErrorAlert("Error", "Booking URL not available for this event type.");
++      return;
++    }
+     try {
+-      const link = await CalComAPIService.buildEventTypeLink(eventType.slug);
+       await Share.share({
+         message: `Book a meeting: ${eventType.title}`,
+-        url: link,
++        url: eventType.bookingUrl,
+       });
+     } catch {
+       showErrorAlert("Error", "Failed to share link. Please try again.");
+@@ -280,14 +285,15 @@ export default function EventTypes() {
+   };
+ 
+   const handlePreview = async (eventType: EventType) => {
++    if (!eventType.bookingUrl) {
++      showErrorAlert("Error", "Booking URL not available for this event type.");
++      return;
++    }
+     try {
+-      const link = await CalComAPIService.buildEventTypeLink(eventType.slug);
+-      // Open in browser
+       if (Platform.OS === "web") {
+-        window.open(link, "_blank");
++        window.open(eventType.bookingUrl, "_blank");
+       } else {
+-        // For mobile, use in-app browser
+-        await openInAppBrowser(link, "event type preview");
++        await openInAppBrowser(eventType.bookingUrl, "event type preview");
+       }
+     } catch {
+       console.error("Failed to open preview");
+@@ -443,6 +449,7 @@ export default function EventTypes() {
+               />
+               <TouchableOpacity
+                 className="min-w-[60px] flex-row items-center justify-center gap-1 rounded-lg bg-black px-2.5 py-2"
++                style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}
+                 onPress={handleCreateNew}
+               >
+                 <Ionicons name="add" size={18} color="#fff" />
+@@ -507,6 +514,7 @@ export default function EventTypes() {
+             />
+             <TouchableOpacity
+               className="min-w-[60px] flex-row items-center justify-center gap-1 rounded-lg bg-black px-2.5 py-2"
++              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}
+               onPress={handleCreateNew}
+             >
+               <Ionicons name="add" size={18} color="#fff" />
+diff --git a/companion/app/profile-sheet.ios.tsx b/companion/app/profile-sheet.ios.tsx
+index b08381b13171..2f85b5752901 100644
+--- a/companion/app/profile-sheet.ios.tsx
++++ b/companion/app/profile-sheet.ios.tsx
+@@ -147,7 +147,7 @@ export default function ProfileSheet() {
+         }}
+       >
+         {/* Profile Header */}
+-        <View className="mt-20 border-b border-gray-200 px-6">
++        <View className="mt-20 px-6">
+           {isLoading ? (
+             <View className="items-center py-8">
+               <ActivityIndicator size="large" color="#000" />
+diff --git a/companion/app/profile-sheet.tsx b/companion/app/profile-sheet.tsx
+index c2f84263268f..0ad0aa5e69f8 100644
+--- a/companion/app/profile-sheet.tsx
++++ b/companion/app/profile-sheet.tsx
+@@ -124,7 +124,7 @@ export default function ProfileSheet() {
+         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+       >
+         {/* Profile Header */}
+-        <View className="border-b border-gray-200 px-6 py-6">
++        <View className="px-6 py-6">
+           {isLoading ? (
+             <View className="items-center py-8">
+               <ActivityIndicator size="large" color="#000" />
+diff --git a/companion/components/Header.tsx b/companion/components/Header.tsx
+index 3d2d5db3bc6c..665b2ac8f3a2 100644
+--- a/companion/components/Header.tsx
++++ b/companion/components/Header.tsx
+@@ -103,11 +103,14 @@ export function Header({
+         {filterOptions && filterOptions.length > 0 && onFilterChange && (
+           <DropdownMenu>
+             <DropdownMenuTrigger asChild>
+-              <AppPressable className="flex-row items-center gap-1 px-2 py-2">
+-                <Text className="text-[16px] font-semibold text-[#007AFF]">
++              <AppPressable
++                className="flex-row items-center gap-1 px-2 py-2"
++                style={{ flexDirection: "row", alignItems: "center" }}
++              >
++                <Text className="text-[16px] font-semibold text-[#000000]">
+                   {activeFilterLabel}
+                 </Text>
+-                <Ionicons name="chevron-down" size={16} color="#007AFF" />
++                <Ionicons name="chevron-down" size={16} color="#000000" />
+               </AppPressable>
+             </DropdownMenuTrigger>
+ 
+@@ -143,11 +146,11 @@ export function Header({
+                       <Ionicons
+                         name={isSelected ? "checkmark-circle" : getFilterIcon(option.key)}
+                         size={16}
+-                        color={isSelected ? "#007AFF" : "#666"}
++                        color={isSelected ? "#000000" : "#666"}
+                       />
+                       <Text
+                         className={
+-                          isSelected ? "text-base font-semibold text-[#007AFF]" : "text-base"
++                          isSelected ? "text-base font-semibold text-[#000000]" : "text-base"
+                         }
+                       >
+                         {option.label}
+@@ -165,11 +168,11 @@ export function Header({
+           <DropdownMenu>
+             <DropdownMenuTrigger asChild>
+               <AppPressable className="relative p-2">
+-                <Ionicons name="options-outline" size={22} color="#007AFF" />
++                <Ionicons name="options-outline" size={22} color="#000000" />
+                 {/* Badge for active filters */}
+                 {eventTypeFilterConfig.activeFilterCount > 0 && (
+                   <View
+-                    className="absolute -top-0.5 -right-0.5 items-center justify-center rounded-full bg-[#007AFF]"
++                    className="absolute -top-0.5 -right-0.5 items-center justify-center rounded-full bg-[#000000]"
+                     style={{ width: 16, height: 16 }}
+                   >
+                     <Text className="text-[10px] font-bold text-white">
+@@ -206,12 +209,12 @@ export function Header({
+                             : "text-outline"
+                         }
+                         size={16}
+-                        color={eventTypeFilterConfig.sortBy === "alphabetical" ? "#007AFF" : "#666"}
++                        color={eventTypeFilterConfig.sortBy === "alphabetical" ? "#000000" : "#666"}
+                       />
+                       <Text
+                         className={
+                           eventTypeFilterConfig.sortBy === "alphabetical"
+-                            ? "text-base font-semibold text-[#007AFF]"
++                            ? "text-base font-semibold text-[#000000]"
+                             : "text-base"
+                         }
+                       >
+@@ -228,12 +231,12 @@ export function Header({
+                             : "calendar-outline"
+                         }
+                         size={16}
+-                        color={eventTypeFilterConfig.sortBy === "newest" ? "#007AFF" : "#666"}
++                        color={eventTypeFilterConfig.sortBy === "newest" ? "#000000" : "#666"}
+                       />
+                       <Text
+                         className={
+                           eventTypeFilterConfig.sortBy === "newest"
+-                            ? "text-base font-semibold text-[#007AFF]"
++                            ? "text-base font-semibold text-[#000000]"
+                             : "text-base"
+                         }
+                       >
+@@ -250,12 +253,12 @@ export function Header({
+                             : "time-outline"
+                         }
+                         size={16}
+-                        color={eventTypeFilterConfig.sortBy === "duration" ? "#007AFF" : "#666"}
++                        color={eventTypeFilterConfig.sortBy === "duration" ? "#000000" : "#666"}
+                       />
+                       <Text
+                         className={
+                           eventTypeFilterConfig.sortBy === "duration"
+-                            ? "text-base font-semibold text-[#007AFF]"
++                            ? "text-base font-semibold text-[#000000]"
+                             : "text-base"
+                         }
+                       >
+@@ -286,12 +289,12 @@ export function Header({
+                         : "eye-off-outline"
+                     }
+                     size={16}
+-                    color={eventTypeFilterConfig.filters.hiddenOnly ? "#007AFF" : "#666"}
++                    color={eventTypeFilterConfig.filters.hiddenOnly ? "#000000" : "#666"}
+                   />
+                   <Text
+                     className={
+                       eventTypeFilterConfig.filters.hiddenOnly
+-                        ? "text-base font-semibold text-[#007AFF]"
++                        ? "text-base font-semibold text-[#000000]"
+                         : "text-base"
+                     }
+                   >
+@@ -307,12 +310,12 @@ export function Header({
+                       eventTypeFilterConfig.filters.paidOnly ? "checkmark-circle" : "cash-outline"
+                     }
+                     size={16}
+-                    color={eventTypeFilterConfig.filters.paidOnly ? "#007AFF" : "#666"}
++                    color={eventTypeFilterConfig.filters.paidOnly ? "#000000" : "#666"}
+                   />
+                   <Text
+                     className={
+                       eventTypeFilterConfig.filters.paidOnly
+-                        ? "text-base font-semibold text-[#007AFF]"
++                        ? "text-base font-semibold text-[#000000]"
+                         : "text-base"
+                     }
+                   >
+@@ -330,12 +333,12 @@ export function Header({
+                         : "people-outline"
+                     }
+                     size={16}
+-                    color={eventTypeFilterConfig.filters.seatedOnly ? "#007AFF" : "#666"}
++                    color={eventTypeFilterConfig.filters.seatedOnly ? "#000000" : "#666"}
+                   />
+                   <Text
+                     className={
+                       eventTypeFilterConfig.filters.seatedOnly
+-                        ? "text-base font-semibold text-[#007AFF]"
++                        ? "text-base font-semibold text-[#000000]"
+                         : "text-base"
+                     }
+                   >
+@@ -356,13 +359,13 @@ export function Header({
+                     }
+                     size={16}
+                     color={
+-                      eventTypeFilterConfig.filters.requiresConfirmationOnly ? "#007AFF" : "#666"
++                      eventTypeFilterConfig.filters.requiresConfirmationOnly ? "#000000" : "#666"
+                     }
+                   />
+                   <Text
+                     className={
+                       eventTypeFilterConfig.filters.requiresConfirmationOnly
+-                        ? "text-base font-semibold text-[#007AFF]"
++                        ? "text-base font-semibold text-[#000000]"
+                         : "text-base"
+                     }
+                   >
+@@ -382,12 +385,12 @@ export function Header({
+                         : "repeat-outline"
+                     }
+                     size={16}
+-                    color={eventTypeFilterConfig.filters.recurringOnly ? "#007AFF" : "#666"}
++                    color={eventTypeFilterConfig.filters.recurringOnly ? "#000000" : "#666"}
+                   />
+                   <Text
+                     className={
+                       eventTypeFilterConfig.filters.recurringOnly
+-                        ? "text-base font-semibold text-[#007AFF]"
++                        ? "text-base font-semibold text-[#000000]"
+                         : "text-base"
+                     }
+                   >
+diff --git a/companion/components/event-type-detail/tabs/AdvancedTab.tsx b/companion/components/event-type-detail/tabs/AdvancedTab.tsx
+index cd07f39424f2..0a009da1ccba 100644
+--- a/companion/components/event-type-detail/tabs/AdvancedTab.tsx
++++ b/companion/components/event-type-detail/tabs/AdvancedTab.tsx
+@@ -138,7 +138,7 @@ function SettingRow({
+     <View className="bg-white pl-4">
+       <View
+         className={`flex-row items-center pr-4 ${!isLast ? "border-b border-[#E5E5E5]" : ""}`}
+-        style={{ height }}
++        style={{ height, flexDirection: "row", alignItems: "center" }}
+       >
+         <TouchableOpacity
+           className="flex-1 flex-row items-center"
+@@ -154,7 +154,7 @@ function SettingRow({
+             <Ionicons name="chevron-down" size={12} color="#C7C7CC" style={{ marginLeft: 6 }} />
+           ) : null}
+         </TouchableOpacity>
+-        <View style={{ alignSelf: "center" }}>
++        <View style={{ alignSelf: "center", justifyContent: "center" }}>
+           <Switch
+             value={value}
+             onValueChange={onValueChange}
+diff --git a/companion/components/event-type-detail/tabs/BasicsTab.tsx b/companion/components/event-type-detail/tabs/BasicsTab.tsx
+index 73f12b17e3d0..1fde5c49cce6 100644
+--- a/companion/components/event-type-detail/tabs/BasicsTab.tsx
++++ b/companion/components/event-type-detail/tabs/BasicsTab.tsx
+@@ -37,6 +37,7 @@ interface BasicsTabProps {
+   onUpdateLocation: (locationId: string, updates: Partial<LocationItem>) => void;
+   locationOptions: LocationOptionGroup[];
+   conferencingLoading: boolean;
++  bookingUrl?: string;
+ }
+ 
+ // Section header
+@@ -201,12 +202,12 @@ function SettingRow({
+     <View className="bg-white pl-4">
+       <View
+         className={`flex-row items-center pr-4 ${!isLast ? "border-b border-[#E5E5E5]" : ""}`}
+-        style={{ height }}
++        style={{ height, flexDirection: "row", alignItems: "center" }}
+       >
+         <Text className="flex-1 text-[17px] text-black" style={{ fontWeight: "400" }}>
+           {title}
+         </Text>
+-        <View style={{ alignSelf: "center" }}>
++        <View style={{ alignSelf: "center", justifyContent: "center" }}>
+           <Switch
+             value={value}
+             onValueChange={onValueChange}
+@@ -253,7 +254,26 @@ export const BasicsTab: React.FC<BasicsTabProps> = (props) => {
+             <Text className="mb-2 text-[13px] text-[#6D6D72]">URL</Text>
+             <View className="flex-row items-center overflow-hidden rounded-lg bg-[#F2F2F7]">
+               <Text className="bg-[#E5E5EA] px-3 py-2 text-[15px] text-[#666]">
+-                cal.com/{props.username}/
++                {(() => {
++                  // Parse bookingUrl to get domain prefix (e.g., "i.cal.com/" or "cal.com/username/")
++                  if (props.bookingUrl) {
++                    try {
++                      const url = new URL(props.bookingUrl);
++                      // Get path without the last segment (slug)
++                      const pathParts = url.pathname.split("/").filter(Boolean);
++                      pathParts.pop(); // Remove slug
++                      // Compute prefix outside try/catch for React Compiler
++                      let prefix = "/";
++                      if (pathParts.length > 0) {
++                        prefix = `/${pathParts.join("/")}/`;
++                      }
++                      return `${url.protocol}//${url.hostname}${prefix}`;
++                    } catch {
++                      // fallback
++                    }
++                  }
++                  return `cal.com/${props.username}/`;
++                })()}
+               </Text>
+               <TextInput
+                 className="flex-1 px-3 py-2 text-[17px] text-black"
+diff --git a/companion/components/event-type-detail/tabs/LimitsTab.tsx b/companion/components/event-type-detail/tabs/LimitsTab.tsx
+index d1079e5c458d..f9609482a945 100644
+--- a/companion/components/event-type-detail/tabs/LimitsTab.tsx
++++ b/companion/components/event-type-detail/tabs/LimitsTab.tsx
+@@ -124,7 +124,7 @@ function SettingRow({
+     <View className="bg-white pl-4">
+       <View
+         className={`flex-row items-center pr-4 ${!isLast ? "border-b border-[#E5E5E5]" : ""}`}
+-        style={{ height: 44 }}
++        style={{ height: 44, flexDirection: "row", alignItems: "center" }}
+       >
+         <TouchableOpacity
+           className="flex-1 flex-row items-center"
+@@ -140,7 +140,7 @@ function SettingRow({
+             <Ionicons name="chevron-down" size={12} color="#C7C7CC" style={{ marginLeft: 6 }} />
+           ) : null}
+         </TouchableOpacity>
+-        <View style={{ alignSelf: "center" }}>
++        <View style={{ alignSelf: "center", justifyContent: "center" }}>
+           <Switch
+             value={value}
+             onValueChange={onValueChange}
+diff --git a/companion/components/event-type-detail/tabs/RecurringTab.tsx b/companion/components/event-type-detail/tabs/RecurringTab.tsx
+index 24b2a42e88e2..e4be9e26b285 100644
+--- a/companion/components/event-type-detail/tabs/RecurringTab.tsx
++++ b/companion/components/event-type-detail/tabs/RecurringTab.tsx
+@@ -89,7 +89,7 @@ function SettingRow({
+     <View className="bg-white pl-4">
+       <View
+         className={`flex-row items-center pr-4 ${!isLast ? "border-b border-[#E5E5E5]" : ""}`}
+-        style={{ minHeight: 44 }}
++        style={{ minHeight: 44, flexDirection: "row", alignItems: "center" }}
+       >
+         <TouchableOpacity
+           className="flex-1 flex-row items-center py-3"
+@@ -104,7 +104,7 @@ function SettingRow({
+             <Ionicons name="chevron-down" size={12} color="#C7C7CC" style={{ marginLeft: 6 }} />
+           ) : null}
+         </TouchableOpacity>
+-        <View style={{ alignSelf: "center" }}>
++        <View style={{ alignSelf: "center", justifyContent: "center" }}>
+           <Switch
+             value={value}
+             onValueChange={onValueChange}
+diff --git a/companion/components/event-type-list-item/EventTypeListItem.ios.tsx b/companion/components/event-type-list-item/EventTypeListItem.ios.tsx
+index 5268f84a12f7..4c88ec1407d8 100644
+--- a/companion/components/event-type-list-item/EventTypeListItem.ios.tsx
++++ b/companion/components/event-type-list-item/EventTypeListItem.ios.tsx
+@@ -100,6 +100,7 @@ export const EventTypeListItem = ({
+                   title={item.title}
+                   username={item.users?.[0]?.username}
+                   slug={item.slug}
++                  bookingUrl={item.bookingUrl}
+                 />
+                 <EventTypeDescription normalizedDescription={normalizedDescription} />
+                 <EventTypeBadges
+diff --git a/companion/components/event-type-list-item/EventTypeListItem.tsx b/companion/components/event-type-list-item/EventTypeListItem.tsx
+index 60b2be2cd255..d4f38921964d 100644
+--- a/companion/components/event-type-list-item/EventTypeListItem.tsx
++++ b/companion/components/event-type-list-item/EventTypeListItem.tsx
+@@ -51,6 +51,7 @@ export const EventTypeListItem = ({
+             title={item.title}
+             username={item.users?.[0]?.username}
+             slug={item.slug}
++            bookingUrl={item.bookingUrl}
+           />
+           <EventTypeDescription normalizedDescription={normalizedDescription} />
+           <EventTypeBadges
+diff --git a/companion/components/event-type-list-item/EventTypeListItemParts.tsx b/companion/components/event-type-list-item/EventTypeListItemParts.tsx
+index 60d6a9fd9806..26698d76edc2 100644
+--- a/companion/components/event-type-list-item/EventTypeListItemParts.tsx
++++ b/companion/components/event-type-list-item/EventTypeListItemParts.tsx
+@@ -4,14 +4,32 @@ import Svg, { Path } from "react-native-svg";
+ import { Tooltip } from "@/components/Tooltip";
+ import type { EventType } from "@/services/types/event-types.types";
+ 
++/**
++ * Parse bookingUrl to get display text (domain + path).
++ * Falls back to /{username}/{slug} if bookingUrl is not available.
++ */
++function getDisplayUrl(bookingUrl?: string, username?: string, slug?: string): string {
++  if (bookingUrl) {
++    try {
++      const url = new URL(bookingUrl);
++      // Return domain + pathname (e.g., "i.cal.com/keith/30min")
++      return url.hostname + url.pathname;
++    } catch {
++      // fallback if URL parsing fails
++    }
++  }
++  return username ? `/${username}/${slug}` : `/${slug}`;
++}
++
+ interface EventTypeTitleProps {
+   title: string;
+   username?: string;
+   slug: string;
++  bookingUrl?: string;
+ }
+ 
+-export function EventTypeTitle({ title, username, slug }: EventTypeTitleProps) {
+-  const linkText = username ? `/${username}/${slug}` : `/${slug}`;
++export function EventTypeTitle({ title, username, slug, bookingUrl }: EventTypeTitleProps) {
++  const linkText = getDisplayUrl(bookingUrl, username, slug);
+   return (
+     <View className="mb-1 flex-row flex-wrap items-baseline">
+       <Text className="text-base font-semibold text-cal-text">{title}</Text>
+@@ -36,10 +54,11 @@ export function EventTypeDescription({ normalizedDescription }: EventTypeDescrip
+ interface EventTypeLinkProps {
+   username?: string;
+   slug: string;
++  bookingUrl?: string;
+ }
+ 
+-export function EventTypeLink({ username, slug }: EventTypeLinkProps) {
+-  const linkText = username ? `/${username}/${slug}` : `/${slug}`;
++export function EventTypeLink({ username, slug, bookingUrl }: EventTypeLinkProps) {
++  const linkText = getDisplayUrl(bookingUrl, username, slug);
+   return <Text className="mb-1 mt-0.5 text-sm text-cal-text-secondary">{linkText}</Text>;
+ }
+ 
+diff --git a/companion/extension/entrypoints/background/index.ts b/companion/extension/entrypoints/background/index.ts
+index d48cf40b1926..a8db66274058 100644
+--- a/companion/extension/entrypoints/background/index.ts
++++ b/companion/extension/entrypoints/background/index.ts
+@@ -278,6 +278,7 @@ function getTabsAPI(): typeof chrome.tabs | null {
+ function getActionAPI(): typeof chrome.action | null {
+   const api = getBrowserAPI();
+   // Safari uses browserAction (Manifest V2), Chrome uses action (Manifest V3)
++  // biome-ignore lint/suspicious/noExplicitAny: Safari's browserAction API is not in Chrome types
+   return api?.action || (api as any)?.browserAction || null;
+ }
+ 
+diff --git a/companion/extension/entrypoints/content.ts b/companion/extension/entrypoints/content.ts
+index 1422a85e8013..892cb907b4e3 100644
+--- a/companion/extension/entrypoints/content.ts
++++ b/companion/extension/entrypoints/content.ts
+@@ -833,6 +833,7 @@ export default defineContentScript({
+                 duration?: number;
+                 description?: string;
+                 users?: Array<{ username?: string }>;
++                bookingUrl?: string;
+               }> = [];
+ 
+               if (isCacheValid && eventTypesCache) {
+@@ -874,6 +875,7 @@ export default defineContentScript({
+                         duration?: number;
+                         description?: string;
+                         users?: Array<{ username?: string }>;
++                        bookingUrl?: string;
+                       }>;
+                     }
+                   ).data
+@@ -889,6 +891,7 @@ export default defineContentScript({
+                         duration?: number;
+                         description?: string;
+                         users?: Array<{ username?: string }>;
++                        bookingUrl?: string;
+                       }>;
+                     }
+                   ).data;
+@@ -1075,9 +1078,11 @@ export default defineContentScript({
+ 
+                   previewBtn.addEventListener("click", (e) => {
+                     e.stopPropagation();
+-                    const bookingUrl = `https://cal.com/${
+-                      eventType.users?.[0]?.username || "user"
+-                    }/${eventType.slug}`;
++                    const bookingUrl =
++                      eventType.bookingUrl ||
++                      `https://cal.com/${
++                        eventType.users?.[0]?.username || "user"
++                      }/${eventType.slug}`;
+                     window.open(bookingUrl, "_blank");
+                   });
+                   previewBtn.addEventListener("mouseenter", () => {
+@@ -1117,9 +1122,10 @@ export default defineContentScript({
+                   copyBtn.addEventListener("click", (e) => {
+                     e.stopPropagation();
+                     // Copy to clipboard
+-                    const bookingUrl = `https://cal.com/${
+-                      eventType.users?.[0]?.username || "user"
+-                    }/${eventType.slug}`;
++                    const bookingUrl =
++                      `https://cal.com/${
++                        eventType.users?.[0]?.username || "user"
++                      }/${eventType.slug}`;
+                     navigator.clipboard
+                       .writeText(bookingUrl)
+                       .then(() => {
+@@ -1285,11 +1291,12 @@ export default defineContentScript({
+           function insertEventTypeLink(eventType: {
+             slug: string;
+             users?: Array<{ username?: string }>;
++            bookingUrl?: string;
+           }): void {
+             // Construct the Cal.com booking link
+-            const bookingUrl = `https://cal.com/${eventType.users?.[0]?.username || "user"}/${
+-              eventType.slug
+-            }`;
++            const bookingUrl =
++              eventType.bookingUrl ||
++              `https://cal.com/${eventType.users?.[0]?.username || "user"}/${eventType.slug}`;
+ 
+             // Try to insert at cursor position in the compose field
+             const inserted = insertTextAtCursor(bookingUrl);
+@@ -1312,11 +1319,12 @@ export default defineContentScript({
+           function _copyEventTypeLink(eventType: {
+             slug: string;
+             users?: Array<{ username?: string }>;
++            bookingUrl?: string;
+           }): void {
+             // Construct the Cal.com booking link
+-            const bookingUrl = `https://cal.com/${eventType.users?.[0]?.username || "user"}/${
+-              eventType.slug
+-            }`;
++            const bookingUrl =
++              eventType.bookingUrl ||
++              `https://cal.com/${eventType.users?.[0]?.username || "user"}/${eventType.slug}`;
+ 
+             // Try to insert at cursor position in the compose field
+             const inserted = insertTextAtCursor(bookingUrl);
+@@ -1574,6 +1582,7 @@ export default defineContentScript({
+             duration?: number;
+             description?: string;
+             users?: Array<{ username?: string }>;
++            bookingUrl?: string;
+           }> = [];
+ 
+           if (isCacheValid && eventTypesCache) {
+@@ -1615,6 +1624,7 @@ export default defineContentScript({
+                     duration?: number;
+                     description?: string;
+                     users?: Array<{ username?: string }>;
++                    bookingUrl?: string;
+                   }>;
+                 }
+               ).data
+@@ -1630,6 +1640,7 @@ export default defineContentScript({
+                     duration?: number;
+                     description?: string;
+                     users?: Array<{ username?: string }>;
++                    bookingUrl?: string;
+                   }>;
+                 }
+               ).data;
+@@ -1815,9 +1826,9 @@ export default defineContentScript({
+ 
+               previewBtn.addEventListener("click", (e) => {
+                 e.stopPropagation();
+-                const bookingUrl = `https://cal.com/${
+-                  eventType.users?.[0]?.username || "user"
+-                }/${eventType.slug}`;
++                const bookingUrl =
++                  eventType.bookingUrl ||
++                  `https://cal.com/${eventType.users?.[0]?.username || "user"}/${eventType.slug}`;
+                 window.open(bookingUrl, "_blank");
+               });
+               previewBtn.addEventListener("mouseenter", () => {
+@@ -1857,9 +1868,9 @@ export default defineContentScript({
+               copyBtn.addEventListener("click", (e) => {
+                 e.stopPropagation();
+                 // Copy to clipboard
+-                const bookingUrl = `https://cal.com/${
+-                  eventType.users?.[0]?.username || "user"
+-                }/${eventType.slug}`;
++                const bookingUrl =
++                  eventType.bookingUrl ||
++                  `https://cal.com/${eventType.users?.[0]?.username || "user"}/${eventType.slug}`;
+                 navigator.clipboard
+                   .writeText(bookingUrl)
+                   .then(() => {
+@@ -2025,11 +2036,12 @@ export default defineContentScript({
+       function insertEventTypeLink(eventType: {
+         slug: string;
+         users?: Array<{ username?: string }>;
++        bookingUrl?: string;
+       }) {
+         // Construct the Cal.com booking link
+-        const bookingUrl = `https://cal.com/${eventType.users?.[0]?.username || "user"}/${
+-          eventType.slug
+-        }`;
++        const bookingUrl =
++          eventType.bookingUrl ||
++          `https://cal.com/${eventType.users?.[0]?.username || "user"}/${eventType.slug}`;
+ 
+         // Try to insert at cursor position in the message field
+         const inserted = insertTextAtCursor(bookingUrl);
+diff --git a/companion/extension/lib/linkedin.ts b/companion/extension/lib/linkedin.ts
+index f3daf7a906de..4e10603bd41b 100644
+--- a/companion/extension/lib/linkedin.ts
++++ b/companion/extension/lib/linkedin.ts
+@@ -115,6 +115,7 @@ interface EventType {
+   duration?: number;
+   description?: string;
+   users?: Array<{ username?: string }>;
++  bookingUrl?: string;
+ }
+ 
+ interface ButtonSize {
+@@ -664,7 +665,10 @@ export function initLinkedInIntegration() {
+   }
+ 
+   function buildBookingUrl(eventType: EventType): string {
+-    return `https://cal.com/${eventType.users?.[0]?.username || "user"}/${eventType.slug}`;
++    return (
++      eventType.bookingUrl ||
++      `https://cal.com/${eventType.users?.[0]?.username || "user"}/${eventType.slug}`
++    );
+   }
+ 
+   function handleFetchError(error: unknown, menu: HTMLElement, tooltipsToCleanup: HTMLElement[]) {
+diff --git a/companion/services/calcom.ts b/companion/services/calcom.ts
+index 74b7a2df6ced..2af939d9bb77 100644
+--- a/companion/services/calcom.ts
++++ b/companion/services/calcom.ts
+@@ -318,18 +318,6 @@ async function getUserProfile(): Promise<UserProfile> {
+   return _userProfilePromise;
+ }
+ 
+-// Get cached username or fetch if not available
+-async function getUsername(): Promise<string> {
+-  const profile = await getUserProfile();
+-  return profile.username;
+-}
+-
+-// Build shareable link for event type
+-async function buildEventTypeLink(eventTypeSlug: string): Promise<string> {
+-  const username = await getUsername();
+-  return `https://cal.com/${username}/${eventTypeSlug}`;
+-}
+-
+ // Clear cached profile (useful for logout)
+ function clearUserProfile(): void {
+   _userProfile = null;
+@@ -1663,6 +1651,16 @@ async function deleteEventTypePrivateLink(eventTypeId: number, linkId: number):
+   }
+ }
+ 
++// Helper to get username
++async function getUsername(): Promise<string> {
++  try {
++    const profile = await getUserProfile();
++    return profile.username;
++  } catch (error) {
++    throw new Error("Failed to get username");
++  }
++}
++
+ // Export as object to satisfy noStaticOnlyClass rule
+ export const CalComAPIService = {
+   setAccessToken,
+@@ -1673,7 +1671,6 @@ export const CalComAPIService = {
+   updateUserProfile,
+   getUserProfile,
+   getUsername,
+-  buildEventTypeLink,
+   clearUserProfile,
+   testRawBookingsAPI,
+   deleteEventType,
+diff --git a/companion/services/types/event-types.types.ts b/companion/services/types/event-types.types.ts
+index 0cb6f1a494d9..bd63ee3c19ce 100644
+--- a/companion/services/types/event-types.types.ts
++++ b/companion/services/types/event-types.types.ts
+@@ -278,6 +278,9 @@ export interface EventType {
+ 
+   // Optimized slots (API V2)
+   showOptimizedSlots?: boolean;
++
++  // Booking URL (API V2) - full booking URL for this event type
++  bookingUrl?: string;
+ }
+ 
+ export interface CreateEventTypeInput {

@@ -1,0 +1,1405 @@
+diff --git a/apps/api/v2/src/lib/modules/booking-cancel.module.ts b/apps/api/v2/src/lib/modules/booking-cancel.module.ts
+index 4151789caee9..ac9fd25f652c 100644
+--- a/apps/api/v2/src/lib/modules/booking-cancel.module.ts
++++ b/apps/api/v2/src/lib/modules/booking-cancel.module.ts
+@@ -1,10 +1,22 @@
++import { PrismaBookingAttendeeRepository } from "@/lib/repositories/prisma-booking-attendee.repository";
++import { PrismaBookingReferenceRepository } from "@/lib/repositories/prisma-booking-reference.repository";
++import { PrismaBookingRepository } from "@/lib/repositories/prisma-booking.repository";
++import { PrismaProfileRepository } from "@/lib/repositories/prisma-profile.repository";
++import { PrismaUserRepository } from "@/lib/repositories/prisma-user.repository";
+ import { BookingCancelService } from "@/lib/services/booking-cancel.service";
+ import { PrismaModule } from "@/modules/prisma/prisma.module";
+ import { Module } from "@nestjs/common";
+ 
+ @Module({
+   imports: [PrismaModule],
+-  providers: [BookingCancelService],
++  providers: [
++    PrismaBookingAttendeeRepository,
++    PrismaBookingReferenceRepository,
++    PrismaBookingRepository,
++    PrismaProfileRepository,
++    PrismaUserRepository,
++    BookingCancelService,
++  ],
+   exports: [BookingCancelService],
+ })
+ export class BookingCancelModule {}
+diff --git a/apps/api/v2/src/lib/repositories/prisma-booking-attendee.repository.ts b/apps/api/v2/src/lib/repositories/prisma-booking-attendee.repository.ts
+new file mode 100644
+index 000000000000..0e92a6820446
+--- /dev/null
++++ b/apps/api/v2/src/lib/repositories/prisma-booking-attendee.repository.ts
+@@ -0,0 +1,11 @@
++import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
++import { Injectable } from "@nestjs/common";
++
++import { PrismaBookingAttendeeRepository as BasePrismaBookingAttendeeRepository } from "@calcom/platform-libraries/repositories";
++
++@Injectable()
++export class PrismaBookingAttendeeRepository extends BasePrismaBookingAttendeeRepository {
++  constructor(private readonly dbWrite: PrismaWriteService) {
++    super(dbWrite.prisma);
++  }
++}
+diff --git a/apps/api/v2/src/lib/repositories/prisma-booking-reference.repository.ts b/apps/api/v2/src/lib/repositories/prisma-booking-reference.repository.ts
+new file mode 100644
+index 000000000000..2aa0b02c9474
+--- /dev/null
++++ b/apps/api/v2/src/lib/repositories/prisma-booking-reference.repository.ts
+@@ -0,0 +1,11 @@
++import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
++import { Injectable } from "@nestjs/common";
++
++import { PrismaBookingReferenceRepository as BasePrismaBookingReferenceRepository } from "@calcom/platform-libraries/repositories";
++
++@Injectable()
++export class PrismaBookingReferenceRepository extends BasePrismaBookingReferenceRepository {
++  constructor(private readonly dbWrite: PrismaWriteService) {
++    super({ prismaClient: dbWrite.prisma });
++  }
++}
+diff --git a/apps/api/v2/src/lib/repositories/prisma-profile.repository.ts b/apps/api/v2/src/lib/repositories/prisma-profile.repository.ts
+new file mode 100644
+index 000000000000..460da113468c
+--- /dev/null
++++ b/apps/api/v2/src/lib/repositories/prisma-profile.repository.ts
+@@ -0,0 +1,11 @@
++import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
++import { Injectable } from "@nestjs/common";
++
++import { PrismaProfileRepository as BasePrismaProfileRepository } from "@calcom/platform-libraries/repositories";
++
++@Injectable()
++export class PrismaProfileRepository extends BasePrismaProfileRepository {
++  constructor(private readonly dbWrite: PrismaWriteService) {
++    super({ prismaClient: dbWrite.prisma });
++  }
++}
+diff --git a/apps/api/v2/src/lib/services/booking-cancel.service.ts b/apps/api/v2/src/lib/services/booking-cancel.service.ts
+index 3a252770a43a..e0adc90a2cd2 100644
+--- a/apps/api/v2/src/lib/services/booking-cancel.service.ts
++++ b/apps/api/v2/src/lib/services/booking-cancel.service.ts
+@@ -1,13 +1,27 @@
+-import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
++import { PrismaBookingAttendeeRepository } from "@/lib/repositories/prisma-booking-attendee.repository";
++import { PrismaBookingReferenceRepository } from "@/lib/repositories/prisma-booking-reference.repository";
++import { PrismaBookingRepository } from "@/lib/repositories/prisma-booking.repository";
++import { PrismaProfileRepository } from "@/lib/repositories/prisma-profile.repository";
++import { PrismaUserRepository } from "@/lib/repositories/prisma-user.repository";
+ import { Injectable } from "@nestjs/common";
+ 
+ import { BookingCancelService as BaseBookingCancelService } from "@calcom/platform-libraries/bookings";
+ 
+ @Injectable()
+ export class BookingCancelService extends BaseBookingCancelService {
+-  constructor(prismaWriteService: PrismaWriteService) {
++  constructor(
++    userRepository: PrismaUserRepository,
++    bookingRepository: PrismaBookingRepository,
++    profileRepository: PrismaProfileRepository,
++    bookingReferenceRepository: PrismaBookingReferenceRepository,
++    attendeeRepository: PrismaBookingAttendeeRepository
++  ) {
+     super({
+-      prismaClient: prismaWriteService.prisma,
++      userRepository,
++      bookingRepository,
++      profileRepository,
++      bookingReferenceRepository,
++      attendeeRepository,
+     });
+   }
+ }
+diff --git a/packages/features/bookingReference/repositories/BookingReferenceRepository.ts b/packages/features/bookingReference/repositories/BookingReferenceRepository.ts
+index f5d49a9c3f88..2cfd0cfaffdc 100644
+--- a/packages/features/bookingReference/repositories/BookingReferenceRepository.ts
++++ b/packages/features/bookingReference/repositories/BookingReferenceRepository.ts
+@@ -1,7 +1,9 @@
+ import { prisma } from "@calcom/prisma";
+-import type { Prisma } from "@calcom/prisma/client";
++import type { Prisma, PrismaClient } from "@calcom/prisma/client";
+ import type { PartialReference } from "@calcom/types/EventManager";
+ 
++import type { IBookingReferenceRepository } from "@calcom/lib/server/repository/dto/IBookingReferenceRepository";
++
+ const bookingReferenceSelect = {
+   id: true,
+   type: true,
+@@ -13,7 +15,12 @@ const bookingReferenceSelect = {
+   bookingId: true,
+ } satisfies Prisma.BookingReferenceSelect;
+ 
+-export class BookingReferenceRepository {
++export class BookingReferenceRepository implements IBookingReferenceRepository {
++  private prismaClient: PrismaClient;
++  constructor(private deps: { prismaClient: PrismaClient }) {
++    this.prismaClient = deps.prismaClient;
++  }
++
+   static async findDailyVideoReferenceByRoomName({ roomName }: { roomName: string }) {
+     return prisma.bookingReference.findFirst({
+       where: {
+@@ -57,4 +64,16 @@ export class BookingReferenceRepository {
+       }),
+     });
+   }
++
++  async updateManyByBookingId(
++    bookingId: number,
++    data: Prisma.BookingReferenceUpdateManyMutationInput
++  ): Promise<void> {
++    await this.prismaClient.bookingReference.updateMany({
++      where: {
++        bookingId,
++      },
++      data,
++    });
++  }
+ }
+diff --git a/packages/features/bookings/di/BookingAttendeeRepository.module.ts b/packages/features/bookings/di/BookingAttendeeRepository.module.ts
+new file mode 100644
+index 000000000000..9062b38de8b2
+--- /dev/null
++++ b/packages/features/bookings/di/BookingAttendeeRepository.module.ts
+@@ -0,0 +1,20 @@
++import { PrismaBookingAttendeeRepository } from "@calcom/features/bookings/repositories/PrismaBookingAttendeeRepository";
++import { bindModuleToClassOnToken, createModule } from "@calcom/features/di/di";
++import { DI_TOKENS } from "@calcom/features/di/tokens";
++import { moduleLoader as prismaModuleLoader } from "@calcom/prisma/prisma.module";
++
++export const bookingAttendeeRepositoryModule = createModule();
++const token = DI_TOKENS.BOOKING_ATTENDEE_REPOSITORY;
++const moduleToken = DI_TOKENS.BOOKING_ATTENDEE_REPOSITORY_MODULE;
++const loadModule = bindModuleToClassOnToken({
++  module: bookingAttendeeRepositoryModule,
++  moduleToken,
++  token,
++  classs: PrismaBookingAttendeeRepository,
++  dep: prismaModuleLoader,
++});
++
++export const moduleLoader = {
++  token,
++  loadModule,
++};
+diff --git a/packages/features/bookings/di/BookingCancelService.module.ts b/packages/features/bookings/di/BookingCancelService.module.ts
+index 217fd40dd835..40d33d1d7a92 100644
+--- a/packages/features/bookings/di/BookingCancelService.module.ts
++++ b/packages/features/bookings/di/BookingCancelService.module.ts
+@@ -1,7 +1,12 @@
+-import { BookingCancelService } from "@calcom/features/bookings/lib/handleCancelBooking";
+ import { bindModuleToClassOnToken, createModule } from "@calcom/features/di/di";
++import { BookingCancelService } from "../lib/handleCancelBooking";
++import { moduleLoader as bookingRepositoryModuleLoader } from "@calcom/features/di/modules/Booking";
++import { moduleLoader as bookingAttendeeRepositoryModuleLoader } from "./BookingAttendeeRepository.module";
++import { moduleLoader as bookingReferenceRepositoryModuleLoader } from "./BookingReferenceRepository.module";
++import { moduleLoader as profileRepositoryModuleLoader } from "@calcom/features/users/di/Profile.module";
++import { moduleLoader as userRepositoryModuleLoader } from "@calcom/features/di/modules/User";
++
+ import { DI_TOKENS } from "@calcom/features/di/tokens";
+-import { moduleLoader as prismaModuleLoader } from "@calcom/features/di/modules/Prisma";
+ 
+ const thisModule = createModule();
+ const token = DI_TOKENS.BOOKING_CANCEL_SERVICE;
+@@ -12,7 +17,11 @@ const loadModule = bindModuleToClassOnToken({
+   token,
+   classs: BookingCancelService,
+   depsMap: {
+-    prismaClient: prismaModuleLoader,
++    userRepository: userRepositoryModuleLoader,
++    bookingRepository: bookingRepositoryModuleLoader,
++    profileRepository: profileRepositoryModuleLoader,
++    bookingReferenceRepository: bookingReferenceRepositoryModuleLoader,
++    attendeeRepository: bookingAttendeeRepositoryModuleLoader,
+   },
+ });
+ 
+diff --git a/packages/features/bookings/di/BookingReferenceRepository.module.ts b/packages/features/bookings/di/BookingReferenceRepository.module.ts
+new file mode 100644
+index 000000000000..f9ba2a6e243d
+--- /dev/null
++++ b/packages/features/bookings/di/BookingReferenceRepository.module.ts
+@@ -0,0 +1,22 @@
++import { bindModuleToClassOnToken, createModule } from "@calcom/features/di/di";
++import { DI_TOKENS } from "@calcom/features/di/tokens";
++import { BookingReferenceRepository } from "@calcom/lib/server/repository/bookingReference";
++import { moduleLoader as prismaModuleLoader } from "@calcom/prisma/prisma.module";
++
++export const bookingReferenceRepositoryModule = createModule();
++const token = DI_TOKENS.BOOKING_REFERENCE_REPOSITORY;
++const moduleToken = DI_TOKENS.BOOKING_REFERENCE_REPOSITORY_MODULE;
++const loadModule = bindModuleToClassOnToken({
++  module: bookingReferenceRepositoryModule,
++  moduleToken,
++  token,
++  classs: BookingReferenceRepository,
++  depsMap: {
++    prismaClient: prismaModuleLoader,
++  },
++});
++
++export const moduleLoader = {
++  token,
++  loadModule,
++};
+diff --git a/packages/features/bookings/di/tokens.ts b/packages/features/bookings/di/tokens.ts
+index a91e6497b475..3fbc106184b3 100644
+--- a/packages/features/bookings/di/tokens.ts
++++ b/packages/features/bookings/di/tokens.ts
+@@ -7,6 +7,10 @@ export const BOOKING_DI_TOKENS = {
+   INSTANT_BOOKING_CREATE_SERVICE_MODULE: Symbol("InstantBookingCreateServiceModule"),
+   BOOKING_CANCEL_SERVICE: Symbol("BookingCancelService"),
+   BOOKING_CANCEL_SERVICE_MODULE: Symbol("BookingCancelServiceModule"),
++  BOOKING_REFERENCE_REPOSITORY: Symbol("BookingReferenceRepository"),
++  BOOKING_REFERENCE_REPOSITORY_MODULE: Symbol("BookingReferenceRepositoryModule"),
++  BOOKING_ATTENDEE_REPOSITORY: Symbol("BookingAttendeeRepository"),
++  BOOKING_ATTENDEE_REPOSITORY_MODULE: Symbol("BookingAttendeeRepositoryModule"),
+   BOOKING_EMAIL_SMS_HANDLER: Symbol("BookingEmailSmsHandler"),
+   BOOKING_EMAIL_SMS_HANDLER_MODULE: Symbol("BookingEmailSmsHandlerModule"),
+   BOOKING_EVENT_HANDLER_SERVICE: Symbol("BookingEventHandlerService"),
+diff --git a/packages/features/bookings/lib/dto/IBookingAttendeeRepository.ts b/packages/features/bookings/lib/dto/IBookingAttendeeRepository.ts
+new file mode 100644
+index 000000000000..af29b952fe33
+--- /dev/null
++++ b/packages/features/bookings/lib/dto/IBookingAttendeeRepository.ts
+@@ -0,0 +1,3 @@
++export interface IBookingAttendeeRepository {
++  deleteManyByBookingId(bookingId: number): Promise<void>;
++}
+diff --git a/packages/features/bookings/lib/handleCancelBooking.ts b/packages/features/bookings/lib/handleCancelBooking.ts
+index a1dee57b982d..18cf7c32cc46 100644
+--- a/packages/features/bookings/lib/handleCancelBooking.ts
++++ b/packages/features/bookings/lib/handleCancelBooking.ts
+@@ -18,6 +18,8 @@ import { getAllWorkflowsFromEventType } from "@calcom/features/ee/workflows/lib/
+ import { sendCancelledReminders } from "@calcom/features/ee/workflows/lib/reminders/reminderScheduler";
+ import { WorkflowRepository } from "@calcom/features/ee/workflows/repositories/WorkflowRepository";
+ import { PrismaOrgMembershipRepository } from "@calcom/features/membership/repositories/PrismaOrgMembershipRepository";
++import { ProfileRepository } from "@calcom/features/profile/repositories/ProfileRepository";
++import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
+ import type { GetSubscriberOptions } from "@calcom/features/webhooks/lib/getWebhooks";
+ import getWebhooks from "@calcom/features/webhooks/lib/getWebhooks";
+ import {
+@@ -34,16 +36,19 @@ import { parseRecurringEvent } from "@calcom/lib/isRecurringEvent";
+ import logger from "@calcom/lib/logger";
+ import { safeStringify } from "@calcom/lib/safeStringify";
+ import { getTranslation } from "@calcom/lib/server/i18n";
++import { BookingReferenceRepository } from "@calcom/features/bookingReference/repositories/BookingReferenceRepository";
+ import { getTimeFormatStringFromUserTimeFormat } from "@calcom/lib/timeFormat";
+ // TODO: Prisma import would be used from DI in a followup PR when we remove `handler` export
+ import prisma from "@calcom/prisma";
+-import type { Prisma, PrismaClient, WorkflowReminder } from "@calcom/prisma/client";
++import type { WorkflowMethods } from "@calcom/prisma/enums";
+ import type { WebhookTriggerEvents } from "@calcom/prisma/enums";
+ import { BookingStatus } from "@calcom/prisma/enums";
+ import { bookingMetadataSchema, bookingCancelInput } from "@calcom/prisma/zod-utils";
+ import type { EventTypeMetadata } from "@calcom/prisma/zod-utils";
+ import type { CalendarEvent } from "@calcom/types/Calendar";
+ 
++import { BookingRepository } from "../repositories/BookingRepository";
++import { PrismaBookingAttendeeRepository } from "../repositories/PrismaBookingAttendeeRepository";
+ import type {
+   CancelRegularBookingData,
+   CancelBookingMeta,
+@@ -81,6 +86,14 @@ export type CancelBookingInput = {
+   actionSource?: ActionSource;
+ } & PlatformParams;
+ 
++type Dependencies = {
++  userRepository: UserRepository;
++  bookingRepository: BookingRepository;
++  profileRepository: ProfileRepository;
++  bookingReferenceRepository: BookingReferenceRepository;
++  attendeeRepository: PrismaBookingAttendeeRepository;
++};
++
+ /**
+  * Its job is to ensure that an actor is always returned, otherwise we won't be able to audit the action.
+  */
+@@ -123,7 +136,21 @@ function getAuditActor({
+   return makeGuestActor({ email: actorEmail, name: null });
+ }
+ 
+-async function handler(input: CancelBookingInput) {
++async function handler(input: CancelBookingInput, dependencies?: Dependencies) {
++  const prismaClient = prisma;
++  const {
++    userRepository,
++    bookingRepository,
++    profileRepository,
++    bookingReferenceRepository,
++    attendeeRepository,
++  } = dependencies || {
++    userRepository: new UserRepository(prismaClient),
++    bookingRepository: new BookingRepository(prismaClient),
++    profileRepository: new ProfileRepository({ prismaClient }),
++    bookingReferenceRepository: new BookingReferenceRepository({ prismaClient }),
++    attendeeRepository: new PrismaBookingAttendeeRepository(prismaClient),
++  };
+   const body = input.bookingData;
+   const {
+     id,
+@@ -269,19 +296,8 @@ async function handler(input: CancelBookingInput) {
+ 
+   const webhooks = await getWebhooks(subscriberOptions);
+ 
+-  const organizer = await prisma.user.findUniqueOrThrow({
+-    where: {
+-      id: bookingToDelete.userId,
+-    },
+-    select: {
+-      id: true,
+-      username: true,
+-      name: true,
+-      email: true,
+-      timeZone: true,
+-      timeFormat: true,
+-      locale: true,
+-    },
++  const organizer = await userRepository.findByIdOrThrow({
++    id: bookingToDelete.userId,
+   });
+ 
+   const teamMembersPromises = [];
+@@ -320,10 +336,8 @@ async function handler(input: CancelBookingInput) {
+   const teamMembers = await Promise.all(teamMembersPromises);
+   const tOrganizer = await getTranslation(organizer.locale ?? "en", "common");
+ 
+-  const ownerProfile = await prisma.profile.findFirst({
+-    where: {
+-      userId: bookingToDelete.userId,
+-    },
++  const ownerProfile = await profileRepository.findFirstByUserId({
++    userId: bookingToDelete.userId,
+   });
+ 
+   const bookerUrl = await getBookerBaseUrl(
+@@ -371,12 +385,12 @@ async function handler(input: CancelBookingInput) {
+     cancellationReason: cancellationReason,
+     ...(teamMembers &&
+       teamId && {
+-        team: {
+-          name: bookingToDelete?.eventType?.team?.name || "Nameless",
+-          members: teamMembers,
+-          id: teamId,
+-        },
+-      }),
++      team: {
++        name: bookingToDelete?.eventType?.team?.name || "Nameless",
++        members: teamMembers,
++        id: teamId,
++      },
++    }),
+     seatsPerTimeSlot: bookingToDelete.eventType?.seatsPerTimeSlot,
+     seatsShowAttendees: bookingToDelete.eventType?.seatsShowAttendees,
+     iCalUID: bookingToDelete.iCalUID,
+@@ -456,7 +470,11 @@ async function handler(input: CancelBookingInput) {
+   let updatedBookings: {
+     id: number;
+     uid: string;
+-    workflowReminders: WorkflowReminder[];
++    workflowReminders: {
++      id: number;
++      referenceId: string | null;
++      method: WorkflowMethods;
++    }[];
+     references: {
+       type: string;
+       credentialId: number | null;
+@@ -479,7 +497,7 @@ async function handler(input: CancelBookingInput) {
+     const recurringEventId = bookingToDelete.recurringEventId;
+     const gte = cancelSubsequentBookings ? bookingToDelete.startTime : new Date();
+     // Proceed to mark as cancelled all remaining recurring events instances (greater than or equal to right now)
+-    await prisma.booking.updateMany({
++    await bookingRepository.updateMany({
+       where: {
+         recurringEventId,
+         startTime: {
+@@ -492,27 +510,12 @@ async function handler(input: CancelBookingInput) {
+         cancelledBy: cancelledBy,
+       },
+     });
+-    const allUpdatedBookings = await prisma.booking.findMany({
++    const allUpdatedBookings = await bookingRepository.findManyIncludeWorkflowRemindersAndReferences({
+       where: {
+         recurringEventId: bookingToDelete.recurringEventId,
+         startTime: {
+-          gte: new Date(),
+-        },
+-      },
+-      select: {
+-        id: true,
+-        startTime: true,
+-        endTime: true,
+-        references: {
+-          select: {
+-            uid: true,
+-            type: true,
+-            externalCalendarId: true,
+-            credentialId: true,
+-          },
++          gte: bookingToDelete.startTime,
+         },
+-        workflowReminders: true,
+-        uid: true,
+       },
+     });
+     updatedBookings = updatedBookings.concat(allUpdatedBookings);
+@@ -537,17 +540,13 @@ async function handler(input: CancelBookingInput) {
+     });
+   } else {
+     if (bookingToDelete?.eventType?.seatsPerTimeSlot) {
+-      await prisma.attendee.deleteMany({
+-        where: {
+-          bookingId: bookingToDelete.id,
+-        },
+-      });
++      await attendeeRepository.deleteManyByBookingId(bookingToDelete.id);
+     }
+ 
+-    const where: Prisma.BookingWhereUniqueInput = uid ? { uid } : { id };
+-
+-    const updatedBooking = await prisma.booking.update({
+-      where,
++    const updatedBooking = await bookingRepository.updateIncludeWorkflowRemindersAndReferences({
++      where: {
++        uid: bookingToDelete.uid,
++      },
+       data: {
+         status: BookingStatus.CANCELLED,
+         cancellationReason: cancellationReason,
+@@ -555,22 +554,8 @@ async function handler(input: CancelBookingInput) {
+         // Assume that canceling the booking is the last action
+         iCalSequence: evt.iCalSequence || 100,
+       },
+-      select: {
+-        id: true,
+-        startTime: true,
+-        endTime: true,
+-        references: {
+-          select: {
+-            uid: true,
+-            type: true,
+-            externalCalendarId: true,
+-            credentialId: true,
+-          },
+-        },
+-        workflowReminders: true,
+-        uid: true,
+-      },
+     });
++
+     updatedBookings.push(updatedBooking);
+ 
+     await bookingEventHandlerService.onBookingCancelled({
+@@ -651,12 +636,7 @@ async function handler(input: CancelBookingInput) {
+ 
+     await eventManager.cancelEvent(evt, bookingToDelete.references, isBookingInRecurringSeries);
+ 
+-    await prisma.bookingReference.updateMany({
+-      where: {
+-        bookingId: bookingToDelete.id,
+-      },
+-      data: { deleted: true },
+-    });
++    await bookingReferenceRepository.updateManyByBookingId(bookingToDelete.id, { deleted: true });
+   } catch (error) {
+     log.error(`Error deleting integrations`, safeStringify({ error }));
+   }
+@@ -721,8 +701,13 @@ async function handler(input: CancelBookingInput) {
+ }
+ 
+ type BookingCancelServiceDependencies = {
+-  prismaClient: PrismaClient;
++  userRepository: UserRepository;
++  bookingRepository: BookingRepository;
++  profileRepository: ProfileRepository;
++  bookingReferenceRepository: BookingReferenceRepository;
++  attendeeRepository: PrismaBookingAttendeeRepository;
+ };
++
+ /**
+  * Takes care of cancelling bookings. This includes regular bookings, recurring bookings, seated bookings, etc.
+  * Handles both individual booking cancellations and bulk cancellations for recurring events.
+@@ -735,8 +720,8 @@ export class BookingCancelService implements IBookingCancelService {
+       bookingData: input.bookingData,
+       ...(input.bookingMeta || {}),
+     };
+-    // TODO: Deps to be passed to it later when we stop exporting handler
+-    return handler(cancelBookingInput);
++
++    return handler(cancelBookingInput, this.deps);
+   }
+ }
+ 
+diff --git a/packages/features/bookings/lib/handleCancelBooking/test/handleCancelBooking.test.ts b/packages/features/bookings/lib/handleCancelBooking/test/handleCancelBooking.test.ts
+index 18f76fd7f9db..e1c15fddaac1 100644
+--- a/packages/features/bookings/lib/handleCancelBooking/test/handleCancelBooking.test.ts
++++ b/packages/features/bookings/lib/handleCancelBooking/test/handleCancelBooking.test.ts
+@@ -1053,4 +1053,465 @@ describe("Cancel Booking", () => {
+       },
+     });
+   });
++
++  test("Should cancel seated event and delete all attendees when seatsPerTimeSlot is enabled", async () => {
++    const handleCancelBooking = (await import("@calcom/features/bookings/lib/handleCancelBooking")).default;
++
++    const booker = getBooker({
++      email: "booker@example.com",
++      name: "Booker",
++    });
++
++    const attendee2 = getBooker({
++      email: "attendee2@example.com",
++      name: "Attendee 2",
++    });
++
++    const organizer = getOrganizer({
++      name: "Organizer",
++      email: "organizer@example.com",
++      id: 101,
++      schedules: [TestData.schedules.IstWorkHours],
++      credentials: [getGoogleCalendarCredential()],
++      selectedCalendars: [TestData.selectedCalendars.google],
++    });
++
++    const uidOfBookingToBeCancelled = "seated-event-booking";
++    const idOfBookingToBeCancelled = 4050;
++    const { dateString: plus1DateString } = getDate({ dateIncrement: 1 });
++
++    await createBookingScenario(
++      getScenarioData({
++        eventTypes: [
++          {
++            id: 1,
++            slotInterval: 30,
++            length: 30,
++            seatsPerTimeSlot: 5, // Enable seated events
++            users: [
++              {
++                id: 101,
++              },
++            ],
++            hosts: [
++              {
++                id: 101,
++                userId: 101,
++              },
++            ],
++          },
++        ],
++        bookings: [
++          {
++            id: idOfBookingToBeCancelled,
++            uid: uidOfBookingToBeCancelled,
++            attendees: [
++              {
++                email: booker.email,
++              },
++              {
++                email: attendee2.email,
++              },
++            ],
++            eventTypeId: 1,
++            userId: 101,
++            responses: {
++              email: booker.email,
++              name: booker.name,
++              location: { optionValue: "", value: BookingLocations.CalVideo },
++            },
++            status: BookingStatus.ACCEPTED,
++            startTime: `${plus1DateString}T05:00:00.000Z`,
++            endTime: `${plus1DateString}T05:30:00.000Z`,
++          },
++        ],
++        organizer,
++        apps: [TestData.apps["daily-video"]],
++      })
++    );
++
++    mockSuccessfulVideoMeetingCreation({
++      metadataLookupKey: "dailyvideo",
++      videoMeetingData: {
++        id: "MOCK_ID",
++        password: "MOCK_PASS",
++        url: `http://mock-dailyvideo.example.com/meeting-seated`,
++      },
++    });
++
++    mockCalendarToHaveNoBusySlots("googlecalendar", {
++      create: {
++        id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID_SEATED",
++      },
++    });
++
++    const result = await handleCancelBooking({
++      bookingData: {
++        id: idOfBookingToBeCancelled,
++        uid: uidOfBookingToBeCancelled,
++        cancelledBy: organizer.email,
++        cancellationReason: "Cancelling seated event",
++      },
++      userId: organizer.id,
++    });
++
++    expect(result.success).toBe(true);
++    expect(result.onlyRemovedAttendee).toBe(false);
++    expect(result.bookingId).toBe(idOfBookingToBeCancelled);
++  });
++
++  test("Should cancel all remaining recurring bookings when allRemainingBookings is true", async () => {
++    const handleCancelBooking = (await import("@calcom/features/bookings/lib/handleCancelBooking")).default;
++
++    const booker = getBooker({
++      email: "booker@example.com",
++      name: "Booker",
++    });
++
++    const organizer = getOrganizer({
++      name: "Organizer",
++      email: "organizer@example.com",
++      id: 101,
++      schedules: [TestData.schedules.IstWorkHours],
++      credentials: [getGoogleCalendarCredential()],
++      selectedCalendars: [TestData.selectedCalendars.google],
++    });
++
++    const uidOfBookingToBeCancelled = "recurring-booking-1";
++    const idOfBookingToBeCancelled = 5060;
++    const { dateString: plus1DateString } = getDate({ dateIncrement: 1 });
++    const { dateString: plus2DateString } = getDate({ dateIncrement: 2 });
++    const recurringEventId = "recurring-event-123";
++
++    await createBookingScenario(
++      getScenarioData({
++        eventTypes: [
++          {
++            id: 1,
++            slotInterval: 30,
++            length: 30,
++            recurringEvent: {
++              freq: 2, // weekly
++              count: 3,
++              interval: 1,
++            },
++            users: [
++              {
++                id: 101,
++              },
++            ],
++          },
++        ],
++        bookings: [
++          {
++            id: idOfBookingToBeCancelled,
++            uid: uidOfBookingToBeCancelled,
++            recurringEventId,
++            attendees: [
++              {
++                email: booker.email,
++              },
++            ],
++            eventTypeId: 1,
++            userId: 101,
++            responses: {
++              email: booker.email,
++              name: booker.name,
++              location: { optionValue: "", value: BookingLocations.CalVideo },
++            },
++            status: BookingStatus.ACCEPTED,
++            startTime: `${plus1DateString}T05:00:00.000Z`,
++            endTime: `${plus1DateString}T05:30:00.000Z`,
++          },
++          // Additional recurring booking instance
++          {
++            id: idOfBookingToBeCancelled + 1,
++            uid: "recurring-booking-2",
++            recurringEventId,
++            attendees: [
++              {
++                email: booker.email,
++              },
++            ],
++            eventTypeId: 1,
++            userId: 101,
++            responses: {
++              email: booker.email,
++              name: booker.name,
++              location: { optionValue: "", value: BookingLocations.CalVideo },
++            },
++            status: BookingStatus.ACCEPTED,
++            startTime: `${plus2DateString}T05:00:00.000Z`,
++            endTime: `${plus2DateString}T05:30:00.000Z`,
++          },
++        ],
++        organizer,
++        apps: [TestData.apps["daily-video"]],
++      })
++    );
++
++    mockSuccessfulVideoMeetingCreation({
++      metadataLookupKey: "dailyvideo",
++      videoMeetingData: {
++        id: "MOCK_ID",
++        password: "MOCK_PASS",
++        url: `http://mock-dailyvideo.example.com/meeting-recurring`,
++      },
++    });
++
++    mockCalendarToHaveNoBusySlots("googlecalendar", {
++      create: {
++        id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID_RECURRING",
++      },
++    });
++
++    const result = await handleCancelBooking({
++      bookingData: {
++        id: idOfBookingToBeCancelled,
++        uid: uidOfBookingToBeCancelled,
++        cancelledBy: organizer.email,
++        cancellationReason: "Cancelling all remaining recurring bookings",
++        allRemainingBookings: true,
++      },
++      userId: organizer.id,
++    });
++
++    expect(result.success).toBe(true);
++    expect(result.onlyRemovedAttendee).toBe(false);
++    expect(result.bookingId).toBe(idOfBookingToBeCancelled);
++  });
++
++  test("Should cancel subsequent bookings when cancelSubsequentBookings is true", async () => {
++    const handleCancelBooking = (await import("@calcom/features/bookings/lib/handleCancelBooking")).default;
++
++    const booker = getBooker({
++      email: "booker@example.com",
++      name: "Booker",
++    });
++
++    const organizer = getOrganizer({
++      name: "Organizer",
++      email: "organizer@example.com",
++      id: 101,
++      schedules: [TestData.schedules.IstWorkHours],
++      credentials: [getGoogleCalendarCredential()],
++      selectedCalendars: [TestData.selectedCalendars.google],
++    });
++
++    const uidOfBookingToBeCancelled = "recurring-subsequent-1";
++    const idOfBookingToBeCancelled = 6070;
++    const { dateString: plus1DateString } = getDate({ dateIncrement: 1 });
++    const { dateString: plus2DateString } = getDate({ dateIncrement: 2 });
++    const recurringEventId = "recurring-subsequent-456";
++
++    await createBookingScenario(
++      getScenarioData({
++        eventTypes: [
++          {
++            id: 1,
++            slotInterval: 30,
++            length: 30,
++            recurringEvent: {
++              freq: 2, // weekly
++              count: 3,
++              interval: 1,
++            },
++            users: [
++              {
++                id: 101,
++              },
++            ],
++          },
++        ],
++        bookings: [
++          {
++            id: idOfBookingToBeCancelled,
++            uid: uidOfBookingToBeCancelled,
++            recurringEventId,
++            attendees: [
++              {
++                email: booker.email,
++              },
++            ],
++            eventTypeId: 1,
++            userId: 101,
++            responses: {
++              email: booker.email,
++              name: booker.name,
++              location: { optionValue: "", value: BookingLocations.CalVideo },
++            },
++            status: BookingStatus.ACCEPTED,
++            startTime: `${plus1DateString}T05:00:00.000Z`,
++            endTime: `${plus1DateString}T05:30:00.000Z`,
++          },
++          // Subsequent booking that should be cancelled
++          {
++            id: idOfBookingToBeCancelled + 1,
++            uid: "recurring-subsequent-2",
++            recurringEventId,
++            attendees: [
++              {
++                email: booker.email,
++              },
++            ],
++            eventTypeId: 1,
++            userId: 101,
++            responses: {
++              email: booker.email,
++              name: booker.name,
++              location: { optionValue: "", value: BookingLocations.CalVideo },
++            },
++            status: BookingStatus.ACCEPTED,
++            startTime: `${plus2DateString}T05:00:00.000Z`,
++            endTime: `${plus2DateString}T05:30:00.000Z`,
++          },
++        ],
++        organizer,
++        apps: [TestData.apps["daily-video"]],
++      })
++    );
++
++    mockSuccessfulVideoMeetingCreation({
++      metadataLookupKey: "dailyvideo",
++      videoMeetingData: {
++        id: "MOCK_ID",
++        password: "MOCK_PASS",
++        url: `http://mock-dailyvideo.example.com/meeting-subsequent`,
++      },
++    });
++
++    mockCalendarToHaveNoBusySlots("googlecalendar", {
++      create: {
++        id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID_SUBSEQUENT",
++      },
++    });
++
++    const result = await handleCancelBooking({
++      bookingData: {
++        id: idOfBookingToBeCancelled,
++        uid: uidOfBookingToBeCancelled,
++        cancelledBy: organizer.email,
++        cancellationReason: "Cancelling this and all subsequent bookings",
++        cancelSubsequentBookings: true,
++      },
++      userId: organizer.id,
++    });
++
++    expect(result.success).toBe(true);
++    expect(result.onlyRemovedAttendee).toBe(false);
++    expect(result.bookingId).toBe(idOfBookingToBeCancelled);
++  });
++
++  test("Should handle booking reference cleanup during cancellation", async () => {
++    const handleCancelBooking = (await import("@calcom/features/bookings/lib/handleCancelBooking")).default;
++
++    const booker = getBooker({
++      email: "booker@example.com",
++      name: "Booker",
++    });
++
++    const organizer = getOrganizer({
++      name: "Organizer",
++      email: "organizer@example.com",
++      id: 101,
++      schedules: [TestData.schedules.IstWorkHours],
++      credentials: [getGoogleCalendarCredential()],
++      selectedCalendars: [TestData.selectedCalendars.google],
++    });
++
++    const uidOfBookingToBeCancelled = "booking-with-references";
++    const idOfBookingToBeCancelled = 7080;
++    const { dateString: plus1DateString } = getDate({ dateIncrement: 1 });
++
++    await createBookingScenario(
++      getScenarioData({
++        eventTypes: [
++          {
++            id: 1,
++            slotInterval: 30,
++            length: 30,
++            users: [
++              {
++                id: 101,
++              },
++            ],
++          },
++        ],
++        bookings: [
++          {
++            id: idOfBookingToBeCancelled,
++            uid: uidOfBookingToBeCancelled,
++            attendees: [
++              {
++                email: booker.email,
++              },
++            ],
++            eventTypeId: 1,
++            userId: 101,
++            responses: {
++              email: booker.email,
++              name: booker.name,
++              location: { optionValue: "", value: BookingLocations.CalVideo },
++            },
++            status: BookingStatus.ACCEPTED,
++            startTime: `${plus1DateString}T05:00:00.000Z`,
++            endTime: `${plus1DateString}T05:30:00.000Z`,
++            references: [
++              {
++                id: 1,
++                type: "daily_video",
++                uid: "daily-meeting-ref",
++                meetingId: "daily123",
++                meetingUrl: "https://daily.co/meeting123",
++                meetingPassword: "pass123",
++                credentialId: 1,
++                deleted: null,
++              },
++              {
++                id: 2,
++                type: "google_calendar",
++                uid: "gcal-event-ref",
++                meetingId: "gcal456",
++                meetingUrl: null,
++                meetingPassword: null,
++                credentialId: 2,
++                deleted: null,
++              },
++            ],
++          },
++        ],
++        organizer,
++        apps: [TestData.apps["daily-video"], TestData.apps["google-calendar"]],
++      })
++    );
++
++    mockSuccessfulVideoMeetingCreation({
++      metadataLookupKey: "dailyvideo",
++      videoMeetingData: {
++        id: "MOCK_ID",
++        password: "MOCK_PASS",
++        url: `http://mock-dailyvideo.example.com/meeting-references`,
++      },
++    });
++
++    mockCalendarToHaveNoBusySlots("googlecalendar", {
++      create: {
++        id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID_REFERENCES",
++      },
++    });
++
++    const result = await handleCancelBooking({
++      bookingData: {
++        id: idOfBookingToBeCancelled,
++        uid: uidOfBookingToBeCancelled,
++        cancelledBy: organizer.email,
++        cancellationReason: "Testing booking reference cleanup",
++      },
++      userId: organizer.id,
++    });
++
++    expect(result.success).toBe(true);
++    expect(result.onlyRemovedAttendee).toBe(false);
++    expect(result.bookingId).toBe(idOfBookingToBeCancelled);
++  });
+ });
+diff --git a/packages/features/bookings/repositories/BookingRepository.ts b/packages/features/bookings/repositories/BookingRepository.ts
+index 64e2656ddf88..53a4497ca86f 100644
+--- a/packages/features/bookings/repositories/BookingRepository.ts
++++ b/packages/features/bookings/repositories/BookingRepository.ts
+@@ -10,6 +10,26 @@ import {
+ } from "@calcom/prisma/selects/booking";
+ import { credentialForCalendarServiceSelect } from "@calcom/prisma/selects/credential";
+ 
++import type {
++  BookingWhereInput,
++  IBookingRepository,
++  BookingUpdateData,
++  BookingWhereUniqueInput,
++} from "@calcom/lib/server/repository/dto/IBookingRepository";
++
++const workflowReminderSelect = {
++  id: true,
++  referenceId: true,
++  method: true,
++};
++
++const referenceSelect = {
++  uid: true,
++  type: true,
++  externalCalendarId: true,
++  credentialId: true,
++};
++
+ type ManagedEventReassignmentCreateParams = {
+   uid: string;
+   userId: number;
+@@ -324,7 +344,7 @@ const selectStatementToGetBookingForCalEventBuilder = {
+   },
+ };
+ 
+-export class BookingRepository {
++export class BookingRepository implements IBookingRepository {
+   constructor(private prismaClient: PrismaClient) {}
+ 
+   /**
+@@ -1479,6 +1499,71 @@ export class BookingRepository {
+     });
+   }
+ 
++async updateMany({ where, data }: { where: BookingWhereInput; data: BookingUpdateData }) {
++    await this.prismaClient.booking.updateMany({
++      where: where,
++      data,
++    });
++  }
++
++  async update({ where, data }: { where: BookingWhereUniqueInput; data: BookingUpdateData }) {
++    return await this.prismaClient.booking.update({
++      where,
++      data,
++    });
++  }
++
++  /**
++   * Update a booking and return it with workflow reminders and references
++   * Used during booking cancellation to update status and retrieve related data in one query
++   */
++  async updateIncludeWorkflowRemindersAndReferences({
++    where,
++    data,
++  }: {
++    where: BookingWhereUniqueInput;
++    data: BookingUpdateData;
++  }) {
++    return await this.prismaClient.booking.update({
++      where,
++      data,
++      select: {
++        id: true,
++        startTime: true,
++        endTime: true,
++        references: {
++          select: referenceSelect,
++        },
++        workflowReminders: {
++          select: workflowReminderSelect,
++        },
++        uid: true,
++      },
++    });
++  }
++
++  /**
++   * Find bookings with workflow reminders for cleanup during cancellation
++   * Used after bulk cancellation of recurring events
++   */
++  async findManyIncludeWorkflowRemindersAndReferences({ where }: { where: BookingWhereInput }) {
++    return await this.prismaClient.booking.findMany({
++      where,
++      select: {
++        id: true,
++        startTime: true,
++        endTime: true,
++        references: {
++          select: referenceSelect,
++        },
++        workflowReminders: {
++          select: workflowReminderSelect,
++        },
++        uid: true,
++      },
++    });
++  }
++
+   async getBookingForCalEventBuilder(bookingId: number) {
+     return await this.prismaClient.booking.findUnique({
+       where: { id: bookingId },
+@@ -1492,6 +1577,7 @@ export class BookingRepository {
+       select: selectStatementToGetBookingForCalEventBuilder,
+     });
+   }
++
+   async findByIdIncludeDestinationCalendar(bookingId: number) {
+     return await this.prismaClient.booking.findUnique({
+       where: {
+diff --git a/packages/features/bookings/repositories/PrismaBookingAttendeeRepository.ts b/packages/features/bookings/repositories/PrismaBookingAttendeeRepository.ts
+new file mode 100644
+index 000000000000..0256fb906591
+--- /dev/null
++++ b/packages/features/bookings/repositories/PrismaBookingAttendeeRepository.ts
+@@ -0,0 +1,15 @@
++import type { PrismaClient } from '@calcom/prisma/client'
++
++import type { IBookingAttendeeRepository } from '../lib/dto/IBookingAttendeeRepository'
++
++export class PrismaBookingAttendeeRepository implements IBookingAttendeeRepository {
++  constructor(private prismaClient: PrismaClient) {}
++
++  async deleteManyByBookingId(bookingId: number): Promise<void> {
++    await this.prismaClient.attendee.deleteMany({
++      where: {
++        bookingId,
++      },
++    })
++  }
++}
+diff --git a/packages/features/di/tokens.ts b/packages/features/di/tokens.ts
+index 310741a27331..e79f36e8dcb9 100644
+--- a/packages/features/di/tokens.ts
++++ b/packages/features/di/tokens.ts
+@@ -62,6 +62,8 @@ export const DI_TOKENS = {
+   HOLIDAY_REPOSITORY_MODULE: Symbol("HolidayRepositoryModule"),
+   ATTRIBUTE_REPOSITORY: Symbol("AttributeRepository"),
+   ATTRIBUTE_REPOSITORY_MODULE: Symbol("AttributeRepositoryModule"),
++  PROFILE_REPOSITORY: Symbol("ProfileRepository"),
++  PROFILE_REPOSITORY_MODULE: Symbol("ProfileRepositoryModule"),
+   MEMBERSHIP_SERVICE: Symbol("MembershipService"),
+   MEMBERSHIP_SERVICE_MODULE: Symbol("MembershipServiceModule"),
+   ASSIGNMENT_REASON_REPOSITORY: Symbol("AssignmentReasonRepository"),
+diff --git a/packages/features/profile/repositories/ProfileRepository.ts b/packages/features/profile/repositories/ProfileRepository.ts
+index 5a7e71d95702..857abe000f5a 100644
+--- a/packages/features/profile/repositories/ProfileRepository.ts
++++ b/packages/features/profile/repositories/ProfileRepository.ts
+@@ -7,13 +7,15 @@ import { DATABASE_CHUNK_SIZE } from "@calcom/lib/constants";
+ import logger from "@calcom/lib/logger";
+ import { safeStringify } from "@calcom/lib/safeStringify";
+ import prisma from "@calcom/prisma";
+-import type { User as PrismaUser } from "@calcom/prisma/client";
++import type { PrismaClient, User as PrismaUser } from "@calcom/prisma/client";
+ import type { Prisma } from "@calcom/prisma/client";
+ import type { Team } from "@calcom/prisma/client";
+ import { MembershipRole } from "@calcom/prisma/enums";
+ import { userMetadata } from "@calcom/prisma/zod-utils";
+ import type { UpId, UserAsPersonalProfile, UserProfile } from "@calcom/types/UserProfile";
+ 
++import type { IProfileRepository } from "@calcom/lib/server/repository/dto/IProfileRepository";
++
+ const userSelect = {
+   name: true,
+   avatarUrl: true,
+@@ -95,7 +97,13 @@ export enum LookupTarget {
+   Profile,
+ }
+ 
+-export class ProfileRepository {
++export class ProfileRepository implements IProfileRepository {
++  private prismaClient: PrismaClient;
++
++  constructor(deps: { prismaClient: PrismaClient }) {
++    this.prismaClient = deps.prismaClient;
++  }
++
+   static generateProfileUid() {
+     return uuidv4();
+   }
+@@ -207,12 +215,12 @@ export class ProfileRepository {
+         },
+         ...(movedFromUserId
+           ? {
+-              movedFromUser: {
+-                connect: {
+-                  id: movedFromUserId,
+-                },
++            movedFromUser: {
++              connect: {
++                id: movedFromUserId,
+               },
+-            }
++            },
++          }
+           : null),
+ 
+         username: username || email.split("@")[0],
+@@ -1009,19 +1017,28 @@ export class ProfileRepository {
+       profiles: {
+         ...(orgSlug
+           ? {
+-              some: {
+-                organization: {
+-                  slug: orgSlug,
+-                },
++            some: {
++              organization: {
++                slug: orgSlug,
+               },
+-            }
++            },
++          }
+           : // If it's not orgSlug we want to ensure that no profile is there. Having a profile means that the user is a member of some organization.
+-            {
+-              none: {},
+-            }),
++          {
++            none: {},
++          }),
+       },
+     };
+   }
++
++  async findFirstByUserId({ userId }: { userId: number }) {
++    return this.prismaClient.profile.findFirst({
++      where: {
++        userId,
++      },
++      select: profileSelect,
++    });
++  }
+ }
+ 
+ export const normalizeProfile = <
+diff --git a/packages/features/users/di/Profile.module.ts b/packages/features/users/di/Profile.module.ts
+new file mode 100644
+index 000000000000..702baca636a7
+--- /dev/null
++++ b/packages/features/users/di/Profile.module.ts
+@@ -0,0 +1,22 @@
++import { bindModuleToClassOnToken, createModule, type ModuleLoader } from "@calcom/features/di/di";
++import { DI_TOKENS } from "@calcom/features/di/tokens";
++import { ProfileRepository } from "@calcom/features/profile/repositories/ProfileRepository";
++import { moduleLoader as prismaModuleLoader } from "@calcom/prisma/prisma.module";
++
++export const profileRepositoryModule = createModule();
++const token = DI_TOKENS.PROFILE_REPOSITORY;
++const moduleToken = DI_TOKENS.PROFILE_REPOSITORY_MODULE;
++const loadModule = bindModuleToClassOnToken({
++  module: profileRepositoryModule,
++  moduleToken,
++  token,
++  classs: ProfileRepository,
++  depsMap: {
++    prismaClient: prismaModuleLoader,
++  },
++});
++
++export const moduleLoader: ModuleLoader = {
++  token,
++  loadModule,
++};
+diff --git a/packages/features/users/repositories/UserRepository.ts b/packages/features/users/repositories/UserRepository.ts
+index e37b19e17083..3866e668d426 100644
+--- a/packages/features/users/repositories/UserRepository.ts
++++ b/packages/features/users/repositories/UserRepository.ts
+@@ -98,7 +98,6 @@ const userSelect = {
+   createdDate: true,
+   trialEndsAt: true,
+   completedOnboarding: true,
+-  locale: true,
+   timeFormat: true,
+   twoFactorSecret: true,
+   twoFactorEnabled: true,
+diff --git a/packages/lib/server/repository/dto/IBookingReferenceRepository.ts b/packages/lib/server/repository/dto/IBookingReferenceRepository.ts
+new file mode 100644
+index 000000000000..35db8e7e90d9
+--- /dev/null
++++ b/packages/lib/server/repository/dto/IBookingReferenceRepository.ts
+@@ -0,0 +1,16 @@
++import type { Prisma } from "@calcom/prisma/client";
++
++/**
++ * Interface for Booking Reference repository operations
++ */
++export interface IBookingReferenceRepository {
++  // ... Add existing methods as well here
++  /**
++   * Update all booking references associated with a booking
++   * Used during booking cancellation cleanup to soft-delete references
++   */
++  updateManyByBookingId(
++    bookingId: number,
++    data: Prisma.BookingReferenceUpdateManyMutationInput
++  ): Promise<void>;
++}
+diff --git a/packages/lib/server/repository/dto/IBookingRepository.ts b/packages/lib/server/repository/dto/IBookingRepository.ts
+new file mode 100644
+index 000000000000..15303ef15985
+--- /dev/null
++++ b/packages/lib/server/repository/dto/IBookingRepository.ts
+@@ -0,0 +1,55 @@
++import { Booking } from "@calcom/prisma/client";
++import type { BookingStatus, WorkflowMethods } from "@calcom/prisma/enums";
++
++export interface BookingWhereInput {
++  id?: number;
++  uid?: string;
++  recurringEventId?: string | null;
++  startTime?: {
++    gte?: Date;
++  };
++}
++
++export type BookingWhereUniqueInput =
++  | {
++    id: number;
++  }
++  | {
++    uid: string;
++  };
++
++export interface BookingUpdateData {
++  status?: BookingStatus;
++  cancellationReason?: string | null;
++  cancelledBy?: string | null;
++  iCalSequence?: number;
++}
++
++interface BookingWithWorkflowReminders {
++  id: number;
++  startTime: Date;
++  endTime: Date;
++  references: {
++    uid: string;
++    type: string;
++    externalCalendarId: string | null;
++    credentialId: number | null;
++  }[];
++  workflowReminders: {
++    id: number;
++    method: WorkflowMethods;
++    referenceId: string | null;
++  }[];
++  uid: string;
++}
++
++export interface IBookingRepository {
++  // ... Add existing methods as well here
++  updateMany(params: { where: BookingWhereInput; data: BookingUpdateData }): Promise<{ count: number }>;
++
++  update(params: { where: BookingWhereUniqueInput; data: BookingUpdateData }): Promise<Booking>;
++
++  findManyIncludeWorkflowRemindersAndReferences(params: {
++    where: BookingWhereInput;
++  }): Promise<BookingWithWorkflowReminders[]>;
++}
+diff --git a/packages/lib/server/repository/dto/IProfileRepository.ts b/packages/lib/server/repository/dto/IProfileRepository.ts
+new file mode 100644
+index 000000000000..214b8a65f9e7
+--- /dev/null
++++ b/packages/lib/server/repository/dto/IProfileRepository.ts
+@@ -0,0 +1,13 @@
++export interface OrganizationProfile {
++  id: number;
++  uid: string;
++  userId: number;
++  organizationId: number;
++  username: string;
++  createdAt: Date;
++  updatedAt: Date;
++}
++
++export interface IProfileRepository {
++  findFirstByUserId({ userId }: { userId: number }): Promise<OrganizationProfile | null>;
++}
+diff --git a/packages/platform/libraries/repositories.ts b/packages/platform/libraries/repositories.ts
+index 8b3107162a0c..4083af791561 100644
+--- a/packages/platform/libraries/repositories.ts
++++ b/packages/platform/libraries/repositories.ts
+@@ -11,5 +11,8 @@ export { UserRepository as PrismaUserRepository } from "@calcom/features/users/r
+ export { FeaturesRepository as PrismaFeaturesRepository } from "@calcom/features/flags/features.repository";
+ export { MembershipRepository as PrismaMembershipRepository } from "@calcom/features/membership/repositories/MembershipRepository";
+ export { HostRepository as PrismaHostRepository } from "@calcom/features/host/repositories/HostRepository";
++export { BookingReferenceRepository as PrismaBookingReferenceRepository } from "@calcom/features/bookingReference/repositories/BookingReferenceRepository";
++export { PrismaBookingAttendeeRepository } from "@calcom/features/bookings/repositories/PrismaBookingAttendeeRepository";
++export { ProfileRepository as PrismaProfileRepository } from "@calcom/features/profile/repositories/ProfileRepository";
+ export { AccessCodeRepository as PrismaAccessCodeRepository } from "@calcom/features/oauth/repositories/AccessCodeRepository";
+ export { OAuthClientRepository as PrismaOAuthClientRepository } from "@calcom/features/oauth/repositories/OAuthClientRepository";

@@ -1,0 +1,124 @@
+diff --git a/web/app/components/devtools/react-scan/loader.tsx b/web/app/components/devtools/react-scan/loader.tsx
+new file mode 100644
+index 00000000000000..a72b271dc8e0e9
+--- /dev/null
++++ b/web/app/components/devtools/react-scan/loader.tsx
+@@ -0,0 +1,24 @@
++'use client'
++
++import { lazy, Suspense } from 'react'
++import { IS_DEV } from '@/config'
++
++const ReactScan = lazy(() =>
++  import('./scan').then(module => ({
++    default: module.ReactScan,
++  })).catch((error) => {
++    console.error('Failed to load React Scan devtools:', error)
++    return { default: () => null }
++  }),
++)
++
++export const ReactScanLoader = () => {
++  if (!IS_DEV)
++    return null
++
++  return (
++    <Suspense fallback={<div className="text-xs text-gray-500">Loading devtools...</div>}>
++      <ReactScan />
++    </Suspense>
++  )
++}
+diff --git a/web/app/components/react-scan.tsx b/web/app/components/devtools/react-scan/scan.tsx
+similarity index 100%
+rename from web/app/components/react-scan.tsx
+rename to web/app/components/devtools/react-scan/scan.tsx
+diff --git a/web/app/components/devtools.tsx b/web/app/components/devtools/tanstack/devtools.tsx
+similarity index 100%
+rename from web/app/components/devtools.tsx
+rename to web/app/components/devtools/tanstack/devtools.tsx
+diff --git a/web/app/components/devtools/tanstack/loader.tsx b/web/app/components/devtools/tanstack/loader.tsx
+new file mode 100644
+index 00000000000000..08b2bda2e0f24a
+--- /dev/null
++++ b/web/app/components/devtools/tanstack/loader.tsx
+@@ -0,0 +1,23 @@
++'use client'
++
++import { lazy, Suspense } from 'react'
++import { IS_DEV } from '@/config'
++
++const TanStackDevtoolsWrapper = lazy(() =>
++  import('./devtools').then(module => ({
++    default: module.TanStackDevtoolsWrapper,
++  })).catch(() => {
++    return { default: () => null }
++  }),
++)
++
++export const TanStackDevtoolsLoader = () => {
++  if (!IS_DEV)
++    return null
++
++  return (
++    <Suspense fallback={null}>
++      <TanStackDevtoolsWrapper />
++    </Suspense>
++  )
++}
+diff --git a/web/app/layout.tsx b/web/app/layout.tsx
+index c182f12dc99277..fa1f7d48b553ba 100644
+--- a/web/app/layout.tsx
++++ b/web/app/layout.tsx
+@@ -8,8 +8,8 @@ import { getLocaleOnServer } from '@/i18n-config/server'
+ import { DatasetAttr } from '@/types/feature'
+ import { cn } from '@/utils/classnames'
+ import BrowserInitializer from './components/browser-initializer'
++import { ReactScanLoader } from './components/devtools/react-scan/loader'
+ import I18nServer from './components/i18n-server'
+-import { ReactScan } from './components/react-scan'
+ import SentryInitializer from './components/sentry-initializer'
+ import RoutePrefixHandle from './routePrefixHandle'
+ import './styles/globals.css'
+@@ -90,7 +90,7 @@ const LocaleLayout = async ({
+         className="color-scheme h-full select-auto"
+         {...datasetMap}
+       >
+-        <ReactScan />
++        <ReactScanLoader />
+         <ThemeProvider
+           attribute="data-theme"
+           defaultTheme="system"
+diff --git a/web/context/query-client.tsx b/web/context/query-client.tsx
+index 8882048a630a4b..a8c19fd4f461e1 100644
+--- a/web/context/query-client.tsx
++++ b/web/context/query-client.tsx
+@@ -2,14 +2,7 @@
+ 
+ import type { FC, PropsWithChildren } from 'react'
+ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+-import { lazy, Suspense } from 'react'
+-import { IS_DEV } from '@/config'
+-
+-const TanStackDevtoolsWrapper = lazy(() =>
+-  import('@/app/components/devtools').then(module => ({
+-    default: module.TanStackDevtoolsWrapper,
+-  })),
+-)
++import { TanStackDevtoolsLoader } from '@/app/components/devtools/tanstack/loader'
+ 
+ const STALE_TIME = 1000 * 60 * 30 // 30 minutes
+ 
+@@ -25,12 +18,8 @@ export const TanstackQueryInitializer: FC<PropsWithChildren> = (props) => {
+   const { children } = props
+   return (
+     <QueryClientProvider client={client}>
++      <TanStackDevtoolsLoader />
+       {children}
+-      {IS_DEV && (
+-        <Suspense fallback={null}>
+-          <TanStackDevtoolsWrapper />
+-        </Suspense>
+-      )}
+     </QueryClientProvider>
+   )
+ }

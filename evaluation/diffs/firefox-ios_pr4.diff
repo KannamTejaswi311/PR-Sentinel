@@ -1,0 +1,203 @@
+diff --git a/firefox-ios/firefox-ios-tests/Tests/AccessibilityTestPlan.xctestplan b/firefox-ios/firefox-ios-tests/Tests/AccessibilityTestPlan.xctestplan
+index 78a69588cc5c0..0891e49cf999c 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/AccessibilityTestPlan.xctestplan
++++ b/firefox-ios/firefox-ios-tests/Tests/AccessibilityTestPlan.xctestplan
+@@ -64,7 +64,6 @@
+         "ClipBoardTests",
+         "ClipBoardTests\/testClipboard()",
+         "ClipBoardTests\/testClipboardPasteAndGo()",
+-        "ClipBoardTests\/testCopyLink()",
+         "CookiePersistenceTests",
+         "CookiePersistenceTests\/testCookiePersistenceBasic()",
+         "CookiePersistenceTests\/testCookiePersistenceOpenNewTab()",
+@@ -189,7 +188,6 @@
+         "HomePageSettingsUITests\/testDisableTopSitesSettingsRemovesSection()",
+         "HomePageSettingsUITests\/testJumpBackIn()",
+         "HomePageSettingsUITests\/testRecentlySaved()",
+-        "HomePageSettingsUITests\/testSetCustomURLAsHome()",
+         "HomePageSettingsUITests\/testSetFirefoxHomeAsHome()",
+         "HomePageSettingsUITests\/testShortcutsRows()",
+         "HomePageSettingsUITests\/testTyping()",
+diff --git a/firefox-ios/firefox-ios-tests/Tests/FullFunctionalTestPlan.xctestplan b/firefox-ios/firefox-ios-tests/Tests/FullFunctionalTestPlan.xctestplan
+index c5f6f6f03579d..4a4490fd0e28f 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/FullFunctionalTestPlan.xctestplan
++++ b/firefox-ios/firefox-ios-tests/Tests/FullFunctionalTestPlan.xctestplan
+@@ -176,7 +176,6 @@
+         "HomePageSettingsUITests\/testCustomizeHomepage()",
+         "HomePageSettingsUITests\/testCustomizeHomepage_TAE()",
+         "HomePageSettingsUITests\/testRecentlyVisited()",
+-        "HomePageSettingsUITests\/testSetCustomURLAsHome()",
+         "HomePageSettingsUITests\/testTyping()",
+         "HomePageUITest",
+         "HomepageSearchBarTests",
+diff --git a/firefox-ios/firefox-ios-tests/Tests/Smoketest.xctestplan b/firefox-ios/firefox-ios-tests/Tests/Smoketest.xctestplan
+index c4ba46537c99f..afc4982b4e7bf 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/Smoketest.xctestplan
++++ b/firefox-ios/firefox-ios-tests/Tests/Smoketest.xctestplan
+@@ -183,7 +183,6 @@
+         "C_AddressesTests\/testUpdateAddressFieldZIP()",
+         "C_AddressesTests\/testUpdateAllAddressFields()",
+         "ClipBoardTests\/testClipboard()",
+-        "ClipBoardTests\/testCopyLink()",
+         "CookiePersistenceTests",
+         "CookiePersistenceTests\/testCookiePersistenceBasic()",
+         "CookiePersistenceTests\/testCookiePersistenceOpenNewTab()",
+@@ -301,7 +300,6 @@
+         "HomePageSettingsUITests\/testDisableTopSitesSettingsRemovesSection()",
+         "HomePageSettingsUITests\/testJumpBackIn()",
+         "HomePageSettingsUITests\/testRecentlySaved()",
+-        "HomePageSettingsUITests\/testSetCustomURLAsHome()",
+         "HomePageSettingsUITests\/testSetFirefoxHomeAsHome()",
+         "HomePageSettingsUITests\/testShortcutsRows()",
+         "HomePageSettingsUITests\/testTopSitesCustomNumberOfRows()",
+diff --git a/firefox-ios/firefox-ios-tests/Tests/TAESmokeTestPlan.xctestplan b/firefox-ios/firefox-ios-tests/Tests/TAESmokeTestPlan.xctestplan
+index 957da29928c28..cf46dcdf74899 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/TAESmokeTestPlan.xctestplan
++++ b/firefox-ios/firefox-ios-tests/Tests/TAESmokeTestPlan.xctestplan
+@@ -109,7 +109,6 @@
+         "ClipBoardTests",
+         "ClipBoardTests\/testClipboard()",
+         "ClipBoardTests\/testClipboardPasteAndGo()",
+-        "ClipBoardTests\/testCopyLink()",
+         "CookiePersistenceTests",
+         "CookiePersistenceTests\/testCookiePersistenceBasic()",
+         "CookiePersistenceTests\/testCookiePersistenceOpenNewTab()",
+@@ -263,7 +262,6 @@
+         "HomePageSettingsUITests\/testJumpBackIn_tabTrayExperimentOn()",
+         "HomePageSettingsUITests\/testRecentlySaved()",
+         "HomePageSettingsUITests\/testRecentlySaved_tabTrayExperimentOff()",
+-        "HomePageSettingsUITests\/testSetCustomURLAsHome()",
+         "HomePageSettingsUITests\/testSetFirefoxHomeAsHome()",
+         "HomePageSettingsUITests\/testShortcutsRows()",
+         "HomePageSettingsUITests\/testShortcutsRows_tabTrayExperimentOff()",
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/ClipBoardTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/ClipBoardTests.swift
+index 6ddb12e19537e..ce0e10ed2bc8e 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/ClipBoardTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/ClipBoardTests.swift
+@@ -8,13 +8,13 @@ class ClipBoardTests: BaseTestCase {
+     let url = "www.example.com"
+ 
+     // Check for test url in the browser
+-    func checkUrl() {
++    public func checkUrl() {
+         let urlTextField = app.textFields[AccessibilityIdentifiers.Browser.AddressToolbar.searchTextField]
+         mozWaitForValueContains(urlTextField, value: "example.com")
+     }
+ 
+     // Copy url from the browser
+-    func copyUrl() {
++    public func copyUrl() {
+         urlBarAddress.waitAndTap()
+         if iPad() {
+             var attemptsiPad = 2
+@@ -38,7 +38,7 @@ class ClipBoardTests: BaseTestCase {
+     }
+ 
+     // Check copied url is same as in browser
+-    func checkCopiedUrl() {
++    public func checkCopiedUrl() {
+         if #unavailable(iOS 16.0) {
+             if let myString = UIPasteboard.general.string {
+                 let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+@@ -68,7 +68,6 @@ class ClipBoardTests: BaseTestCase {
+         waitUntilPageLoad()
+         checkUrl()
+         copyUrl()
+-        checkCopiedUrl()
+ 
+         navigator.createNewTab()
+         mozWaitForElementToNotExist(app.staticTexts["XCUITests-Runner pasted from Fennec"])
+@@ -88,29 +87,6 @@ class ClipBoardTests: BaseTestCase {
+         }
+     }
+ 
+-    // https://mozilla.testrail.io/index.php?/cases/view/2307051
+-    func testCopyLink() {
+-        // Tap on "Copy Link
+-        navigator.openURL(url_3)
+-        waitForTabsButton()
+-        // Menu Refactor: No "Copy Link" from browser tab menu
+-        /*
+-        navigator.performAction(Action.CopyAddressPAM)
+-        // The Link is copied to clipboard
+-        mozWaitForElementToExist(app.staticTexts["URL Copied To Clipboard"])
+-        // Open a new tab. Long tap on the URL and tap "Paste & Go"
+-        navigator.performAction(Action.OpenNewTabFromTabTray)
+-        let urlBar = app.textFields[AccessibilityIdentifiers.Browser.AddressToolbar.searchTextField]
+-        mozWaitForElementToExist(urlBar)
+-        urlBar.press(forDuration: 1.5)
+-        app.otherElements[AccessibilityIdentifiers.Photon.pasteAndGoAction].waitAndTap()
+-        // The URL is pasted and the page is correctly loaded
+-        mozWaitForElementToExist(urlBar)
+-        waitForValueContains(urlBar, value: "localhost")
+-        mozWaitForElementToExist(app.staticTexts["Example Domain"])
+-        */
+-    }
+-
+     // https://mozilla.testrail.io/index.php?/cases/view/2325691
+     // Smoketest
+     func testClipboardPasteAndGo() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/DisplaySettingsTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/DisplaySettingsTests.swift
+index 7674bab3af98f..1387e03457ab2 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/DisplaySettingsTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/DisplaySettingsTests.swift
+@@ -43,14 +43,14 @@ class DisplaySettingTests: BaseTestCase {
+         XCTAssertEqual(darkThemeValue as? String, "0")
+     }
+ 
+-    // https://mozilla.testrail.io/index.php?/cases/view/2337487
++    // https://mozilla.testrail.io/index.php?/cases/view/3298823
+     func testCheckSystemThemeChanges() {
+         navigator.nowAt(NewTabScreen)
+         navigator.goto(DisplaySettings)
+ 
+         // Select Light mode
+         navigator.performAction(Action.SelectLightTheme)
+-        let lightIsSelected = app.buttons[AccessibilityIdentifiers.Settings.Appearance.lightThemeView].value
++        let lightIsSelected = app.buttons[AccessibilityIdentifiers.Settings.Appearance.darkThemeView].value
+         XCTAssertEqual(lightIsSelected as? String, "1")
+ 
+         // Select Dark mode
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/HomePageSettingsUITest.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/HomePageSettingsUITest.swift
+index 7b62366b405b1..63ba0aa46f95f 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/HomePageSettingsUITest.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/HomePageSettingsUITest.swift
+@@ -140,28 +140,6 @@ class HomePageSettingsUITests: FeatureFlaggedTestBase {
+         mozWaitForElementToExist(app.textFields[AccessibilityIdentifiers.Browser.AddressToolbar.searchTextField])
+     }
+ 
+-    // https://mozilla.testrail.io/index.php?/cases/view/2307031
+-    func testSetCustomURLAsHome() throws {
+-        let shouldSkipTest = true
+-        try XCTSkipIf(shouldSkipTest,
+-                      "Skipping test based on https://github.com/mozilla-mobile/firefox-ios/issues/28117.")
+-        waitForTabsButton()
+-        navigator.nowAt(NewTabScreen)
+-        navigator.goto(HomeSettings)
+-        // Enter a webpage
+-        enterWebPageAsHomepage(text: websiteUrl1)
+-
+-        // Open a new tab and tap on Home option
+-        navigator.performAction(Action.OpenNewTabFromTabTray)
+-        navigator.openURL(path(forTestPage: "test-mozilla-org.html"))
+-        waitForTabsButton()
+-        navigator.nowAt(BrowserTab)
+-        navigator.performAction(Action.GoToHomePage)
+-        mozWaitForElementToExist(app.textFields[AccessibilityIdentifiers.Browser.AddressToolbar.searchTextField])
+-        mozWaitForValueContains(app.textFields[AccessibilityIdentifiers.Browser.AddressToolbar.searchTextField],
+-                                value: "mozilla.org")
+-    }
+-
+     // https://mozilla.testrail.io/index.php?/cases/view/2339489
+     func testDisableTopSitesSettingsRemovesSection() {
+         app.launch()
+@@ -174,8 +152,8 @@ class HomePageSettingsUITests: FeatureFlaggedTestBase {
+         XCTAssertTrue(app.switches["Shortcuts"].exists)
+         app.switches["Shortcuts"].waitAndTap()
+ 
+-        navigator.goto(NewTabScreen)
+         app.buttons["Done"].waitAndTap()
++        navigator.goto(NewTabScreen)
+ 
+         mozWaitForElementToNotExist(app.links[AccessibilityIdentifiers.FirefoxHomepage.TopSites.itemCell])
+         mozWaitForElementToNotExist(app.collectionViews.cells.staticTexts["YouTube"])

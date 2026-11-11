@@ -1,0 +1,1056 @@
+diff --git a/ui-v2/src/components/blocks/block-document-combobox/block-document-combobox.stories.tsx b/ui-v2/src/components/blocks/block-document-combobox/block-document-combobox.stories.tsx
+new file mode 100644
+index 000000000000..9d7cd1ec4f11
+--- /dev/null
++++ b/ui-v2/src/components/blocks/block-document-combobox/block-document-combobox.stories.tsx
+@@ -0,0 +1,76 @@
++import type { Meta, StoryObj } from "@storybook/react";
++import { buildApiUrl } from "@tests/utils/handlers";
++import { HttpResponse, http } from "msw";
++import { useState } from "react";
++import { createFakeBlockDocument } from "@/mocks";
++import { reactQueryDecorator } from "@/storybook/utils";
++import { BlockDocumentCombobox } from "./block-document-combobox";
++
++const MOCK_BLOCK_DOCUMENTS_DATA = Array.from({ length: 5 }, (_, i) =>
++	createFakeBlockDocument({ name: `my-block-${i}` }),
++);
++
++const meta = {
++	title: "Components/Blocks/BlockDocumentCombobox",
++	render: (args) => <BlockDocumentComboboxStory {...args} />,
++	decorators: [reactQueryDecorator],
++	parameters: {
++		msw: {
++			handlers: [
++				http.post(buildApiUrl("/block_documents/filter"), () => {
++					return HttpResponse.json(MOCK_BLOCK_DOCUMENTS_DATA);
++				}),
++			],
++		},
++	},
++	args: {
++		blockTypeSlug: "aws-credentials",
++	},
++} satisfies Meta<{ blockTypeSlug: string; showCreateNew?: boolean }>;
++
++export default meta;
++
++type Story = StoryObj<typeof meta>;
++
++export const Default: Story = { name: "BlockDocumentCombobox" };
++
++export const WithCreateNew: Story = {
++	name: "With Create New Button",
++	args: {
++		showCreateNew: true,
++	},
++};
++
++export const Empty: Story = {
++	name: "Empty State",
++	parameters: {
++		msw: {
++			handlers: [
++				http.post(buildApiUrl("/block_documents/filter"), () => {
++					return HttpResponse.json([]);
++				}),
++			],
++		},
++	},
++};
++
++const BlockDocumentComboboxStory = ({
++	blockTypeSlug,
++	showCreateNew,
++}: {
++	blockTypeSlug: string;
++	showCreateNew?: boolean;
++}) => {
++	const [selected, setSelected] = useState<string | undefined>();
++
++	return (
++		<BlockDocumentCombobox
++			blockTypeSlug={blockTypeSlug}
++			selectedBlockDocumentId={selected}
++			onSelect={setSelected}
++			onCreateNew={
++				showCreateNew ? () => alert("Create new clicked") : undefined
++			}
++		/>
++	);
++};
+diff --git a/ui-v2/src/components/blocks/block-document-combobox/block-document-combobox.test.tsx b/ui-v2/src/components/blocks/block-document-combobox/block-document-combobox.test.tsx
+new file mode 100644
+index 000000000000..a7f0f239fb81
+--- /dev/null
++++ b/ui-v2/src/components/blocks/block-document-combobox/block-document-combobox.test.tsx
+@@ -0,0 +1,114 @@
++import { render, screen, waitFor } from "@testing-library/react";
++import userEvent from "@testing-library/user-event";
++import { buildApiUrl, createWrapper, server } from "@tests/utils";
++import { mockPointerEvents } from "@tests/utils/browser";
++import { HttpResponse, http } from "msw";
++import { beforeAll, describe, expect, it, vi } from "vitest";
++import type { components } from "@/api/prefect";
++import { createFakeBlockDocument } from "@/mocks";
++import { BlockDocumentCombobox } from "./block-document-combobox";
++
++describe("BlockDocumentCombobox", () => {
++	beforeAll(mockPointerEvents);
++
++	const mockListBlockDocumentsAPI = (
++		blockDocuments: Array<components["schemas"]["BlockDocument"]>,
++	) => {
++		server.use(
++			http.post(buildApiUrl("/block_documents/filter"), () => {
++				return HttpResponse.json(blockDocuments);
++			}),
++		);
++	};
++
++	it("able to select a block document", async () => {
++		const mockOnSelect = vi.fn();
++		const blockDocuments = [
++			createFakeBlockDocument({ id: "block-1", name: "my_block_0" }),
++			createFakeBlockDocument({ id: "block-2", name: "my_block_1" }),
++		];
++		mockListBlockDocumentsAPI(blockDocuments);
++
++		const user = userEvent.setup();
++
++		render(
++			<BlockDocumentCombobox
++				blockTypeSlug="aws-credentials"
++				selectedBlockDocumentId={undefined}
++				onSelect={mockOnSelect}
++			/>,
++			{ wrapper: createWrapper() },
++		);
++
++		await waitFor(() =>
++			expect(screen.getByLabelText(/select a block/i)).toBeVisible(),
++		);
++
++		await user.click(screen.getByLabelText(/select a block/i));
++		await user.click(screen.getByRole("option", { name: "my_block_0" }));
++
++		expect(mockOnSelect).toHaveBeenLastCalledWith("block-1");
++	});
++
++	it("has the selected value displayed", async () => {
++		const blockDocuments = [
++			createFakeBlockDocument({ id: "block-1", name: "my_block_0" }),
++			createFakeBlockDocument({ id: "block-2", name: "my_block_1" }),
++		];
++		mockListBlockDocumentsAPI(blockDocuments);
++
++		render(
++			<BlockDocumentCombobox
++				blockTypeSlug="aws-credentials"
++				selectedBlockDocumentId="block-1"
++				onSelect={vi.fn()}
++			/>,
++			{ wrapper: createWrapper() },
++		);
++
++		await waitFor(() => expect(screen.getByText("my_block_0")).toBeVisible());
++	});
++
++	it("shows placeholder when no block document is selected", async () => {
++		mockListBlockDocumentsAPI([]);
++
++		render(
++			<BlockDocumentCombobox
++				blockTypeSlug="aws-credentials"
++				selectedBlockDocumentId={undefined}
++				onSelect={vi.fn()}
++			/>,
++			{ wrapper: createWrapper() },
++		);
++
++		await waitFor(() =>
++			expect(screen.getByText("Select a block...")).toBeVisible(),
++		);
++	});
++
++	it("shows create new button when onCreateNew is provided", async () => {
++		const mockOnCreateNew = vi.fn();
++		mockListBlockDocumentsAPI([]);
++
++		const user = userEvent.setup();
++
++		render(
++			<BlockDocumentCombobox
++				blockTypeSlug="aws-credentials"
++				selectedBlockDocumentId={undefined}
++				onSelect={vi.fn()}
++				onCreateNew={mockOnCreateNew}
++			/>,
++			{ wrapper: createWrapper() },
++		);
++
++		await waitFor(() =>
++			expect(screen.getByLabelText(/select a block/i)).toBeVisible(),
++		);
++
++		await user.click(screen.getByLabelText(/select a block/i));
++		await user.click(screen.getByRole("option", { name: /create new block/i }));
++
++		expect(mockOnCreateNew).toHaveBeenCalled();
++	});
++});
+diff --git a/ui-v2/src/components/blocks/block-document-combobox/block-document-combobox.tsx b/ui-v2/src/components/blocks/block-document-combobox/block-document-combobox.tsx
+new file mode 100644
+index 000000000000..c78a93fbb702
+--- /dev/null
++++ b/ui-v2/src/components/blocks/block-document-combobox/block-document-combobox.tsx
+@@ -0,0 +1,129 @@
++import { useSuspenseQuery } from "@tanstack/react-query";
++import { Suspense, useDeferredValue, useMemo, useState } from "react";
++import { buildListFilterBlockDocumentsQuery } from "@/api/block-documents";
++import {
++	Combobox,
++	ComboboxCommandEmtpy,
++	ComboboxCommandGroup,
++	ComboboxCommandInput,
++	ComboboxCommandItem,
++	ComboboxCommandList,
++	ComboboxContent,
++	ComboboxTrigger,
++} from "@/components/ui/combobox";
++import { Icon } from "@/components/ui/icons";
++
++type BlockDocumentComboboxProps = {
++	blockTypeSlug: string;
++	selectedBlockDocumentId: string | undefined;
++	onSelect: (blockDocumentId: string | undefined) => void;
++	onCreateNew?: () => void;
++};
++
++export const BlockDocumentCombobox = ({
++	blockTypeSlug,
++	selectedBlockDocumentId,
++	onSelect,
++	onCreateNew,
++}: BlockDocumentComboboxProps) => {
++	return (
++		<Suspense>
++			<BlockDocumentComboboxImplementation
++				blockTypeSlug={blockTypeSlug}
++				selectedBlockDocumentId={selectedBlockDocumentId}
++				onSelect={onSelect}
++				onCreateNew={onCreateNew}
++			/>
++		</Suspense>
++	);
++};
++
++const BlockDocumentComboboxImplementation = ({
++	blockTypeSlug,
++	selectedBlockDocumentId,
++	onSelect,
++	onCreateNew,
++}: BlockDocumentComboboxProps) => {
++	const [search, setSearch] = useState("");
++	const deferredSearch = useDeferredValue(search);
++
++	const { data } = useSuspenseQuery(
++		buildListFilterBlockDocumentsQuery({
++			offset: 0,
++			sort: "BLOCK_TYPE_AND_NAME_ASC",
++			include_secrets: false,
++			block_types: {
++				slug: { any_: [blockTypeSlug] },
++			},
++			block_documents: {
++				operator: "and_",
++				is_anonymous: { eq_: false },
++				...(deferredSearch ? { name: { like_: deferredSearch } } : {}),
++			},
++			limit: 50,
++		}),
++	);
++
++  const filteredData = useMemo(() => {
++    return data.filter((blockDocument) =>
++      blockDocument.name?.toLowerCase().includes(deferredSearch.toLowerCase()),
++    );
++  }, [data, deferredSearch]);
++
++	const selectedBlockDocument = useMemo(() => {
++		return filteredData.find(
++			(blockDocument) => blockDocument.id === selectedBlockDocumentId,
++		);
++	}, [filteredData, selectedBlockDocumentId]);
++
++	return (
++		<Combobox>
++			<ComboboxTrigger
++				selected={Boolean(selectedBlockDocumentId)}
++				aria-label="Select a block"
++			>
++				{selectedBlockDocument?.name ?? "Select a block..."}
++			</ComboboxTrigger>
++			<ComboboxContent>
++				<ComboboxCommandInput
++					value={search}
++					onValueChange={setSearch}
++					placeholder="Search for a block..."
++				/>
++				<ComboboxCommandEmtpy>No block found</ComboboxCommandEmtpy>
++				<ComboboxCommandList>
++					<ComboboxCommandGroup>
++						{filteredData.map((blockDocument) => (
++							<ComboboxCommandItem
++								key={blockDocument.id}
++								selected={selectedBlockDocumentId === blockDocument.id}
++								onSelect={(value) => {
++									onSelect(value);
++									setSearch("");
++								}}
++								value={blockDocument.id}
++							>
++								{blockDocument.name}
++							</ComboboxCommandItem>
++						))}
++					</ComboboxCommandGroup>
++					{onCreateNew && (
++						<ComboboxCommandGroup>
++							<ComboboxCommandItem
++								onSelect={() => {
++									onCreateNew();
++									setSearch("");
++								}}
++								value="__create_new__"
++								closeOnSelect={true}
++							>
++								<Icon id="Plus" className="mr-2 size-4" />
++								Create new block
++							</ComboboxCommandItem>
++						</ComboboxCommandGroup>
++					)}
++				</ComboboxCommandList>
++			</ComboboxContent>
++		</Combobox>
++	);
++};
+diff --git a/ui-v2/src/components/blocks/block-document-combobox/index.ts b/ui-v2/src/components/blocks/block-document-combobox/index.ts
+new file mode 100644
+index 000000000000..fb9e07e04631
+--- /dev/null
++++ b/ui-v2/src/components/blocks/block-document-combobox/index.ts
+@@ -0,0 +1 @@
++export { BlockDocumentCombobox } from "./block-document-combobox";
+diff --git a/ui-v2/src/components/blocks/block-document-create-dialog/block-document-create-dialog.stories.tsx b/ui-v2/src/components/blocks/block-document-create-dialog/block-document-create-dialog.stories.tsx
+new file mode 100644
+index 000000000000..b72dd09fefdf
+--- /dev/null
++++ b/ui-v2/src/components/blocks/block-document-create-dialog/block-document-create-dialog.stories.tsx
+@@ -0,0 +1,71 @@
++import type { Meta, StoryObj } from "@storybook/react";
++import { buildApiUrl } from "@tests/utils/handlers";
++import { HttpResponse, http } from "msw";
++import { useState } from "react";
++import { Button } from "@/components/ui/button";
++import { createFakeBlockSchema, createFakeBlockType } from "@/mocks";
++import { reactQueryDecorator, toastDecorator } from "@/storybook/utils";
++import { BlockDocumentCreateDialog } from "./block-document-create-dialog";
++
++const MOCK_BLOCK_TYPE = createFakeBlockType({
++	id: "block-type-1",
++	slug: "secret",
++	name: "Secret",
++});
++
++const MOCK_BLOCK_SCHEMA = createFakeBlockSchema();
++
++const meta = {
++	title: "Components/Blocks/BlockDocumentCreateDialog",
++	render: (args) => <BlockDocumentCreateDialogStory {...args} />,
++	decorators: [reactQueryDecorator, toastDecorator],
++	parameters: {
++		msw: {
++			handlers: [
++				http.get(buildApiUrl("/block_types/slug/:slug"), () => {
++					return HttpResponse.json(MOCK_BLOCK_TYPE);
++				}),
++				http.post(buildApiUrl("/block_schemas/filter"), () => {
++					return HttpResponse.json([
++						{ ...MOCK_BLOCK_SCHEMA, block_type_id: MOCK_BLOCK_TYPE.id },
++					]);
++				}),
++				http.post(buildApiUrl("/block_documents/"), () => {
++					return HttpResponse.json({
++						id: "new-block-document-id",
++						name: "test-block",
++					});
++				}),
++			],
++		},
++	},
++	args: {
++		blockTypeSlug: "secret",
++	},
++} satisfies Meta<{ blockTypeSlug: string }>;
++
++export default meta;
++
++type Story = StoryObj<typeof meta>;
++
++export const Default: Story = { name: "BlockDocumentCreateDialog" };
++
++const BlockDocumentCreateDialogStory = ({
++	blockTypeSlug,
++}: {
++	blockTypeSlug: string;
++}) => {
++	const [open, setOpen] = useState(false);
++
++	return (
++		<>
++			<Button onClick={() => setOpen(true)}>Open Dialog</Button>
++			<BlockDocumentCreateDialog
++				open={open}
++				onOpenChange={setOpen}
++				blockTypeSlug={blockTypeSlug}
++				onCreated={(id) => alert(`Created block document: ${id}`)}
++			/>
++		</>
++	);
++};
+diff --git a/ui-v2/src/components/blocks/block-document-create-dialog/block-document-create-dialog.test.tsx b/ui-v2/src/components/blocks/block-document-create-dialog/block-document-create-dialog.test.tsx
+new file mode 100644
+index 000000000000..2519e22d2c76
+--- /dev/null
++++ b/ui-v2/src/components/blocks/block-document-create-dialog/block-document-create-dialog.test.tsx
+@@ -0,0 +1,110 @@
++import { render, screen, waitFor } from "@testing-library/react";
++import userEvent from "@testing-library/user-event";
++import { buildApiUrl, createWrapper, server } from "@tests/utils";
++import { HttpResponse, http } from "msw";
++import { describe, expect, it, vi } from "vitest";
++import { createFakeBlockSchema, createFakeBlockType } from "@/mocks";
++import { BlockDocumentCreateDialog } from "./block-document-create-dialog";
++
++describe("BlockDocumentCreateDialog", () => {
++	const mockBlockType = createFakeBlockType({
++		id: "block-type-1",
++		slug: "aws-credentials",
++		name: "AWS Credentials",
++	});
++
++	const mockBlockSchema = createFakeBlockSchema();
++
++	const setupMocks = () => {
++		server.use(
++			http.get(buildApiUrl("/block_types/slug/:slug"), () => {
++				return HttpResponse.json(mockBlockType);
++			}),
++			http.post(buildApiUrl("/block_schemas/filter"), () => {
++				return HttpResponse.json([
++					{ ...mockBlockSchema, block_type_id: mockBlockType.id },
++				]);
++			}),
++			http.post(buildApiUrl("/block_documents/"), () => {
++				return HttpResponse.json({
++					id: "new-block-document-id",
++					name: "test-block",
++				});
++			}),
++		);
++	};
++
++	it("renders the dialog when open", async () => {
++		setupMocks();
++
++		render(
++			<BlockDocumentCreateDialog
++				open={true}
++				onOpenChange={vi.fn()}
++				blockTypeSlug="aws-credentials"
++				onCreated={vi.fn()}
++			/>,
++			{ wrapper: createWrapper() },
++		);
++
++		await waitFor(() =>
++			expect(screen.getByText("Create New Block")).toBeVisible(),
++		);
++	});
++
++	it("does not render when closed", () => {
++		setupMocks();
++
++		render(
++			<BlockDocumentCreateDialog
++				open={false}
++				onOpenChange={vi.fn()}
++				blockTypeSlug="aws-credentials"
++				onCreated={vi.fn()}
++			/>,
++			{ wrapper: createWrapper() },
++		);
++
++		expect(screen.queryByText("Create New Block")).not.toBeInTheDocument();
++	});
++
++	it("calls onOpenChange when cancel is clicked", async () => {
++		setupMocks();
++		const mockOnOpenChange = vi.fn();
++		const user = userEvent.setup();
++
++		render(
++			<BlockDocumentCreateDialog
++				open={true}
++				onOpenChange={mockOnOpenChange}
++				blockTypeSlug="aws-credentials"
++				onCreated={vi.fn()}
++			/>,
++			{ wrapper: createWrapper() },
++		);
++
++		await waitFor(() =>
++			expect(screen.getByRole("button", { name: /cancel/i })).toBeVisible(),
++		);
++
++		await user.click(screen.getByRole("button", { name: /cancel/i }));
++
++		expect(mockOnOpenChange).toHaveBeenCalledWith(false);
++	});
++
++	it("shows name input field", async () => {
++		setupMocks();
++
++		render(
++			<BlockDocumentCreateDialog
++				open={true}
++				onOpenChange={vi.fn()}
++				blockTypeSlug="aws-credentials"
++				onCreated={vi.fn()}
++			/>,
++			{ wrapper: createWrapper() },
++		);
++
++		await waitFor(() => expect(screen.getByLabelText("Name")).toBeVisible());
++	});
++});
+diff --git a/ui-v2/src/components/blocks/block-document-create-dialog/block-document-create-dialog.tsx b/ui-v2/src/components/blocks/block-document-create-dialog/block-document-create-dialog.tsx
+new file mode 100644
+index 000000000000..1d155baf9556
+--- /dev/null
++++ b/ui-v2/src/components/blocks/block-document-create-dialog/block-document-create-dialog.tsx
+@@ -0,0 +1,236 @@
++import { zodResolver } from "@hookform/resolvers/zod";
++import { useSuspenseQuery } from "@tanstack/react-query";
++import { Suspense } from "react";
++import { useForm } from "react-hook-form";
++import { toast } from "sonner";
++import { z } from "zod";
++import { useCreateBlockDocument } from "@/api/block-documents";
++import { buildListFilterBlockSchemasQuery } from "@/api/block-schemas";
++import { buildGetBlockTypeQuery } from "@/api/block-types";
++import {
++	LazySchemaForm,
++	type PrefectSchemaObject,
++	useSchemaForm,
++} from "@/components/schemas";
++import { Button } from "@/components/ui/button";
++import {
++	Dialog,
++	DialogContent,
++	DialogFooter,
++	DialogHeader,
++	DialogTitle,
++} from "@/components/ui/dialog";
++import {
++	Form,
++	FormControl,
++	FormField,
++	FormItem,
++	FormLabel,
++	FormMessage,
++} from "@/components/ui/form";
++import { Input } from "@/components/ui/input";
++import { Skeleton } from "@/components/ui/skeleton";
++
++type BlockDocumentCreateDialogProps = {
++	open: boolean;
++	onOpenChange: (open: boolean) => void;
++	blockTypeSlug: string;
++	onCreated: (blockDocumentId: string) => void;
++};
++
++const BLOCK_NAME_REGEX = /^[a-z0-9-]+$/;
++
++const BlockNameFormSchema = z.object({
++	blockName: z.string().regex(BLOCK_NAME_REGEX, {
++		message: "Name must only contain lowercase letters, numbers, and dashes",
++	}),
++});
++
++type BlockNameFormSchema = z.infer<typeof BlockNameFormSchema>;
++
++const DEFAULT_VALUES: BlockNameFormSchema = {
++	blockName: "",
++};
++
++export const BlockDocumentCreateDialog = ({
++	open,
++	onOpenChange,
++	blockTypeSlug,
++	onCreated,
++}: BlockDocumentCreateDialogProps) => {
++	return (
++		<Dialog open={open} onOpenChange={onOpenChange}>
++			<DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
++				<DialogHeader>
++					<DialogTitle>Create New Block</DialogTitle>
++				</DialogHeader>
++				<Suspense fallback={<BlockDocumentCreateDialogSkeleton />}>
++					<BlockDocumentCreateDialogContent
++						blockTypeSlug={blockTypeSlug}
++						onCreated={onCreated}
++						onOpenChange={onOpenChange}
++					/>
++				</Suspense>
++			</DialogContent>
++		</Dialog>
++	);
++};
++
++const BlockDocumentCreateDialogSkeleton = () => {
++	return (
++		<div className="flex flex-col gap-4">
++			<Skeleton className="h-10 w-full" />
++			<Skeleton className="h-32 w-full" />
++			<Skeleton className="h-10 w-24 ml-auto" />
++		</div>
++	);
++};
++
++type BlockDocumentCreateDialogContentProps = {
++	blockTypeSlug: string;
++	onCreated: (blockDocumentId: string) => void;
++	onOpenChange: (open: boolean) => void;
++};
++
++const BlockDocumentCreateDialogContent = ({
++	blockTypeSlug,
++	onCreated,
++	onOpenChange,
++}: BlockDocumentCreateDialogContentProps) => {
++	const { data: blockType } = useSuspenseQuery(
++		buildGetBlockTypeQuery(blockTypeSlug),
++	);
++
++	const { data: blockSchemas } = useSuspenseQuery(
++		buildListFilterBlockSchemasQuery({
++			block_schemas: {
++				operator: "and_",
++				block_type_id: { any_: [blockType.id] },
++			},
++			offset: 0,
++			limit: 1,
++		}),
++	);
++
++	const blockSchema = blockSchemas[0];
++
++	if (!blockSchema) {
++		return (
++			<div className="text-muted-foreground">
++				No schema found for this block type.
++			</div>
++		);
++	}
++
++	return (
++		<BlockDocumentCreateForm
++			blockTypeId={blockType.id}
++			blockSchemaId={blockSchema.id}
++			blockSchemaFields={blockSchema.fields as unknown as PrefectSchemaObject}
++			onCreated={onCreated}
++			onOpenChange={onOpenChange}
++		/>
++	);
++};
++
++type BlockDocumentCreateFormProps = {
++	blockTypeId: string;
++	blockSchemaId: string;
++	blockSchemaFields: PrefectSchemaObject;
++	onCreated: (blockDocumentId: string) => void;
++	onOpenChange: (open: boolean) => void;
++};
++
++const BlockDocumentCreateForm = ({
++	blockTypeId,
++	blockSchemaId,
++	blockSchemaFields,
++	onCreated,
++	onOpenChange,
++}: BlockDocumentCreateFormProps) => {
++	const { values, setValues, errors, validateForm } = useSchemaForm();
++	const { createBlockDocument, isPending } = useCreateBlockDocument();
++
++	const form = useForm({
++		resolver: zodResolver(BlockNameFormSchema),
++		defaultValues: DEFAULT_VALUES,
++	});
++
++	const onSave = async (zodFormValues: BlockNameFormSchema) => {
++		try {
++			await validateForm({ schema: values });
++			if (errors.length > 0) {
++				return;
++			}
++			createBlockDocument(
++				{
++					block_schema_id: blockSchemaId,
++					block_type_id: blockTypeId,
++					is_anonymous: false,
++					data: values,
++					name: zodFormValues.blockName,
++				},
++				{
++					onSuccess: (res) => {
++						toast.success("Block created successfully");
++						onOpenChange(false);
++						onCreated(res.id);
++					},
++					onError: (err) => {
++						const message = "Unknown error while creating block.";
++						toast.error(message);
++						console.error(message, err);
++					},
++				},
++			);
++		} catch (err) {
++			const message = "Unknown error while validating block data.";
++			toast.error(message);
++			console.error(message, err);
++		}
++	};
++
++	return (
++		<Form {...form}>
++			<form
++				className="flex flex-col gap-4"
++				onSubmit={(e) => void form.handleSubmit(onSave)(e)}
++			>
++				<FormField
++					control={form.control}
++					name="blockName"
++					render={({ field }) => (
++						<FormItem>
++							<FormLabel>Name</FormLabel>
++							<FormControl>
++								<Input {...field} value={field.value} />
++							</FormControl>
++							<FormMessage />
++						</FormItem>
++					)}
++				/>
++
++				<LazySchemaForm
++					values={values}
++					onValuesChange={setValues}
++					errors={errors}
++					kinds={["json"]}
++					schema={blockSchemaFields}
++				/>
++
++				<DialogFooter>
++					<Button
++						variant="secondary"
++						type="button"
++						onClick={() => onOpenChange(false)}
++					>
++						Cancel
++					</Button>
++					<Button loading={isPending} type="submit">
++						Create
++					</Button>
++				</DialogFooter>
++			</form>
++		</Form>
++	);
++};
+diff --git a/ui-v2/src/components/blocks/block-document-create-dialog/index.ts b/ui-v2/src/components/blocks/block-document-create-dialog/index.ts
+new file mode 100644
+index 000000000000..67e9ee7a2755
+--- /dev/null
++++ b/ui-v2/src/components/blocks/block-document-create-dialog/index.ts
+@@ -0,0 +1 @@
++export { BlockDocumentCreateDialog } from "./block-document-create-dialog";
+diff --git a/ui-v2/src/components/schemas/schema-form-input-block-document.test.tsx b/ui-v2/src/components/schemas/schema-form-input-block-document.test.tsx
+new file mode 100644
+index 000000000000..ee5bd4a92129
+--- /dev/null
++++ b/ui-v2/src/components/schemas/schema-form-input-block-document.test.tsx
+@@ -0,0 +1,84 @@
++import { render, screen, waitFor } from "@testing-library/react";
++import userEvent from "@testing-library/user-event";
++import { buildApiUrl, createWrapper, server } from "@tests/utils";
++import { mockPointerEvents } from "@tests/utils/browser";
++import { HttpResponse, http } from "msw";
++import { beforeAll, describe, expect, it, vi } from "vitest";
++import { createFakeBlockDocument } from "@/mocks";
++import { SchemaFormInputBlockDocument } from "./schema-form-input-block-document";
++
++describe("SchemaFormInputBlockDocument", () => {
++	beforeAll(mockPointerEvents);
++
++	const mockBlockDocuments = [
++		createFakeBlockDocument({ id: "block-1", name: "my_block_0" }),
++		createFakeBlockDocument({ id: "block-2", name: "my_block_1" }),
++	];
++
++	const setupMocks = () => {
++		server.use(
++			http.post(buildApiUrl("/block_documents/filter"), () => {
++				return HttpResponse.json(mockBlockDocuments);
++			}),
++		);
++	};
++
++	it("renders the combobox", async () => {
++		setupMocks();
++
++		render(
++			<SchemaFormInputBlockDocument
++				value={undefined}
++				onValueChange={vi.fn()}
++				blockTypeSlug="aws-credentials"
++				id="test-id"
++			/>,
++			{ wrapper: createWrapper() },
++		);
++
++		await waitFor(() =>
++			expect(screen.getByLabelText(/select a block/i)).toBeVisible(),
++		);
++	});
++
++	it("calls onValueChange with $ref when a block is selected", async () => {
++		setupMocks();
++		const mockOnValueChange = vi.fn();
++		const user = userEvent.setup();
++
++		render(
++			<SchemaFormInputBlockDocument
++				value={undefined}
++				onValueChange={mockOnValueChange}
++				blockTypeSlug="aws-credentials"
++				id="test-id"
++			/>,
++			{ wrapper: createWrapper() },
++		);
++
++		await waitFor(() =>
++			expect(screen.getByLabelText(/select a block/i)).toBeVisible(),
++		);
++
++		await user.click(screen.getByLabelText(/select a block/i));
++		await user.click(screen.getByRole("option", { name: "my_block_0" }));
++
++		expect(mockOnValueChange).toHaveBeenCalledWith({ $ref: "block-1" });
++	});
++
++	it("displays the selected block document name", async () => {
++		setupMocks();
++
++		render(
++			<SchemaFormInputBlockDocument
++				value={{ $ref: "block-1" }}
++				onValueChange={vi.fn()}
++				blockTypeSlug="aws-credentials"
++				id="test-id"
++			/>,
++			{ wrapper: createWrapper() },
++		);
++
++		await waitFor(() => expect(screen.getByText("my_block_0")).toBeVisible());
++	});
++});
+diff --git a/ui-v2/src/components/schemas/schema-form-input-block-document.tsx b/ui-v2/src/components/schemas/schema-form-input-block-document.tsx
+new file mode 100644
+index 000000000000..6c11b1e092d9
+--- /dev/null
++++ b/ui-v2/src/components/schemas/schema-form-input-block-document.tsx
+@@ -0,0 +1,56 @@
++import { useState } from "react";
++import { BlockDocumentCombobox } from "@/components/blocks/block-document-combobox";
++import { BlockDocumentCreateDialog } from "@/components/blocks/block-document-create-dialog";
++
++type BlockDocumentReferenceValue =
++	| {
++			$ref: string;
++	  }
++	| undefined;
++
++type SchemaFormInputBlockDocumentProps = {
++	value: BlockDocumentReferenceValue;
++	onValueChange: (value: BlockDocumentReferenceValue) => void;
++	blockTypeSlug: string;
++	id: string;
++};
++
++export function SchemaFormInputBlockDocument({
++	value,
++	onValueChange,
++	blockTypeSlug,
++	id,
++}: SchemaFormInputBlockDocumentProps) {
++	const [createDialogOpen, setCreateDialogOpen] = useState(false);
++
++	const selectedBlockDocumentId = value?.$ref;
++
++	const handleSelect = (blockDocumentId: string | undefined) => {
++		if (blockDocumentId) {
++			onValueChange({ $ref: blockDocumentId });
++		} else {
++			onValueChange(undefined);
++		}
++	};
++
++	const handleCreated = (blockDocumentId: string) => {
++		onValueChange({ $ref: blockDocumentId });
++	};
++
++	return (
++		<div id={id}>
++			<BlockDocumentCombobox
++				blockTypeSlug={blockTypeSlug}
++				selectedBlockDocumentId={selectedBlockDocumentId}
++				onSelect={handleSelect}
++				onCreateNew={() => setCreateDialogOpen(true)}
++			/>
++			<BlockDocumentCreateDialog
++				open={createDialogOpen}
++				onOpenChange={setCreateDialogOpen}
++				blockTypeSlug={blockTypeSlug}
++				onCreated={handleCreated}
++			/>
++		</div>
++	);
++}
+diff --git a/ui-v2/src/components/schemas/schema-form-input.tsx b/ui-v2/src/components/schemas/schema-form-input.tsx
+index 3ad0970c88a5..63d1f2b152e1 100644
+--- a/ui-v2/src/components/schemas/schema-form-input.tsx
++++ b/ui-v2/src/components/schemas/schema-form-input.tsx
+@@ -2,6 +2,7 @@ import type { SchemaObject } from "openapi-typescript";
+ import { SchemaFormInputAllOf } from "./schema-form-input-all-of";
+ import { SchemaFormInputAnyOf } from "./schema-form-input-any-of";
+ import { SchemaFormInputArray } from "./schema-form-input-array";
++import { SchemaFormInputBlockDocument } from "./schema-form-input-block-document";
+ import { SchemaFormInputBoolean } from "./schema-form-input-boolean";
+ import { SchemaFormInputInteger } from "./schema-form-input-integer";
+ import { SchemaFormInputNull } from "./schema-form-input-null";
+@@ -74,7 +75,17 @@ export function SchemaFormInput({
+ 	}
+ 
+ 	if ("blockTypeSlug" in property) {
+-		throw new Error("not implemented");
++		const blockTypeSlug = property.blockTypeSlug;
++		if (typeof blockTypeSlug === "string") {
++			return (
++				<SchemaFormInputBlockDocument
++					value={value as { $ref: string } | undefined}
++					onValueChange={onValueChange}
++					blockTypeSlug={blockTypeSlug}
++					id={id}
++				/>
++			);
++		}
+ 	}
+ 
+ 	if (isAnyOfObject(property)) {
+diff --git a/ui-v2/src/components/schemas/stories/properties.stories.tsx b/ui-v2/src/components/schemas/stories/properties.stories.tsx
+index c798af81feaf..935034680f55 100644
+--- a/ui-v2/src/components/schemas/stories/properties.stories.tsx
++++ b/ui-v2/src/components/schemas/stories/properties.stories.tsx
+@@ -1,7 +1,15 @@
+ import type { Meta, StoryObj } from "@storybook/react";
++import { buildApiUrl } from "@tests/utils/handlers";
++import { HttpResponse, http } from "msw";
+ import type { PrefectSchemaObject } from "@/components/schemas/types/schemas";
++import { createFakeBlockDocument } from "@/mocks";
++import { reactQueryDecorator } from "@/storybook/utils";
+ import { TestSchemaForm } from "./utilities";
+ 
++const MOCK_BLOCK_DOCUMENTS = Array.from({ length: 5 }, (_, i) =>
++	createFakeBlockDocument({ id: `block-${i}`, name: `my-block-${i}` }),
++);
++
+ const userDefinition: PrefectSchemaObject = {
+ 	type: "object",
+ 	title: "User",
+@@ -23,6 +31,7 @@ const userDefinition: PrefectSchemaObject = {
+ const meta = {
+ 	title: "Components/SchemaForm/Properties",
+ 	component: TestSchemaForm,
++	decorators: [reactQueryDecorator],
+ 	parameters: {
+ 		layout: "fullscreen",
+ 	},
+@@ -619,3 +628,58 @@ export const prefectKindWorkspaceVariableWithValue: Story = {
+ };
+ prefectKindWorkspaceVariableWithValue.storyName =
+ 	"prefect_kind:workspace_variable (with value)";
++
++export const blockTypeSlugEmpty: Story = {
++	args: {
++		schema: {
++			type: "object",
++			properties: {
++				credentials: {
++					title: "AWS Credentials",
++					// @ts-expect-error blockTypeSlug is a custom property not in the schema types
++					blockTypeSlug: "aws-credentials",
++				},
++			},
++		},
++	},
++	parameters: {
++		msw: {
++			handlers: [
++				http.post(buildApiUrl("/block_documents/filter"), () => {
++					return HttpResponse.json(MOCK_BLOCK_DOCUMENTS);
++				}),
++			],
++		},
++	},
++};
++blockTypeSlugEmpty.storyName = "blockTypeSlug (empty)";
++
++export const blockTypeSlugWithValue: Story = {
++	args: {
++		schema: {
++			type: "object",
++			properties: {
++				credentials: {
++					title: "AWS Credentials",
++					// @ts-expect-error blockTypeSlug is a custom property not in the schema types
++					blockTypeSlug: "aws-credentials",
++				},
++			},
++		},
++		values: {
++			credentials: {
++				$ref: "block-0",
++			},
++		},
++	},
++	parameters: {
++		msw: {
++			handlers: [
++				http.post(buildApiUrl("/block_documents/filter"), () => {
++					return HttpResponse.json(MOCK_BLOCK_DOCUMENTS);
++				}),
++			],
++		},
++	},
++};
++blockTypeSlugWithValue.storyName = "blockTypeSlug (with value)";

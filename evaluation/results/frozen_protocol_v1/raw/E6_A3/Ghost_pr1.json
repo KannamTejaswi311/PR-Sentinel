@@ -1,0 +1,168 @@
+{
+  "pr_id": "Ghost_pr1",
+  "experiment_id": "E6_A3",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "Ghost_pr1",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr1.diff",
+      "line_start": 9,
+      "evidence": "// NOTE: If you need to add dependencies for services, use npm install <package>",
+      "execution_status": "SUCCESS",
+      "finding_id": "87466014-4c50-409e-a1de-c5a2aa98f02d",
+      "line_end": 9,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A3"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr1",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/core/boot.js",
+      "line_start": 1,
+      "evidence": "diff --git a/ghost/core/core/boot.js b/ghost/core/core/boot.js",
+      "execution_status": "SUCCESS",
+      "finding_id": "3e2e4e0d-de3c-4fab-9452-b6db84f40f4d",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.js)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/core/boot.js' has unsupported extension '.js'.",
+      "recommendation": "Add external static analyzer for '.js' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A3"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr1",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/core/server/services/xmlrpc.js",
+      "line_start": 1,
+      "evidence": "diff --git a/ghost/core/core/boot.js b/ghost/core/core/boot.js",
+      "execution_status": "SUCCESS",
+      "finding_id": "346a714e-8cd9-41b3-9b13-355753b1eb10",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.js)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/core/server/services/xmlrpc.js' has unsupported extension '.js'.",
+      "recommendation": "Add external static analyzer for '.js' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A3"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr1",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/core/shared/config/env/config.development.json",
+      "line_start": 1,
+      "evidence": "diff --git a/ghost/core/core/boot.js b/ghost/core/core/boot.js",
+      "execution_status": "SUCCESS",
+      "finding_id": "a496fd40-ce44-4cae-96a1-3add3c58565b",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.json)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/core/shared/config/env/config.development.json' has unsupported extension '.json'.",
+      "recommendation": "Add external static analyzer for '.json' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A3"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr1",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/test/unit/server/services/xmlrpc.test.js",
+      "line_start": 1,
+      "evidence": "diff --git a/ghost/core/core/boot.js b/ghost/core/core/boot.js",
+      "execution_status": "SUCCESS",
+      "finding_id": "6dd0d432-0fdf-454d-8f71-fe7e421b5a2f",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.js)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/test/unit/server/services/xmlrpc.test.js' has unsupported extension '.js'.",
+      "recommendation": "Add external static analyzer for '.js' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A3"
+      }
+    }
+  ],
+  "findings_count": 5,
+  "risk_assessment": {
+    "score": 22,
+    "risk_level": "LOW RISK",
+    "recommendation": "APPROVE WITH SUGGESTIONS: Minor style or non-critical observations.",
+    "metrics": {
+      "raw_finding_score": 17.0,
+      "file_spread_multiplier": 1.1,
+      "diff_size_multiplier": 1.2,
+      "codebert_penalty_added": 0.0,
+      "total_diff_lines": 481,
+      "modified_files_count": 2
+    },
+    "formula_explanation": "PR Risk Score = min(100, round(RawScore(17.0) * FileSpread(1.10) * DiffSize(1.20) + CodeBERTPenalty(0.0))) = 22",
+    "top_contributions": [
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      },
+      {
+        "title": "Unsupported Language (.js)",
+        "severity": "INFORMATIONAL",
+        "is_security": false,
+        "points_added": 0.5
+      },
+      {
+        "title": "Unsupported Language (.js)",
+        "severity": "INFORMATIONAL",
+        "is_security": false,
+        "points_added": 0.5
+      },
+      {
+        "title": "Unsupported Language (.json)",
+        "severity": "INFORMATIONAL",
+        "is_security": false,
+        "points_added": 0.5
+      },
+      {
+        "title": "Unsupported Language (.js)",
+        "severity": "INFORMATIONAL",
+        "is_security": false,
+        "points_added": 0.5
+      }
+    ]
+  },
+  "duration_seconds": 0.008,
+  "execution_manifest": {
+    "codebert": "ERROR: Real CodeBERT model required in research mode, but unavailable.",
+    "static_analyzer": "SUCCESS",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SUCCESS",
+    "synthesizer": "SUCCESS",
+    "test_generator": "SUCCESS"
+  }
+}

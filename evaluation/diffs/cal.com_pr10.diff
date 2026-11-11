@@ -1,0 +1,2889 @@
+diff --git a/apps/api/v2/src/ee/bookings/2024-08-13/services/bookings.service.ts b/apps/api/v2/src/ee/bookings/2024-08-13/services/bookings.service.ts
+index 6e6b73b9dd24..84fbcfd7865d 100644
+--- a/apps/api/v2/src/ee/bookings/2024-08-13/services/bookings.service.ts
++++ b/apps/api/v2/src/ee/bookings/2024-08-13/services/bookings.service.ts
+@@ -69,6 +69,7 @@ import {
+ import type { RescheduleSeatedBookingInput_2024_08_13 } from "@calcom/platform-types";
+ import type { PrismaClient } from "@calcom/prisma";
+ import type { EventType, User, Team } from "@calcom/prisma/client";
++import { makeUserActor } from "@calcom/features/booking-audit/lib/makeActor";
+ 
+ type CreatedBooking = {
+   hosts: { id: number }[];
+@@ -921,40 +922,40 @@ export class BookingsService_2024_08_13 {
+     return await this.getBooking(recurringBookingUid, authUser);
+   }
+ 
+-    async markAbsent(
+-      bookingUid: string,
+-      bookingOwnerId: number,
+-      body: MarkAbsentBookingInput_2024_08_13,
+-      userUuid?: string
+-    ) {
+-      const bodyTransformed = this.inputService.transformInputMarkAbsentBooking(body);
+-      const bookingBefore = await this.bookingsRepository.getByUid(bookingUid);
+-
+-      if (!bookingBefore) {
+-        throw new NotFoundException(`Booking with uid=${bookingUid} not found.`);
+-      }
++  async markAbsent(
++    bookingUid: string,
++    bookingOwnerId: number,
++    body: MarkAbsentBookingInput_2024_08_13,
++    userUuid?: string
++  ) {
++    const bodyTransformed = this.inputService.transformInputMarkAbsentBooking(body);
++    const bookingBefore = await this.bookingsRepository.getByUid(bookingUid);
++
++    if (!bookingBefore) {
++      throw new NotFoundException(`Booking with uid=${bookingUid} not found.`);
++    }
+ 
+-      const nowUtc = DateTime.utc();
+-      const bookingStartTimeUtc = DateTime.fromJSDate(bookingBefore.startTime, { zone: "utc" });
++    const nowUtc = DateTime.utc();
++    const bookingStartTimeUtc = DateTime.fromJSDate(bookingBefore.startTime, { zone: "utc" });
+ 
+-      if (nowUtc < bookingStartTimeUtc) {
+-        throw new BadRequestException(
+-          `Bookings can only be marked as absent after their scheduled start time. Current time in UTC+0: ${nowUtc.toISO()}, Booking start time in UTC+0: ${bookingStartTimeUtc.toISO()}`
+-        );
+-      }
++    if (nowUtc < bookingStartTimeUtc) {
++      throw new BadRequestException(
++        `Bookings can only be marked as absent after their scheduled start time. Current time in UTC+0: ${nowUtc.toISO()}, Booking start time in UTC+0: ${bookingStartTimeUtc.toISO()}`
++      );
++    }
+ 
+-      const platformClientParams = bookingBefore?.eventTypeId
+-        ? await this.platformBookingsService.getOAuthClientParams(bookingBefore.eventTypeId)
+-        : undefined;
++    const platformClientParams = bookingBefore?.eventTypeId
++      ? await this.platformBookingsService.getOAuthClientParams(bookingBefore.eventTypeId)
++      : undefined;
+ 
+-      await handleMarkNoShow({
+-        bookingUid,
+-        attendees: bodyTransformed.attendees,
+-        noShowHost: bodyTransformed.noShowHost,
+-        userId: bookingOwnerId,
+-        userUuid,
+-        platformClientParams,
+-      });
++    await handleMarkNoShow({
++      bookingUid,
++      attendees: bodyTransformed.attendees,
++      noShowHost: bodyTransformed.noShowHost,
++      userId: bookingOwnerId,
++      userUuid,
++      platformClientParams,
++    });
+ 
+     const booking = await this.bookingsRepository.getByUidWithAttendeesAndUserAndEvent(bookingUid);
+ 
+@@ -1146,6 +1147,8 @@ export class BookingsService_2024_08_13 {
+         recurringEventId: booking.recurringEventId ?? undefined,
+         emailsEnabled,
+         platformClientParams,
++        actionSource: "API_V2",
++        actor: makeUserActor(requestUser.uuid),
+       },
+     });
+ 
+@@ -1179,6 +1182,8 @@ export class BookingsService_2024_08_13 {
+         reason,
+         emailsEnabled,
+         platformClientParams,
++        actionSource: "API_V2",
++        actor: makeUserActor(requestUser.uuid),
+       },
+     });
+ 
+diff --git a/apps/web/app/api/link/__tests__/route.test.ts b/apps/web/app/api/link/__tests__/route.test.ts
+index b5ecb7246d63..542a70c6328a 100644
+--- a/apps/web/app/api/link/__tests__/route.test.ts
++++ b/apps/web/app/api/link/__tests__/route.test.ts
+@@ -78,6 +78,10 @@ vi.mock("@calcom/lib/tracing/factory", () => ({
+   },
+ }));
+ 
++vi.mock("@calcom/features/booking-audit/lib/makeActor", () => ({
++  makeUserActor: vi.fn().mockReturnValue({ type: "user", id: "test-uuid" }),
++}));
++
+ // Import after mocks are set up
+ import { GET } from "../route";
+ import prisma from "@calcom/prisma";
+@@ -171,7 +175,9 @@ describe("link route", () => {
+       const { TRPCError } = await import("@trpc/server");
+ 
+       // Mock confirmHandler to throw a TRPCError
+-      mockConfirmHandler.mockRejectedValueOnce(new TRPCError({ code: "BAD_REQUEST", message: "Custom error" }));
++      mockConfirmHandler.mockRejectedValueOnce(
++        new TRPCError({ code: "BAD_REQUEST", message: "Custom error" })
++      );
+ 
+       const baseUrl = "https://app.example.com/api/link?action=accept&token=encrypted-token";
+       const req = createMockRequest(baseUrl);
+@@ -206,4 +212,122 @@ describe("link route", () => {
+       expect(location).not.toContain("localhost");
+     });
+   });
++
++  describe("confirmHandler flow", () => {
++    it("should call confirmHandler with correct arguments for accept action", async () => {
++      const baseUrl = "https://app.example.com/api/link?action=accept&token=encrypted-token";
++      const req = createMockRequest(baseUrl);
++
++      await GET(req, { params: Promise.resolve({}) });
++
++      expect(mockConfirmHandler).toHaveBeenCalledWith(
++        expect.objectContaining({
++          input: expect.objectContaining({
++            bookingId: 1,
++            confirmed: true,
++            emailsEnabled: true,
++            actionSource: "MAGIC_LINK",
++          }),
++        })
++      );
++    });
++
++    it("should call confirmHandler with confirmed=false for reject action", async () => {
++      const baseUrl = "https://app.example.com/api/link?action=reject&token=encrypted-token";
++      const req = createMockRequest(baseUrl);
++
++      await GET(req, { params: Promise.resolve({}) });
++
++      expect(mockConfirmHandler).toHaveBeenCalledWith(
++        expect.objectContaining({
++          input: expect.objectContaining({
++            bookingId: 1,
++            confirmed: false,
++            emailsEnabled: true,
++            actionSource: "MAGIC_LINK",
++          }),
++        })
++      );
++    });
++
++    it("should call confirmHandler with reason when provided in query params", async () => {
++      const baseUrl =
++        "https://app.example.com/api/link?action=reject&token=encrypted-token&reason=test-reason";
++      const req = createMockRequest(baseUrl);
++
++      await GET(req, { params: Promise.resolve({}) });
++
++      expect(mockConfirmHandler).toHaveBeenCalledWith(
++        expect.objectContaining({
++          input: expect.objectContaining({
++            bookingId: 1,
++            confirmed: false,
++            reason: "test-reason",
++            emailsEnabled: true,
++            actionSource: "MAGIC_LINK",
++          }),
++        })
++      );
++    });
++
++    it("should pass recurringEventId when booking has one", async () => {
++      // Update mock to return booking with recurringEventId
++      vi.mocked(prisma.booking.findUniqueOrThrow).mockResolvedValueOnce({
++        id: 1,
++        uid: "test-booking-uid",
++        recurringEventId: "recurring-123",
++      } as Awaited<ReturnType<typeof prisma.booking.findUniqueOrThrow>>);
++
++      const baseUrl = "https://app.example.com/api/link?action=accept&token=encrypted-token";
++      const req = createMockRequest(baseUrl);
++
++      await GET(req, { params: Promise.resolve({}) });
++
++      expect(mockConfirmHandler).toHaveBeenCalledWith(
++        expect.objectContaining({
++          input: expect.objectContaining({
++            bookingId: 1,
++            recurringEventId: "recurring-123",
++            confirmed: true,
++          }),
++        })
++      );
++    });
++
++    it("should pass user context to confirmHandler", async () => {
++      const baseUrl = "https://app.example.com/api/link?action=accept&token=encrypted-token";
++      const req = createMockRequest(baseUrl);
++
++      await GET(req, { params: Promise.resolve({}) });
++
++      expect(mockConfirmHandler).toHaveBeenCalledWith(
++        expect.objectContaining({
++          ctx: expect.objectContaining({
++            user: expect.objectContaining({
++              id: 1,
++              uuid: "user-uuid",
++              email: "test@example.com",
++              username: "testuser",
++              role: "USER",
++            }),
++          }),
++        })
++      );
++    });
++
++    it("should pass actor from makeUserActor to confirmHandler", async () => {
++      const baseUrl = "https://app.example.com/api/link?action=accept&token=encrypted-token";
++      const req = createMockRequest(baseUrl);
++
++      await GET(req, { params: Promise.resolve({}) });
++
++      expect(mockConfirmHandler).toHaveBeenCalledWith(
++        expect.objectContaining({
++          input: expect.objectContaining({
++            actor: { type: "user", id: "test-uuid" },
++          }),
++        })
++      );
++    });
++  });
+ });
+diff --git a/apps/web/app/api/link/route.ts b/apps/web/app/api/link/route.ts
+index d3081896f089..1826a697e276 100644
+--- a/apps/web/app/api/link/route.ts
++++ b/apps/web/app/api/link/route.ts
+@@ -8,6 +8,7 @@ import { distributedTracing } from "@calcom/lib/tracing/factory";
+ import prisma from "@calcom/prisma";
+ import { confirmHandler } from "@calcom/trpc/server/routers/viewer/bookings/confirm.handler";
+ import { TRPCError } from "@trpc/server";
++import { makeUserActor } from "@calcom/features/booking-audit/lib/makeActor";
+ 
+ enum DirectAction {
+   ACCEPT = "accept",
+@@ -90,6 +91,8 @@ async function handler(request: NextRequest) {
+               platformBookingUrl,
+             }
+           : undefined,
++        actionSource: "MAGIC_LINK",
++        actor: makeUserActor(user.uuid),
+       },
+     });
+   } catch (e) {
+diff --git a/apps/web/app/api/verify-booking-token/__tests__/route.test.ts b/apps/web/app/api/verify-booking-token/__tests__/route.test.ts
+index 3ffe786a4632..240c9ffb37fc 100644
+--- a/apps/web/app/api/verify-booking-token/__tests__/route.test.ts
++++ b/apps/web/app/api/verify-booking-token/__tests__/route.test.ts
+@@ -65,6 +65,10 @@ vi.mock("@calcom/lib/tracing/factory", () => ({
+   },
+ }));
+ 
++vi.mock("@calcom/features/booking-audit/lib/makeActor", () => ({
++  makeUserActor: vi.fn().mockReturnValue({ type: "user", id: "test-uuid" }),
++}));
++
+ // Store for mock request body - will be set by tests
+ let mockRequestBody: Record<string, unknown> = {};
+ 
+@@ -179,7 +183,6 @@ describe("verify-booking-token route", () => {
+       const baseUrl =
+         "https://app.example.com/api/verify-booking-token?action=reject&token=test-token&bookingUid=abc123&userId=42";
+       const req = createMockRequest(baseUrl, "GET");
+-
+       const res = await GET(req, { params: Promise.resolve({}) });
+       const location = res.headers.get("location");
+ 
+@@ -256,7 +259,7 @@ describe("verify-booking-token route", () => {
+   describe("POST handler", () => {
+     it("should redirect with status 303 when query params are invalid", async () => {
+       const baseUrl =
+-        "https://app.example.com/api/verify-booking-token?token=test-token&bookingUid=abc123&userId=42";
++        "https://app.example.com/api/verify-booking-token?token=test-token&bookingUid=abc123&userId=42&action=reject";
+       const req = createMockRequest(baseUrl, "POST");
+ 
+       const res = await POST(req, { params: Promise.resolve({}) });
+@@ -274,7 +277,7 @@ describe("verify-booking-token route", () => {
+ 
+     it("should preserve the request origin in POST redirect URL", async () => {
+       const baseUrl =
+-        "https://self-hosted.company.com/api/verify-booking-token?bookingUid=uid123&token=t&userId=1";
++        "https://self-hosted.company.com/api/verify-booking-token?bookingUid=uid123&token=t&userId=1&action=reject";
+       const req = createMockRequest(baseUrl, "POST");
+ 
+       const res = await POST(req, { params: Promise.resolve({}) });
+@@ -313,4 +316,117 @@ describe("verify-booking-token route", () => {
+       }
+     });
+   });
++
++  describe("successful booking confirmation", () => {
++    it("should call confirmHandler with correct arguments for accept action", async () => {
++      createMockBooking({
++        id: 1,
++        uid: "booking-uid",
++        oneTimePassword: "valid-token",
++        recurringEventId: null,
++      });
++      createMockUser({
++        id: 42,
++        uuid: "user-uuid",
++        email: "test@example.com",
++        username: "testuser",
++        role: "USER",
++        destinationCalendar: null,
++      });
++
++      const req = createMockRequest(
++        "https://app.example.com/api/verify-booking-token?action=accept&token=valid-token&bookingUid=booking-uid&userId=42",
++        "GET"
++      );
++      await GET(req, { params: Promise.resolve({}) });
++
++      expect(mockConfirmHandler).toHaveBeenCalledWith(
++        expect.objectContaining({
++          input: expect.objectContaining({
++            bookingId: 1,
++            confirmed: true,
++            emailsEnabled: true,
++            actionSource: "MAGIC_LINK",
++          }),
++        })
++      );
++    });
++
++    it("should redirect with error when booking not found", async () => {
++      createMockUser({
++        id: 42,
++        uuid: "user-uuid",
++        email: "test@example.com",
++        username: "testuser",
++        role: "USER",
++        destinationCalendar: null,
++      });
++
++      const req = createMockRequest(
++        "https://app.example.com/api/verify-booking-token?action=accept&token=invalid-token&bookingUid=booking-uid&userId=42",
++        "GET"
++      );
++      const res = await GET(req, { params: Promise.resolve({}) });
++
++      expectErrorRedirect(res, "/booking/booking-uid", "Error confirming booking");
++      expect(mockConfirmHandler).not.toHaveBeenCalled();
++    });
++
++    it("should redirect with error when user not found", async () => {
++      createMockBooking({
++        id: 1,
++        uid: "booking-uid",
++        oneTimePassword: "valid-token",
++      });
++
++      const req = createMockRequest(
++        "https://app.example.com/api/verify-booking-token?action=accept&token=valid-token&bookingUid=booking-uid&userId=999",
++        "GET"
++      );
++
++      const res = await GET(req, { params: Promise.resolve({}) });
++
++      expectErrorRedirect(res, "/booking/booking-uid", "Error confirming booking");
++      expect(mockConfirmHandler).not.toHaveBeenCalled();
++    });
++
++    it("should call confirmHandler with reject action and reason for POST request", async () => {
++      createMockBooking({
++        id: 1,
++        uid: "booking-uid",
++        oneTimePassword: "valid-token",
++      });
++      createMockUser({
++        id: 42,
++        uuid: "user-uuid",
++        email: "test@example.com",
++        username: "testuser",
++        role: "USER",
++        destinationCalendar: null,
++      });
++
++      // Set the mock body for parseRequestData
++      setMockRequestBody({ reason: "test" });
++
++      const req = createMockRequest(
++        "https://app.example.com/api/verify-booking-token?action=reject&token=valid-token&bookingUid=booking-uid&userId=42",
++        "POST",
++        { reason: "test" }
++      );
++      await POST(req, { params: Promise.resolve({}) });
++
++      expect(mockConfirmHandler).toHaveBeenCalledWith(
++        expect.objectContaining({
++          input: expect.objectContaining({
++            bookingId: 1,
++            confirmed: false,
++            reason: "test",
++            emailsEnabled: true,
++            actionSource: "MAGIC_LINK",
++            actor: { type: "user", id: "test-uuid" },
++          }),
++        })
++      );
++    });
++  });
+ });
+diff --git a/apps/web/app/api/verify-booking-token/route.ts b/apps/web/app/api/verify-booking-token/route.ts
+index c4529fc8d4f3..8a76ada0fb7f 100644
+--- a/apps/web/app/api/verify-booking-token/route.ts
++++ b/apps/web/app/api/verify-booking-token/route.ts
+@@ -8,6 +8,7 @@ import { distributedTracing } from "@calcom/lib/tracing/factory";
+ import prisma from "@calcom/prisma";
+ import { confirmHandler } from "@calcom/trpc/server/routers/viewer/bookings/confirm.handler";
+ import { TRPCError } from "@trpc/server";
++import { makeUserActor } from "@calcom/features/booking-audit/lib/makeActor";
+ 
+ enum DirectAction {
+   ACCEPT = "accept",
+@@ -115,6 +116,8 @@ async function handleBookingAction(
+         /** Ignored reason input unless we're rejecting */
+         reason: action === DirectAction.REJECT ? reason : undefined,
+         emailsEnabled: true,
++        actionSource: "MAGIC_LINK",
++        actor: makeUserActor(user.uuid),
+       },
+     });
+   } catch (e) {
+diff --git a/apps/web/test/lib/confirm.handler.test.ts b/apps/web/test/lib/confirm.handler.test.ts
+index d5de99fc585c..4e7c3fab75dd 100644
+--- a/apps/web/test/lib/confirm.handler.test.ts
++++ b/apps/web/test/lib/confirm.handler.test.ts
+@@ -13,101 +13,610 @@ import { distributedTracing } from "@calcom/lib/tracing/factory";
+ import { BookingStatus } from "@calcom/prisma/enums";
+ import { confirmHandler } from "@calcom/trpc/server/routers/viewer/bookings/confirm.handler";
+ import type { TrpcSessionUser } from "@calcom/trpc/server/types";
++import { makeUserActor } from "@calcom/features/booking-audit/lib/makeActor";
++import { getBookingEventHandlerService } from "@calcom/features/bookings/di/BookingEventHandlerService.container";
++
++vi.mock("@calcom/features/bookings/di/BookingEventHandlerService.container", () => {
++  const onBookingAccepted = vi.fn().mockResolvedValue(undefined);
++  const onBulkBookingsAccepted = vi.fn().mockResolvedValue(undefined);
++  const onBookingRejected = vi.fn().mockResolvedValue(undefined);
++  const onBulkBookingsRejected = vi.fn().mockResolvedValue(undefined);
++
++  // Create a single service instance that will be returned
++  const mockService = {
++    onBookingAccepted,
++    onBulkBookingsAccepted,
++    onBookingRejected,
++    onBulkBookingsRejected,
++  };
++
++  return {
++    getBookingEventHandlerService: vi.fn(() => mockService),
++  };
++});
+ 
+ describe("confirmHandler", () => {
+   beforeEach(() => {
+     vi.clearAllMocks();
+   });
+ 
+-  it("should pass hideCalendarNotes property to CalendarEvent when enabled", async () => {
+-    vi.setSystemTime("2050-01-07T00:00:00Z");
++  describe("Booking Accepted", () => {
++    it("should pass hideCalendarNotes property to CalendarEvent when enabled", async () => {
++      vi.setSystemTime("2050-01-07T00:00:00Z");
++
++      const handleConfirmationSpy = vi.spyOn(handleConfirmationModule, "handleConfirmation");
++
++      const attendeeUser = getOrganizer({
++        email: "test@example.com",
++        name: "test name",
++        id: 102,
++        schedules: [TestData.schedules.IstWorkHours],
++      });
++
++      const organizer = getOrganizer({
++        name: "Organizer",
++        email: "organizer@example.com",
++        id: 101,
++        schedules: [TestData.schedules.IstWorkHours],
++      });
++
++      const uidOfBooking = "hideNotes123";
++      const iCalUID = `${uidOfBooking}@Cal.com`;
+ 
+-    const handleConfirmationSpy = vi.spyOn(handleConfirmationModule, "handleConfirmation");
++      const plus1DateString = "2050-01-08";
+ 
+-    const attendeeUser = getOrganizer({
+-      email: "test@example.com",
+-      name: "test name",
+-      id: 102,
+-      schedules: [TestData.schedules.IstWorkHours],
++      await createBookingScenario(
++        getScenarioData({
++          eventTypes: [
++            {
++              id: 1,
++              slotInterval: 15,
++              length: 15,
++              locations: [],
++              hideCalendarNotes: true,
++              hideCalendarEventDetails: true,
++              requiresConfirmation: true,
++              users: [
++                {
++                  id: 101,
++                },
++              ],
++            },
++          ],
++          bookings: [
++            {
++              id: 101,
++              uid: uidOfBooking,
++              eventTypeId: 1,
++              status: BookingStatus.PENDING,
++              startTime: `${plus1DateString}T05:00:00.000Z`,
++              endTime: `${plus1DateString}T05:15:00.000Z`,
++              references: [],
++              iCalUID,
++              location: "integrations:daily",
++              attendees: [attendeeUser],
++              responses: {
++                name: attendeeUser.name,
++                email: attendeeUser.email,
++                notes: "Sensitive information",
++              },
++              user: { id: organizer.id },
++            },
++          ],
++          organizer,
++          apps: [TestData.apps["daily-video"]],
++        })
++      );
++
++      mockSuccessfulVideoMeetingCreation({
++        metadataLookupKey: "dailyvideo",
++      });
++
++      const ctx = {
++        user: {
++          id: organizer.id,
++          name: organizer.name,
++          timeZone: organizer.timeZone,
++          username: organizer.username,
++        } as NonNullable<TrpcSessionUser>,
++        traceContext: distributedTracing.createTrace("test_confirm_handler"),
++      };
++
++      const res = await confirmHandler({
++        ctx,
++        input: {
++          bookingId: 101,
++          confirmed: true,
++          reason: "",
++          emailsEnabled: true,
++          actor: makeUserActor(ctx.user.uuid),
++          actionSource: "WEBAPP",
++        },
++      });
++
++      expect(res?.status).toBe(BookingStatus.ACCEPTED);
++      expect(handleConfirmationSpy).toHaveBeenCalledTimes(1);
++
++      const handleConfirmationCall = handleConfirmationSpy.mock.calls[0][0];
++      const calendarEvent = handleConfirmationCall.evt;
++
++      expect(calendarEvent.hideCalendarNotes).toBe(true);
++      expect(calendarEvent.hideCalendarEventDetails).toBe(true);
+     });
+ 
+-    const organizer = getOrganizer({
+-      name: "Organizer",
+-      email: "organizer@example.com",
+-      id: 101,
+-      schedules: [TestData.schedules.IstWorkHours],
++    it("should call BookingEventHandlerService.onBookingAccepted with correct arguments when confirming a booking", async () => {
++      vi.setSystemTime("2050-01-07T00:00:00Z");
++
++      const attendeeUser = getOrganizer({
++        email: "test@example.com",
++        name: "test name",
++        id: 102,
++        schedules: [TestData.schedules.IstWorkHours],
++      });
++
++      const organizer = getOrganizer({
++        name: "Organizer",
++        email: "organizer@example.com",
++        id: 101,
++        schedules: [TestData.schedules.IstWorkHours],
++      });
++
++      const uidOfBooking = "testBooking123";
++      const iCalUID = `${uidOfBooking}@Cal.com`;
++
++      const plus1DateString = "2050-01-08";
++
++      await createBookingScenario(
++        getScenarioData({
++          eventTypes: [
++            {
++              id: 1,
++              slotInterval: 15,
++              length: 15,
++              locations: [],
++              requiresConfirmation: true,
++              users: [
++                {
++                  id: 101,
++                },
++              ],
++            },
++          ],
++          bookings: [
++            {
++              id: 101,
++              uid: uidOfBooking,
++              eventTypeId: 1,
++              status: BookingStatus.PENDING,
++              startTime: `${plus1DateString}T05:00:00.000Z`,
++              endTime: `${plus1DateString}T05:15:00.000Z`,
++              references: [],
++              iCalUID,
++              location: "integrations:daily",
++              attendees: [attendeeUser],
++              responses: { name: attendeeUser.name, email: attendeeUser.email },
++              user: { id: organizer.id },
++            },
++          ],
++          organizer,
++          apps: [TestData.apps["daily-video"]],
++        })
++      );
++
++      mockSuccessfulVideoMeetingCreation({
++        metadataLookupKey: "dailyvideo",
++      });
++
++      const testUserUuid = "test-uuid-101";
++      const ctx = {
++        user: {
++          id: organizer.id,
++          name: organizer.name,
++          timeZone: organizer.timeZone,
++          username: organizer.username,
++          uuid: testUserUuid,
++        } as NonNullable<TrpcSessionUser>,
++        traceContext: distributedTracing.createTrace("test_confirm_handler"),
++      };
++
++      const actor = makeUserActor(ctx.user.uuid);
++
++      const res = await confirmHandler({
++        ctx,
++        input: {
++          bookingId: 101,
++          confirmed: true,
++          reason: "",
++          emailsEnabled: true,
++          actor,
++          actionSource: "WEBAPP",
++        },
++      });
++
++      expect(res?.status).toBe(BookingStatus.ACCEPTED);
++
++      // Get the mock service instance to access the mocks
++      const mockService = getBookingEventHandlerService();
++      expect(mockService.onBookingAccepted).toHaveBeenCalledTimes(1);
++
++      const callArgs = vi.mocked(mockService.onBookingAccepted).mock.calls[0][0];
++      expect(callArgs.bookingUid).toBe(uidOfBooking);
++      expect(callArgs.actor).toEqual(actor);
++      expect(callArgs.auditData).toEqual({
++        status: { old: BookingStatus.PENDING, new: BookingStatus.ACCEPTED },
++      });
++      expect(callArgs.source).toBe("WEBAPP");
++      expect(callArgs.organizationId).toBeNull();
+     });
+ 
+-    const uidOfBooking = "hideNotes123";
+-    const iCalUID = `${uidOfBooking}@Cal.com`;
+-
+-    const plus1DateString = "2050-01-08";
+-
+-    await createBookingScenario(
+-      getScenarioData({
+-        eventTypes: [
+-          {
+-            id: 1,
+-            slotInterval: 15,
+-            length: 15,
+-            locations: [],
+-            hideCalendarNotes: true,
+-            hideCalendarEventDetails: true,
+-            requiresConfirmation: true,
+-            users: [
+-              {
+-                id: 101,
+-              },
+-            ],
+-          },
+-        ],
+-        bookings: [
+-          {
+-            id: 101,
+-            uid: uidOfBooking,
+-            eventTypeId: 1,
+-            status: BookingStatus.PENDING,
+-            startTime: `${plus1DateString}T05:00:00.000Z`,
+-            endTime: `${plus1DateString}T05:15:00.000Z`,
+-            references: [],
+-            iCalUID,
+-            location: "integrations:daily",
+-            attendees: [attendeeUser],
+-            responses: { name: attendeeUser.name, email: attendeeUser.email, notes: "Sensitive information" },
+-            user: { id: organizer.id },
+-          },
+-        ],
+-        organizer,
+-        apps: [TestData.apps["daily-video"]],
+-      })
+-    );
+-
+-    mockSuccessfulVideoMeetingCreation({
+-      metadataLookupKey: "dailyvideo",
++    it("should call BookingEventHandlerService.onBulkBookingsAccepted when confirming recurring bookings", async () => {
++      vi.setSystemTime("2050-01-07T00:00:00Z");
++
++      const attendeeUser = getOrganizer({
++        email: "test@example.com",
++        name: "test name",
++        id: 102,
++        schedules: [TestData.schedules.IstWorkHours],
++      });
++
++      const organizer = getOrganizer({
++        name: "Organizer",
++        email: "organizer@example.com",
++        id: 101,
++        schedules: [TestData.schedules.IstWorkHours],
++      });
++
++      const recurringEventId = "recurring123";
++      const uidOfBooking1 = "testBooking1";
++      const uidOfBooking2 = "testBooking2";
++      const iCalUID1 = `${uidOfBooking1}@Cal.com`;
++      const iCalUID2 = `${uidOfBooking2}@Cal.com`;
++
++      const plus1DateString = "2050-01-08";
++      const plus2DateString = "2050-01-09";
++
++      await createBookingScenario(
++        getScenarioData({
++          eventTypes: [
++            {
++              id: 1,
++              slotInterval: 15,
++              length: 15,
++              locations: [],
++              requiresConfirmation: true,
++              recurringEvent: { freq: 2, count: 3, interval: 1 },
++              users: [
++                {
++                  id: 101,
++                },
++              ],
++            },
++          ],
++          bookings: [
++            {
++              id: 101,
++              uid: uidOfBooking1,
++              eventTypeId: 1,
++              status: BookingStatus.PENDING,
++              startTime: `${plus1DateString}T05:00:00.000Z`,
++              endTime: `${plus1DateString}T05:15:00.000Z`,
++              references: [],
++              iCalUID: iCalUID1,
++              location: "integrations:daily",
++              attendees: [attendeeUser],
++              responses: { name: attendeeUser.name, email: attendeeUser.email },
++              user: { id: organizer.id },
++              recurringEventId,
++            },
++            {
++              id: 102,
++              uid: uidOfBooking2,
++              eventTypeId: 1,
++              status: BookingStatus.PENDING,
++              startTime: `${plus2DateString}T05:00:00.000Z`,
++              endTime: `${plus2DateString}T05:15:00.000Z`,
++              references: [],
++              iCalUID: iCalUID2,
++              location: "integrations:daily",
++              attendees: [attendeeUser],
++              responses: { name: attendeeUser.name, email: attendeeUser.email },
++              user: { id: organizer.id },
++              recurringEventId,
++            },
++          ],
++          organizer,
++          apps: [TestData.apps["daily-video"]],
++        })
++      );
++
++      mockSuccessfulVideoMeetingCreation({
++        metadataLookupKey: "dailyvideo",
++      });
++
++      const testUserUuid = "test-uuid-101";
++      const ctx = {
++        user: {
++          id: organizer.id,
++          name: organizer.name,
++          timeZone: organizer.timeZone,
++          username: organizer.username,
++          uuid: testUserUuid,
++        } as NonNullable<TrpcSessionUser>,
++        traceContext: distributedTracing.createTrace("test_confirm_handler"),
++      };
++
++      const actor = makeUserActor(ctx.user.uuid);
++
++      const res = await confirmHandler({
++        ctx,
++        input: {
++          bookingId: 101,
++          recurringEventId,
++          confirmed: true,
++          reason: "",
++          emailsEnabled: true,
++          actor,
++          actionSource: "WEBAPP",
++        },
++      });
++
++      expect(res?.status).toBe(BookingStatus.ACCEPTED);
++
++      // Get the mock service instance to access the mocks
++      const mockService = getBookingEventHandlerService();
++      expect(mockService.onBulkBookingsAccepted).toHaveBeenCalledTimes(1);
++
++      const callArgs = vi.mocked(mockService.onBulkBookingsAccepted).mock.calls[0][0];
++      expect(callArgs.bookings).toHaveLength(2);
++      expect(callArgs.bookings[0].bookingUid).toBe(uidOfBooking1);
++      expect(callArgs.bookings[0].auditData).toEqual({
++        status: { old: BookingStatus.PENDING, new: BookingStatus.ACCEPTED },
++      });
++      expect(callArgs.bookings[1].bookingUid).toBe(uidOfBooking2);
++      expect(callArgs.bookings[1].auditData).toEqual({
++        status: { old: BookingStatus.PENDING, new: BookingStatus.ACCEPTED },
++      });
++      expect(callArgs.actor).toEqual(actor);
++      expect(callArgs.source).toBe("WEBAPP");
++      expect(callArgs.organizationId).toBeNull();
++      expect(callArgs.operationId).toBeDefined();
+     });
++  });
++
++  describe("Booking Rejected", () => {
++    it("should call BookingEventHandlerService.onBookingRejected with correct arguments when rejecting a booking", async () => {
++      vi.setSystemTime("2050-01-07T00:00:00Z");
++
++      const attendeeUser = getOrganizer({
++        email: "test@example.com",
++        name: "test name",
++        id: 102,
++        schedules: [TestData.schedules.IstWorkHours],
++      });
++
++      const organizer = getOrganizer({
++        name: "Organizer",
++        email: "organizer@example.com",
++        id: 101,
++        schedules: [TestData.schedules.IstWorkHours],
++      });
++
++      const uidOfBooking = "testBooking456";
++      const iCalUID = `${uidOfBooking}@Cal.com`;
++
++      const plus1DateString = "2050-01-08";
++
++      await createBookingScenario(
++        getScenarioData({
++          eventTypes: [
++            {
++              id: 1,
++              slotInterval: 15,
++              length: 15,
++              locations: [],
++              requiresConfirmation: true,
++              users: [
++                {
++                  id: 101,
++                },
++              ],
++            },
++          ],
++          bookings: [
++            {
++              id: 103,
++              uid: uidOfBooking,
++              eventTypeId: 1,
++              status: BookingStatus.PENDING,
++              startTime: `${plus1DateString}T05:00:00.000Z`,
++              endTime: `${plus1DateString}T05:15:00.000Z`,
++              references: [],
++              iCalUID,
++              location: "integrations:daily",
++              attendees: [attendeeUser],
++              responses: { name: attendeeUser.name, email: attendeeUser.email },
++              user: { id: organizer.id },
++            },
++          ],
++          organizer,
++          apps: [TestData.apps["daily-video"]],
++        })
++      );
+ 
+-    const ctx = {
+-      user: {
+-        id: organizer.id,
+-        name: organizer.name,
+-        timeZone: organizer.timeZone,
+-        username: organizer.username,
+-      } as NonNullable<TrpcSessionUser>,
+-      traceContext: distributedTracing.createTrace("test_confirm_handler"),
+-    };
+-
+-    const res = await confirmHandler({
+-      ctx,
+-      input: { bookingId: 101, confirmed: true, reason: "", emailsEnabled: true },
++      const testUserUuid = "test-uuid-101";
++      const ctx = {
++        user: {
++          id: organizer.id,
++          name: organizer.name,
++          timeZone: organizer.timeZone,
++          username: organizer.username,
++          uuid: testUserUuid,
++        } as NonNullable<TrpcSessionUser>,
++        traceContext: distributedTracing.createTrace("test_confirm_handler"),
++      };
++
++      const actor = makeUserActor(ctx.user.uuid);
++      const rejectionReason = "Not available";
++
++      const res = await confirmHandler({
++        ctx,
++        input: {
++          bookingId: 103,
++          confirmed: false,
++          reason: rejectionReason,
++          emailsEnabled: false,
++          actor,
++          actionSource: "WEBAPP",
++        },
++      });
++
++      expect(res?.status).toBe(BookingStatus.REJECTED);
++
++      // Get the mock service instance to access the mocks
++      const mockService = getBookingEventHandlerService();
++      expect(mockService.onBookingRejected).toHaveBeenCalledTimes(1);
++
++      const callArgs = vi.mocked(mockService.onBookingRejected).mock.calls[0][0];
++      expect(callArgs.bookingUid).toBe(uidOfBooking);
++      expect(callArgs.actor).toEqual(actor);
++      expect(callArgs.auditData).toEqual({
++        rejectionReason,
++        status: { old: BookingStatus.PENDING, new: BookingStatus.REJECTED },
++      });
++      expect(callArgs.source).toBe("WEBAPP");
++      expect(callArgs.organizationId).toBeNull();
+     });
+ 
+-    expect(res?.status).toBe(BookingStatus.ACCEPTED);
+-    expect(handleConfirmationSpy).toHaveBeenCalledTimes(1);
++    it("should call BookingEventHandlerService.onBulkBookingsRejected when rejecting recurring bookings", async () => {
++      vi.setSystemTime("2050-01-07T00:00:00Z");
++
++      const attendeeUser = getOrganizer({
++        email: "test@example.com",
++        name: "test name",
++        id: 102,
++        schedules: [TestData.schedules.IstWorkHours],
++      });
++
++      const organizer = getOrganizer({
++        name: "Organizer",
++        email: "organizer@example.com",
++        id: 101,
++        schedules: [TestData.schedules.IstWorkHours],
++      });
++
++      const recurringEventId = "recurring456";
++      const uidOfBooking1 = "testBooking3";
++      const uidOfBooking2 = "testBooking4";
++      const iCalUID1 = `${uidOfBooking1}@Cal.com`;
++      const iCalUID2 = `${uidOfBooking2}@Cal.com`;
+ 
+-    const handleConfirmationCall = handleConfirmationSpy.mock.calls[0][0];
+-    const calendarEvent = handleConfirmationCall.evt;
++      const plus1DateString = "2050-01-08";
++      const plus2DateString = "2050-01-09";
+ 
+-    expect(calendarEvent.hideCalendarNotes).toBe(true);
+-    expect(calendarEvent.hideCalendarEventDetails).toBe(true);
++      await createBookingScenario(
++        getScenarioData({
++          eventTypes: [
++            {
++              id: 1,
++              slotInterval: 15,
++              length: 15,
++              locations: [],
++              requiresConfirmation: true,
++              recurringEvent: { freq: 2, count: 3, interval: 1 },
++              users: [
++                {
++                  id: 101,
++                },
++              ],
++            },
++          ],
++          bookings: [
++            {
++              id: 104,
++              uid: uidOfBooking1,
++              eventTypeId: 1,
++              status: BookingStatus.PENDING,
++              startTime: `${plus1DateString}T05:00:00.000Z`,
++              endTime: `${plus1DateString}T05:15:00.000Z`,
++              references: [],
++              iCalUID: iCalUID1,
++              location: "integrations:daily",
++              attendees: [attendeeUser],
++              responses: { name: attendeeUser.name, email: attendeeUser.email },
++              user: { id: organizer.id },
++              recurringEventId,
++            },
++            {
++              id: 105,
++              uid: uidOfBooking2,
++              eventTypeId: 1,
++              status: BookingStatus.PENDING,
++              startTime: `${plus2DateString}T05:00:00.000Z`,
++              endTime: `${plus2DateString}T05:15:00.000Z`,
++              references: [],
++              iCalUID: iCalUID2,
++              location: "integrations:daily",
++              attendees: [attendeeUser],
++              responses: { name: attendeeUser.name, email: attendeeUser.email },
++              user: { id: organizer.id },
++              recurringEventId,
++            },
++          ],
++          organizer,
++          apps: [TestData.apps["daily-video"]],
++        })
++      );
++
++      const testUserUuid = "test-uuid-101";
++      const ctx = {
++        user: {
++          id: organizer.id,
++          name: organizer.name,
++          timeZone: organizer.timeZone,
++          username: organizer.username,
++          uuid: testUserUuid,
++        } as NonNullable<TrpcSessionUser>,
++        traceContext: distributedTracing.createTrace("test_confirm_handler"),
++      };
++
++      const actor = makeUserActor(ctx.user.uuid);
++      const rejectionReason = "Organizer not available";
++
++      const res = await confirmHandler({
++        ctx,
++        input: {
++          bookingId: 104,
++          recurringEventId,
++          confirmed: false,
++          reason: rejectionReason,
++          emailsEnabled: false,
++          actor,
++          actionSource: "WEBAPP",
++        },
++      });
++
++      expect(res?.status).toBe(BookingStatus.REJECTED);
++
++      // Get the mock service instance to access the mocks
++      const mockService = getBookingEventHandlerService();
++      expect(mockService.onBulkBookingsRejected).toHaveBeenCalledTimes(1);
++
++      const callArgs = vi.mocked(mockService.onBulkBookingsRejected).mock.calls[0][0];
++      expect(callArgs.bookings).toHaveLength(2);
++      expect(callArgs.bookings[0].bookingUid).toBe(uidOfBooking1);
++      expect(callArgs.bookings[0].auditData).toEqual({
++        rejectionReason,
++        status: { old: BookingStatus.PENDING, new: BookingStatus.REJECTED },
++      });
++      expect(callArgs.bookings[1].bookingUid).toBe(uidOfBooking2);
++      expect(callArgs.bookings[1].auditData).toEqual({
++        rejectionReason,
++        status: { old: BookingStatus.PENDING, new: BookingStatus.REJECTED },
++      });
++      expect(callArgs.actor).toEqual(actor);
++      expect(callArgs.source).toBe("WEBAPP");
++      expect(callArgs.organizationId).toBeNull();
++      expect(callArgs.operationId).toBeDefined();
++    });
+   });
+ });
+diff --git a/packages/app-store/_utils/getAppActor.ts b/packages/app-store/_utils/getAppActor.ts
+new file mode 100644
+index 000000000000..ea0406c3e526
+--- /dev/null
++++ b/packages/app-store/_utils/getAppActor.ts
+@@ -0,0 +1,49 @@
++import type { z } from "zod";
++
++import type { eventTypeAppMetadataOptionalSchema } from "@calcom/app-store/zod-utils";
++import { getAppNameFromSlug } from "@calcom/features/booking-audit/lib/getAppNameFromSlug";
++import { makeAppActor, makeAppActorUsingSlug } from "@calcom/features/booking-audit/lib/makeActor";
++import type { Actor } from "@calcom/features/booking-audit/lib/dto/types";
++import logger from "@calcom/lib/logger";
++import { safeStringify } from "@calcom/lib/safeStringify";
++
++const log = logger.getSubLogger({ prefix: ["[getAppActor]"] });
++
++/**
++ * Gets an actor object for an app, using the credentialId if available,
++ * otherwise falling back to the appSlug.
++ *
++ * @param params - The parameters for creating the actor
++ * @param params.appSlug - The slug of the app (e.g., "stripe", "paypal", "zoom")
++ * @param params.bookingId - The booking ID for logging purposes
++ * @param params.apps - The event type app metadata containing credentialIds
++ * @returns An Actor object representing the app
++ */
++export function getAppActor({
++  appSlug,
++  bookingId,
++  apps,
++}: {
++  appSlug: string;
++  bookingId: number;
++  apps: z.infer<typeof eventTypeAppMetadataOptionalSchema>;
++}): Actor {
++  let actor: Actor;
++  const appData = apps?.[appSlug as keyof typeof apps];
++  if (appData?.credentialId) {
++    actor = makeAppActor({ credentialId: appData.credentialId });
++  } else {
++    log.warn(
++      `Missing credentialId for app, using appSlug fallback`,
++      safeStringify({
++        bookingId,
++        appSlug,
++      })
++    );
++    actor = makeAppActorUsingSlug({
++      appSlug,
++      name: getAppNameFromSlug({ appSlug }),
++    });
++  }
++  return actor;
++}
+diff --git a/packages/app-store/_utils/payments/handlePaymentSuccess.test.ts b/packages/app-store/_utils/payments/handlePaymentSuccess.test.ts
+index 79485ee6947d..c7af2e04ffd0 100644
+--- a/packages/app-store/_utils/payments/handlePaymentSuccess.test.ts
++++ b/packages/app-store/_utils/payments/handlePaymentSuccess.test.ts
+@@ -2,11 +2,7 @@
+  * @vitest-environment node
+  */
+ import { describe, it, expect, vi, beforeEach } from "vitest";
+-import {
+-  BookingStatus,
+-  WebhookTriggerEvents,
+-  WorkflowTriggerEvents,
+-} from "@calcom/prisma/enums";
++import { BookingStatus, WebhookTriggerEvents, WorkflowTriggerEvents } from "@calcom/prisma/enums";
+ import { handlePaymentSuccess } from "./handlePaymentSuccess";
+ 
+ // Mock dependencies
+@@ -16,12 +12,9 @@ vi.mock("@calcom/features/webhooks/lib/sendOrSchedulePayload");
+ vi.mock("@calcom/features/ee/workflows/lib/getAllWorkflowsFromEventType");
+ vi.mock("@calcom/features/ee/workflows/lib/service/WorkflowService");
+ vi.mock("@calcom/features/tasker");
+-vi.mock(
+-  "@calcom/features/bookings/lib/getAllCredentialsForUsersOnEvent/getAllCredentials",
+-  () => ({
+-    getAllCredentialsIncludeServiceAccountKey: vi.fn().mockResolvedValue([]),
+-  })
+-);
++vi.mock("@calcom/features/bookings/lib/getAllCredentialsForUsersOnEvent/getAllCredentials", () => ({
++  getAllCredentialsIncludeServiceAccountKey: vi.fn().mockResolvedValue([]),
++}));
+ vi.mock("@calcom/features/users/repositories/UserRepository", () => ({
+   UserRepository: class {
+     constructor() {}
+@@ -51,15 +44,12 @@ vi.mock("@calcom/features/ee/organizations/lib/getBookerUrlServer");
+ vi.mock("@calcom/lib/getTeamIdFromEventType");
+ vi.mock("@calcom/lib/CalEventParser");
+ vi.mock("@calcom/features/ee/billing/credit-service");
+-vi.mock(
+-  "@calcom/features/platform-oauth-client/platform-oauth-client.repository",
+-  () => ({
+-    PlatformOAuthClientRepository: class {
+-      constructor() {}
+-      getByUserId = vi.fn().mockResolvedValue(null);
+-    },
+-  })
+-);
++vi.mock("@calcom/features/platform-oauth-client/platform-oauth-client.repository", () => ({
++  PlatformOAuthClientRepository: class {
++    constructor() {}
++    getByUserId = vi.fn().mockResolvedValue(null);
++  },
++}));
+ vi.mock("@calcom/features/platform-oauth-client/get-platform-params");
+ vi.mock("@calcom/features/bookings/lib/handleConfirmation");
+ vi.mock("@calcom/features/bookings/lib/handleBookingRequested");
+@@ -228,23 +218,24 @@ describe("handlePaymentSuccess", () => {
+ 
+     // Mock workflow functions
+     vi.mocked(getAllWorkflowsFromEventType).mockResolvedValue([mockWorkflow]);
+-    vi.mocked(
+-      WorkflowService.scheduleWorkflowsFilteredByTriggerEvent
+-    ).mockResolvedValue(undefined);
++    vi.mocked(WorkflowService.scheduleWorkflowsFilteredByTriggerEvent).mockResolvedValue(undefined);
+ 
+     // Mock utility functions
+     vi.mocked(getOrgIdFromMemberOrTeamId).mockResolvedValue(undefined);
+     vi.mocked(getBookerBaseUrl).mockResolvedValue("https://cal.com");
+     vi.mocked(getTeamIdFromEventType).mockResolvedValue(null);
+     vi.mocked(getVideoCallUrlFromCalEvent).mockReturnValue("");
+-    vi.mocked(CreditService.prototype.hasAvailableCredits).mockResolvedValue(
+-      true
+-    );
++    vi.mocked(CreditService.prototype.hasAvailableCredits).mockResolvedValue(true);
+   });
+ 
+   it("should trigger BOOKING_PAID webhooks with correct payload", async () => {
+     await expect(
+-      handlePaymentSuccess(mockPaymentId, mockBookingId, mockTraceContext)
++      handlePaymentSuccess({
++        paymentId: mockPaymentId,
++        appSlug: "stripe",
++        bookingId: mockBookingId,
++        traceContext: mockTraceContext,
++      })
+     ).rejects.toThrow(); // Function throws HttpCode 200 at the end
+ 
+     // Verify webhooks were fetched
+@@ -282,19 +273,19 @@ describe("handlePaymentSuccess", () => {
+ 
+   it("should trigger BOOKING_PAID workflows with correct calendar event", async () => {
+     await expect(
+-      handlePaymentSuccess(mockPaymentId, mockBookingId, mockTraceContext)
++      handlePaymentSuccess({
++        paymentId: mockPaymentId,
++        appSlug: "stripe",
++        bookingId: mockBookingId,
++        traceContext: mockTraceContext,
++      })
+     ).rejects.toThrow(); // Function throws HttpCode 200 at the end
+ 
+     // Verify workflows were fetched
+-    expect(getAllWorkflowsFromEventType).toHaveBeenCalledWith(
+-      mockBooking.eventType,
+-      mockBooking.userId
+-    );
++    expect(getAllWorkflowsFromEventType).toHaveBeenCalledWith(mockBooking.eventType, mockBooking.userId);
+ 
+     // Verify workflows were scheduled
+-    expect(
+-      WorkflowService.scheduleWorkflowsFilteredByTriggerEvent
+-    ).toHaveBeenCalledWith({
++    expect(WorkflowService.scheduleWorkflowsFilteredByTriggerEvent).toHaveBeenCalledWith({
+       workflows: [mockWorkflow],
+       smsReminderNumber: null,
+       calendarEvent: expect.objectContaining({
+@@ -319,7 +310,12 @@ describe("handlePaymentSuccess", () => {
+ 
+     // Should not throw (webhook errors are caught)
+     await expect(
+-      handlePaymentSuccess(mockPaymentId, mockBookingId, mockTraceContext)
++      handlePaymentSuccess({
++        paymentId: mockPaymentId,
++        appSlug: "stripe",
++        bookingId: mockBookingId,
++        traceContext: mockTraceContext,
++      })
+     ).rejects.toThrow(); // Throws HttpCode 200 at the end
+ 
+     // Verify webhook was still attempted
+@@ -328,24 +324,30 @@ describe("handlePaymentSuccess", () => {
+ 
+   it("should handle workflow errors gracefully without blocking", async () => {
+     const workflowError = new Error("Workflow failed");
+-    vi.mocked(
+-      WorkflowService.scheduleWorkflowsFilteredByTriggerEvent
+-    ).mockRejectedValueOnce(workflowError);
++    vi.mocked(WorkflowService.scheduleWorkflowsFilteredByTriggerEvent).mockRejectedValueOnce(workflowError);
+ 
+     // Should not throw (workflow errors are caught)
+     await expect(
+-      handlePaymentSuccess(mockPaymentId, mockBookingId, mockTraceContext)
++      handlePaymentSuccess({
++        paymentId: mockPaymentId,
++        appSlug: "stripe",
++        bookingId: mockBookingId,
++        traceContext: mockTraceContext,
++      })
+     ).rejects.toThrow(); // Throws HttpCode 200 at the end
+ 
+     // Verify workflow was still attempted
+-    expect(
+-      WorkflowService.scheduleWorkflowsFilteredByTriggerEvent
+-    ).toHaveBeenCalled();
++    expect(WorkflowService.scheduleWorkflowsFilteredByTriggerEvent).toHaveBeenCalled();
+   });
+ 
+   it("should include payment metadata in webhook payload", async () => {
+     await expect(
+-      handlePaymentSuccess(mockPaymentId, mockBookingId, mockTraceContext)
++      handlePaymentSuccess({
++        paymentId: mockPaymentId,
++        appSlug: "stripe",
++        bookingId: mockBookingId,
++        traceContext: mockTraceContext,
++      })
+     ).rejects.toThrow(); // Function throws HttpCode 200 at the end
+ 
+     expect(sendPayload).toHaveBeenCalledWith(
+diff --git a/packages/app-store/_utils/payments/handlePaymentSuccess.ts b/packages/app-store/_utils/payments/handlePaymentSuccess.ts
+index cc8f4d7eed3d..f55da25499c1 100644
+--- a/packages/app-store/_utils/payments/handlePaymentSuccess.ts
++++ b/packages/app-store/_utils/payments/handlePaymentSuccess.ts
+@@ -29,14 +29,25 @@ import type { Prisma } from "@calcom/prisma/client";
+ import { BookingStatus, WebhookTriggerEvents, WorkflowTriggerEvents } from "@calcom/prisma/enums";
+ import type { EventTypeMetadata } from "@calcom/prisma/zod-utils";
+ 
++import { getAppActor } from "../getAppActor";
++
+ const log = logger.getSubLogger({ prefix: ["[handlePaymentSuccess]"] });
+-export async function handlePaymentSuccess(paymentId: number, bookingId: number, traceContext: TraceContext) {
++
++export async function handlePaymentSuccess(params: {
++  paymentId: number;
++  appSlug: string;
++  bookingId: number;
++  traceContext: TraceContext;
++}) {
++  const { paymentId, bookingId, appSlug, traceContext } = params;
+   const updatedTraceContext = distributedTracing.updateTrace(traceContext, {
+     bookingId,
+     paymentId,
+   });
+   log.debug(`handling payment success for bookingId ${bookingId}`);
+   const { booking, user: userWithCredentials, evt, eventType } = await getBooking(bookingId);
++  const apps = eventTypeAppMetadataOptionalSchema.parse(eventType?.metadata?.apps);
++  const actor = getAppActor({ appSlug, bookingId, apps });
+ 
+   try {
+     await tasker.cancelWithReference(booking.uid, "sendAwaitingPaymentEmail");
+@@ -238,6 +249,8 @@ export async function handlePaymentSuccess(paymentId: number, bookingId: number,
+         paid: true,
+         platformClientParams,
+         traceContext: updatedTraceContext,
++        actionSource: "WEBHOOK",
++        actor,
+       });
+     } else {
+       await handleBookingRequested({
+diff --git a/packages/app-store/alby/api/webhook.ts b/packages/app-store/alby/api/webhook.ts
+index 0cbe50fcc634..79933ddd0700 100644
+--- a/packages/app-store/alby/api/webhook.ts
++++ b/packages/app-store/alby/api/webhook.ts
+@@ -92,7 +92,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
+     const traceContext = distributedTracing.createTrace("alby_webhook", {
+       meta: { paymentId: payment.id, bookingId: payment.bookingId },
+     });
+-    return await handlePaymentSuccess(payment.id, payment.bookingId, traceContext);
++    return await handlePaymentSuccess({
++      paymentId: payment.id,
++      bookingId: payment.bookingId,
++      appSlug: "alby",
++      traceContext,
++    });
+   } catch (_err) {
+     const err = getServerErrorFromUnknown(_err);
+     console.error(`Webhook Error: ${err.message}`);
+diff --git a/packages/app-store/btcpayserver/api/webhook.ts b/packages/app-store/btcpayserver/api/webhook.ts
+index bd10b6b5a24a..9989c8939248 100644
+--- a/packages/app-store/btcpayserver/api/webhook.ts
++++ b/packages/app-store/btcpayserver/api/webhook.ts
+@@ -91,7 +91,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
+     const traceContext = distributedTracing.createTrace("btcpayserver_webhook", {
+       meta: { paymentId: payment.id, bookingId: payment.bookingId },
+     });
+-    await handlePaymentSuccess(payment.id, payment.bookingId, traceContext);
++    await handlePaymentSuccess({
++      paymentId: payment.id,
++      bookingId: payment.bookingId,
++      appSlug: appConfig.slug,
++      traceContext,
++    });
+     return res.status(200).json({ success: true });
+   } catch (_err) {
+     const err = getServerErrorFromUnknown(_err);
+diff --git a/packages/app-store/hitpay/api/webhook.ts b/packages/app-store/hitpay/api/webhook.ts
+index ed0d520dfce1..f0e11b63c6f8 100644
+--- a/packages/app-store/hitpay/api/webhook.ts
++++ b/packages/app-store/hitpay/api/webhook.ts
+@@ -9,6 +9,7 @@ import { HttpError as HttpCode } from "@calcom/lib/http-error";
+ import { getServerErrorFromUnknown } from "@calcom/lib/server/getServerErrorFromUnknown";
+ import prisma from "@calcom/prisma";
+ 
++import appConfig from "../config.json";
+ import type { hitpayCredentialKeysSchema } from "../lib/hitpayCredentialKeysSchema";
+ 
+ export const config = {
+@@ -113,7 +114,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
+     const traceContext = distributedTracing.createTrace("hitpay_webhook", {
+       meta: { paymentId: payment.id, bookingId: payment.bookingId },
+     });
+-    return await handlePaymentSuccess(payment.id, payment.bookingId, traceContext);
++    return await handlePaymentSuccess({
++      paymentId: payment.id,
++      bookingId: payment.bookingId,
++      appSlug: appConfig.slug,
++      traceContext,
++    });
+   } catch (_err) {
+     const err = getServerErrorFromUnknown(_err);
+     console.error(`Webhook Error: ${err.message}`);
+diff --git a/packages/app-store/paypal/api/webhook.ts b/packages/app-store/paypal/api/webhook.ts
+index ec029a03da65..edb738f5c95c 100644
+--- a/packages/app-store/paypal/api/webhook.ts
++++ b/packages/app-store/paypal/api/webhook.ts
+@@ -11,6 +11,8 @@ import { HttpError as HttpCode } from "@calcom/lib/http-error";
+ import { getServerErrorFromUnknown } from "@calcom/lib/server/getServerErrorFromUnknown";
+ import prisma from "@calcom/prisma";
+ 
++import appConfig from "../config.json";
++
+ export const config = {
+   api: {
+     bodyParser: false,
+@@ -66,7 +68,12 @@ export async function handlePaypalPaymentSuccess(
+   const traceContext = distributedTracing.createTrace("paypal_webhook", {
+     meta: { paymentId: payment.id, bookingId: payment.bookingId },
+   });
+-  return await handlePaymentSuccess(payment.id, payment.bookingId, traceContext);
++  return await handlePaymentSuccess({
++    paymentId: payment.id,
++    bookingId: payment.bookingId,
++    appSlug: appConfig.slug,
++    traceContext,
++  });
+ }
+ 
+ export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+diff --git a/packages/features/booking-audit/lib/actions/RejectedAuditActionService.ts b/packages/features/booking-audit/lib/actions/RejectedAuditActionService.ts
+index 6017d2ecec34..73e3cf9b93bc 100644
+--- a/packages/features/booking-audit/lib/actions/RejectedAuditActionService.ts
++++ b/packages/features/booking-audit/lib/actions/RejectedAuditActionService.ts
+@@ -1,8 +1,14 @@
+ import { z } from "zod";
+ 
+-import { StringChangeSchema } from "../common/changeSchemas";
++import { BookingStatusChangeSchema } from "../common/changeSchemas";
+ import { AuditActionServiceHelper } from "./AuditActionServiceHelper";
+-import type { IAuditActionService, TranslationWithParams, GetDisplayTitleParams, GetDisplayJsonParams } from "./IAuditActionService";
++import type {
++  IAuditActionService,
++  TranslationWithParams,
++  GetDisplayTitleParams,
++  GetDisplayJsonParams,
++} from "./IAuditActionService";
++import type { BookingStatus } from "@calcom/prisma/enums";
+ 
+ /**
+  * Rejected Audit Action Service
+@@ -11,76 +17,69 @@ import type { IAuditActionService, TranslationWithParams, GetDisplayTitleParams,
+ 
+ // Module-level because it is passed to IAuditActionService type outside the class scope
+ const fieldsSchemaV1 = z.object({
+-    rejectionReason: StringChangeSchema,
+-    status: StringChangeSchema,
++  rejectionReason: z.string().nullable(),
++  status: BookingStatusChangeSchema,
+ });
+ 
+ export class RejectedAuditActionService implements IAuditActionService {
+-    readonly VERSION = 1;
+-    public static readonly TYPE = "REJECTED" as const;
+-    private static dataSchemaV1 = z.object({
+-        version: z.literal(1),
+-        fields: fieldsSchemaV1,
+-    });
+-    private static fieldsSchemaV1 = fieldsSchemaV1;
+-    public static readonly latestFieldsSchema = fieldsSchemaV1;
+-    // Union of all versions
+-    public static readonly storedDataSchema = RejectedAuditActionService.dataSchemaV1;
+-    // Union of all versions
+-    public static readonly storedFieldsSchema = RejectedAuditActionService.fieldsSchemaV1;
+-    private helper: AuditActionServiceHelper<
+-        typeof RejectedAuditActionService.latestFieldsSchema,
+-        typeof RejectedAuditActionService.storedDataSchema
+-    >;
++  readonly VERSION = 1;
++  public static readonly TYPE = "REJECTED" as const;
++  private static dataSchemaV1 = z.object({
++    version: z.literal(1),
++    fields: fieldsSchemaV1,
++  });
++  private static fieldsSchemaV1 = fieldsSchemaV1;
++  public static readonly latestFieldsSchema = fieldsSchemaV1;
++  // Union of all versions
++  public static readonly storedDataSchema = RejectedAuditActionService.dataSchemaV1;
++  // Union of all versions
++  public static readonly storedFieldsSchema = RejectedAuditActionService.fieldsSchemaV1;
++  private helper: AuditActionServiceHelper<typeof RejectedAuditActionService.latestFieldsSchema, typeof RejectedAuditActionService.storedDataSchema>;
+ 
+-    constructor() {
+-        this.helper = new AuditActionServiceHelper({
+-            latestVersion: this.VERSION,
+-            latestFieldsSchema: RejectedAuditActionService.latestFieldsSchema,
+-            storedDataSchema: RejectedAuditActionService.storedDataSchema,
+-        });
+-    }
++  constructor() {
++    this.helper = new AuditActionServiceHelper({
++      latestVersion: this.VERSION,
++      latestFieldsSchema: RejectedAuditActionService.latestFieldsSchema,
++      storedDataSchema: RejectedAuditActionService.storedDataSchema,
++    });
++  }
+ 
+-    getVersionedData(fields: unknown) {
+-        return this.helper.getVersionedData(fields);
+-    }
++  getVersionedData(fields: unknown) {
++    return this.helper.getVersionedData(fields);
++  }
+ 
+-    parseStored(data: unknown) {
+-        return this.helper.parseStored(data);
+-    }
++  parseStored(data: unknown) {
++    return this.helper.parseStored(data);
++  }
+ 
+-    getVersion(data: unknown): number {
+-        return this.helper.getVersion(data);
+-    }
++  getVersion(data: unknown): number {
++    return this.helper.getVersion(data);
++  }
+ 
+-    migrateToLatest(data: unknown) {
+-        // V1-only: validate and return as-is (no migration needed)
+-        const validated = fieldsSchemaV1.parse(data);
+-        return { isMigrated: false, latestData: validated };
+-    }
++  migrateToLatest(data: unknown) {
++    // V1-only: validate and return as-is (no migration needed)
++    const validated = fieldsSchemaV1.parse(data);
++    return { isMigrated: false, latestData: validated };
++  }
+ 
+-    async getDisplayTitle(_: GetDisplayTitleParams): Promise<TranslationWithParams> {
+-        return { key: "booking_audit_action.rejected" };
+-    }
++  async getDisplayTitle(_: GetDisplayTitleParams): Promise<TranslationWithParams> {
++    return { key: "booking_audit_action.rejected" };
++  }
+ 
+-    getDisplayJson({
+-        storedData,
+-    }: GetDisplayJsonParams): RejectedAuditDisplayData {
+-        const { fields } = this.parseStored(storedData);
+-        return {
+-            rejectionReason: fields.rejectionReason.new ?? null,
+-            previousReason: fields.rejectionReason.old ?? null,
+-            previousStatus: fields.status.old ?? null,
+-            newStatus: fields.status.new ?? null,
+-        };
+-    }
++  getDisplayJson({ storedData }: GetDisplayJsonParams): RejectedAuditDisplayData {
++    const { fields } = this.parseStored(storedData);
++    return {
++      rejectionReason: fields.rejectionReason ?? null,
++      previousStatus: fields.status.old ?? null,
++      newStatus: fields.status.new ?? null,
++    };
++  }
+ }
+ 
+ export type RejectedAuditData = z.infer<typeof fieldsSchemaV1>;
+ 
+ export type RejectedAuditDisplayData = {
+-    rejectionReason: string | null;
+-    previousReason: string | null;
+-    previousStatus: string | null;
+-    newStatus: string | null;
++  rejectionReason: string | null;
++  previousStatus: BookingStatus | null;
++  newStatus: BookingStatus | null;
+ };
+diff --git a/packages/features/booking-audit/lib/service/BookingAuditProducerService.interface.ts b/packages/features/booking-audit/lib/service/BookingAuditProducerService.interface.ts
+index cb9927a24eed..54a0ebe7aaea 100644
+--- a/packages/features/booking-audit/lib/service/BookingAuditProducerService.interface.ts
++++ b/packages/features/booking-audit/lib/service/BookingAuditProducerService.interface.ts
+@@ -19,186 +19,197 @@ import { SeatRescheduledAuditActionService } from "../actions/SeatRescheduledAud
+ 
+ /**
+  * BookingAuditProducerService Interface
+- * 
++ *
+  * Producer abstraction for queueing booking audit tasks.
+  * Allows for multiple implementations (e.g., Tasker, Trigger.dev).
+- * 
++ *
+  * Uses specialized methods per action type for better TypeScript performance
+  * and type safety, avoiding large discriminated unions.
+- * 
++ *
+  * Implementations:
+  * - BookingAuditTaskerProducerService: Uses Tasker for local/background jobs
+  * - BookingAuditTriggerProducerService: (Future) Uses Trigger.dev for cloud jobs
+  */
+ export interface BookingAuditProducerService {
+-        queueCreatedAudit(params: {
+-                bookingUid: string;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                data: z.infer<typeof CreatedAuditActionService.latestFieldsSchema>;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
+-
+-        queueRescheduledAudit(params: {
+-                bookingUid: string;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                data: z.infer<typeof RescheduledAuditActionService.latestFieldsSchema>;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
+-
+-        queueAcceptedAudit(params: {
+-                bookingUid: string;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                data: z.infer<typeof AcceptedAuditActionService.latestFieldsSchema>;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
+-
+-        queueCancelledAudit(params: {
+-                bookingUid: string;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                data: z.infer<typeof CancelledAuditActionService.latestFieldsSchema>;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
+-
+-        queueRescheduleRequestedAudit(params: {
+-                bookingUid: string;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                data: z.infer<typeof RescheduleRequestedAuditActionService.latestFieldsSchema>;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
+-
+-        queueAttendeeAddedAudit(params: {
+-                bookingUid: string;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                data: z.infer<typeof AttendeeAddedAuditActionService.latestFieldsSchema>;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
+-
+-        queueHostNoShowUpdatedAudit(params: {
+-                bookingUid: string;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                data: z.infer<typeof HostNoShowUpdatedAuditActionService.latestFieldsSchema>;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
+-
+-        queueRejectedAudit(params: {
+-                bookingUid: string;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                data: z.infer<typeof RejectedAuditActionService.latestFieldsSchema>;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
+-
+-        queueAttendeeRemovedAudit(params: {
+-                bookingUid: string;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                data: z.infer<typeof AttendeeRemovedAuditActionService.latestFieldsSchema>;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
+-
+-        queueReassignmentAudit(params: {
+-                bookingUid: string;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                data: z.infer<typeof ReassignmentAuditActionService.latestFieldsSchema>;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
+-
+-        queueLocationChangedAudit(params: {
+-                bookingUid: string;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                data: z.infer<typeof LocationChangedAuditActionService.latestFieldsSchema>;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
+-
+-        queueAttendeeNoShowUpdatedAudit(params: {
+-                bookingUid: string;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                data: z.infer<typeof AttendeeNoShowUpdatedAuditActionService.latestFieldsSchema>;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
+-
+-        queueSeatBookedAudit(params: {
+-                bookingUid: string;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                data: z.infer<typeof SeatBookedAuditActionService.latestFieldsSchema>;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
+-
+-        queueSeatRescheduledAudit(params: {
+-                bookingUid: string;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                data: z.infer<typeof SeatRescheduledAuditActionService.latestFieldsSchema>;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
+-
+-        /**
+-         * Queues a bulk accepted audit task for multiple bookings
+-         */
+-        queueBulkAcceptedAudit(params: {
+-                bookings: Array<{
+-                        bookingUid: string;
+-                        data: z.infer<typeof AcceptedAuditActionService.latestFieldsSchema>;
+-                }>;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
+-
+-        /**
+-         * Queues a bulk cancelled audit task for multiple bookings
+-         */
+-        queueBulkCancelledAudit(params: {
+-                bookings: Array<{
+-                        bookingUid: string;
+-                        data: z.infer<typeof CancelledAuditActionService.latestFieldsSchema>;
+-                }>;
+-                actor: Actor;
+-                organizationId: number | null;
+-                source: ActionSource;
+-                operationId?: string | null;
+-                context?: BookingAuditContext;
+-        }): Promise<void>;
++  queueCreatedAudit(params: {
++    bookingUid: string;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    data: z.infer<typeof CreatedAuditActionService.latestFieldsSchema>;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  queueRescheduledAudit(params: {
++    bookingUid: string;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    data: z.infer<typeof RescheduledAuditActionService.latestFieldsSchema>;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  queueAcceptedAudit(params: {
++    bookingUid: string;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    data: z.infer<typeof AcceptedAuditActionService.latestFieldsSchema>;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  queueCancelledAudit(params: {
++    bookingUid: string;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    data: z.infer<typeof CancelledAuditActionService.latestFieldsSchema>;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  queueRescheduleRequestedAudit(params: {
++    bookingUid: string;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    data: z.infer<typeof RescheduleRequestedAuditActionService.latestFieldsSchema>;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  queueAttendeeAddedAudit(params: {
++    bookingUid: string;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    data: z.infer<typeof AttendeeAddedAuditActionService.latestFieldsSchema>;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  queueHostNoShowUpdatedAudit(params: {
++    bookingUid: string;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    data: z.infer<typeof HostNoShowUpdatedAuditActionService.latestFieldsSchema>;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  queueRejectedAudit(params: {
++    bookingUid: string;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    data: z.infer<typeof RejectedAuditActionService.latestFieldsSchema>;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  queueAttendeeRemovedAudit(params: {
++    bookingUid: string;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    data: z.infer<typeof AttendeeRemovedAuditActionService.latestFieldsSchema>;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  queueReassignmentAudit(params: {
++    bookingUid: string;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    data: z.infer<typeof ReassignmentAuditActionService.latestFieldsSchema>;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  queueLocationChangedAudit(params: {
++    bookingUid: string;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    data: z.infer<typeof LocationChangedAuditActionService.latestFieldsSchema>;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  queueAttendeeNoShowUpdatedAudit(params: {
++    bookingUid: string;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    data: z.infer<typeof AttendeeNoShowUpdatedAuditActionService.latestFieldsSchema>;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  queueSeatBookedAudit(params: {
++    bookingUid: string;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    data: z.infer<typeof SeatBookedAuditActionService.latestFieldsSchema>;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  queueSeatRescheduledAudit(params: {
++    bookingUid: string;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    data: z.infer<typeof SeatRescheduledAuditActionService.latestFieldsSchema>;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  /**
++   * Queues a bulk accepted audit task for multiple bookings
++   */
++  queueBulkAcceptedAudit(params: {
++    bookings: Array<{
++      bookingUid: string;
++      data: z.infer<typeof AcceptedAuditActionService.latestFieldsSchema>;
++    }>;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  /**
++   * Queues a bulk cancelled audit task for multiple bookings
++   */
++  queueBulkCancelledAudit(params: {
++    bookings: Array<{
++      bookingUid: string;
++      data: z.infer<typeof CancelledAuditActionService.latestFieldsSchema>;
++    }>;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    context?: BookingAuditContext;
++  }): Promise<void>;
++
++  queueBulkRejectedAudit(params: {
++    bookings: Array<{
++      bookingUid: string;
++      data: z.infer<typeof RejectedAuditActionService.latestFieldsSchema>;
++    }>;
++    actor: Actor;
++    organizationId: number | null;
++    source: ActionSource;
++    operationId?: string | null;
++    context?: BookingAuditContext;
++  }): Promise<void>;
+ }
+-
+diff --git a/packages/features/booking-audit/lib/service/BookingAuditTaskerProducerService.ts b/packages/features/booking-audit/lib/service/BookingAuditTaskerProducerService.ts
+index 5821bab4f135..2df32f9adf0d 100644
+--- a/packages/features/booking-audit/lib/service/BookingAuditTaskerProducerService.ts
++++ b/packages/features/booking-audit/lib/service/BookingAuditTaskerProducerService.ts
+@@ -401,4 +401,20 @@ export class BookingAuditTaskerProducerService implements BookingAuditProducerSe
+             action: CancelledAuditActionService.TYPE,
+         });
+     }
++
++    async queueBulkRejectedAudit(params: {
++        bookings: Array<{
++            bookingUid: string;
++            data: z.infer<typeof RejectedAuditActionService.latestFieldsSchema>;
++        }>;
++        actor: Actor;
++        organizationId: number | null;
++        source: ActionSource;
++        operationId?: string | null;
++    }): Promise<void> {
++        await this.queueBulkTask({
++            ...params,
++            action: RejectedAuditActionService.TYPE,
++        });
++    }
+ }
+diff --git a/packages/features/booking-audit/lib/service/__tests__/accepted-action.integration-test.ts b/packages/features/booking-audit/lib/service/__tests__/accepted-action.integration-test.ts
+new file mode 100644
+index 000000000000..a46c90260860
+--- /dev/null
++++ b/packages/features/booking-audit/lib/service/__tests__/accepted-action.integration-test.ts
+@@ -0,0 +1,257 @@
++import { BookingStatus } from "@calcom/prisma/enums";
++import { afterEach, beforeEach, describe, expect, it } from "vitest";
++import { getBookingAuditTaskConsumer } from "../../../di/BookingAuditTaskConsumer.container";
++import { getBookingAuditViewerService } from "../../../di/BookingAuditViewerService.container";
++import { makeUserActor } from "../../makeActor";
++import type { BookingAuditTaskConsumer } from "../BookingAuditTaskConsumer";
++import type { BookingAuditViewerService } from "../BookingAuditViewerService";
++import {
++  cleanupTestData,
++  createTestBooking,
++  createTestEventType,
++  createTestMembership,
++  createTestOrganization,
++  createTestUser,
++  enableFeatureForOrganization,
++} from "./integration-utils";
++
++describe("Accepted Action Integration", () => {
++  let bookingAuditTaskConsumer: BookingAuditTaskConsumer;
++  let bookingAuditViewerService: BookingAuditViewerService;
++
++  let testData: {
++    owner: { id: number; uuid: string; email: string };
++    attendee: { id: number; email: string };
++    organization: { id: number };
++    eventType: { id: number };
++    booking: { uid: string; startTime: Date; endTime: Date; status: BookingStatus };
++  };
++  const additionalBookingUids: string[] = [];
++
++  beforeEach(async () => {
++    bookingAuditTaskConsumer = getBookingAuditTaskConsumer();
++    bookingAuditViewerService = getBookingAuditViewerService();
++
++    const owner = await createTestUser({ name: "Test Audit User" });
++    const organization = await createTestOrganization();
++    await createTestMembership(owner.id, organization.id);
++    await enableFeatureForOrganization(organization.id, "booking-audit");
++    const eventType = await createTestEventType(owner.id);
++    const attendee = await createTestUser({ name: "Test Attendee" });
++
++    const booking = await createTestBooking(owner.id, eventType.id, {
++      status: BookingStatus.PENDING,
++      attendees: [
++        {
++          email: attendee.email,
++          name: attendee.name || "Test Attendee",
++          timeZone: "UTC",
++        },
++      ],
++    });
++
++    testData = {
++      owner: { id: owner.id, uuid: owner.uuid, email: owner.email },
++      attendee: { id: attendee.id, email: attendee.email },
++      organization: { id: organization.id },
++      eventType: { id: eventType.id },
++      booking: {
++        uid: booking.uid,
++        startTime: booking.startTime,
++        endTime: booking.endTime,
++        status: booking.status,
++      },
++    };
++  });
++
++  afterEach(async () => {
++    for (const bookingUid of additionalBookingUids) {
++      await cleanupTestData({
++        bookingUid,
++      });
++    }
++    additionalBookingUids.length = 0; // Clear the array for next test
++
++    if (!testData) return;
++
++    await cleanupTestData({
++      bookingUid: testData.booking?.uid,
++      userUuids: testData.owner?.uuid ? [testData.owner.uuid] : [],
++      attendeeEmails: testData.attendee?.email ? [testData.attendee.email] : [],
++      eventTypeId: testData.eventType?.id,
++      organizationId: testData.organization?.id,
++      userIds: [testData.owner?.id, testData.attendee?.id].filter((id): id is number => id !== undefined),
++      featureSlug: "booking-audit",
++    });
++  });
++
++  describe("when single booking is accepted", () => {
++    it("should create audit record and retrieve it with correct data formatting", async () => {
++      const actor = makeUserActor(testData.owner.uuid);
++
++      await bookingAuditTaskConsumer.onBookingAction({
++        bookingUid: testData.booking.uid,
++        actor,
++        action: "ACCEPTED",
++        source: "WEBAPP",
++        operationId: `op-${Date.now()}`,
++        data: {
++          status: { old: BookingStatus.PENDING, new: BookingStatus.ACCEPTED },
++        },
++        timestamp: Date.now(),
++      });
++
++      const result = await bookingAuditViewerService.getAuditLogsForBooking({
++        bookingUid: testData.booking.uid,
++        userId: testData.owner.id,
++        userEmail: testData.owner.email,
++        userTimeZone: "UTC",
++        organizationId: testData.organization.id,
++      });
++
++      expect(result.bookingUid).toBe(testData.booking.uid);
++      expect(result.auditLogs).toHaveLength(1);
++
++      const auditLog = result.auditLogs[0];
++      expect(auditLog.bookingUid).toBe(testData.booking.uid);
++      expect(auditLog.action).toBe("ACCEPTED");
++      expect(auditLog.type).toBe("RECORD_UPDATED");
++
++      const displayData = auditLog.displayJson as Record<string, unknown>;
++      expect(displayData).toBeDefined();
++      expect(displayData.previousStatus).toBe(BookingStatus.PENDING);
++      expect(displayData.newStatus).toBe(BookingStatus.ACCEPTED);
++    });
++
++    it("should enrich actor information with user details from database", async () => {
++      const actor = makeUserActor(testData.owner.uuid);
++
++      await bookingAuditTaskConsumer.onBookingAction({
++        bookingUid: testData.booking.uid,
++        actor,
++        action: "ACCEPTED",
++        source: "WEBAPP",
++        operationId: `op-${Date.now()}`,
++        data: {
++          status: { old: BookingStatus.PENDING, new: BookingStatus.ACCEPTED },
++        },
++        timestamp: Date.now(),
++      });
++
++      const result = await bookingAuditViewerService.getAuditLogsForBooking({
++        bookingUid: testData.booking.uid,
++        userId: testData.owner.id,
++        userEmail: testData.owner.email,
++        userTimeZone: "UTC",
++        organizationId: testData.organization.id,
++      });
++
++      const auditLog = result.auditLogs[0];
++      expect(auditLog.actor.displayName).toBe("Test Audit User");
++      expect(auditLog.actor.displayEmail).toBe(testData.owner.email);
++      expect(auditLog.actor.userUuid).toBe(testData.owner.uuid);
++    });
++  });
++
++  describe("when multiple bookings are accepted in bulk", () => {
++    it("should create audit records for all bookings with same operation ID", async () => {
++      const booking2 = await createTestBooking(testData.owner.id, testData.eventType.id, {
++        status: BookingStatus.PENDING,
++        attendees: [
++          {
++            email: testData.attendee.email,
++            name: "Test Attendee",
++            timeZone: "UTC",
++          },
++        ],
++      });
++      additionalBookingUids.push(booking2.uid);
++
++      const booking3 = await createTestBooking(testData.owner.id, testData.eventType.id, {
++        status: BookingStatus.PENDING,
++        attendees: [
++          {
++            email: testData.attendee.email,
++            name: "Test Attendee",
++            timeZone: "UTC",
++          },
++        ],
++      });
++      additionalBookingUids.push(booking3.uid);
++
++      const actor = makeUserActor(testData.owner.uuid);
++      const operationId = `bulk-op-${Date.now()}`;
++      const timestamp = Date.now();
++
++      await bookingAuditTaskConsumer.processBulkAuditTask(
++        {
++          isBulk: true,
++          bookings: [
++            {
++              bookingUid: testData.booking.uid,
++              data: {
++                status: { old: BookingStatus.PENDING, new: BookingStatus.ACCEPTED },
++              },
++            },
++            {
++              bookingUid: booking2.uid,
++              data: {
++                status: { old: BookingStatus.PENDING, new: BookingStatus.ACCEPTED },
++              },
++            },
++            {
++              bookingUid: booking3.uid,
++              data: {
++                status: { old: BookingStatus.PENDING, new: BookingStatus.ACCEPTED },
++              },
++            },
++          ],
++          actor,
++          action: "ACCEPTED",
++          source: "WEBAPP",
++          operationId,
++          timestamp,
++          organizationId: testData.organization.id,
++        },
++        "test-task-id"
++      );
++
++      const result1 = await bookingAuditViewerService.getAuditLogsForBooking({
++        bookingUid: testData.booking.uid,
++        userId: testData.owner.id,
++        userEmail: testData.owner.email,
++        userTimeZone: "UTC",
++        organizationId: testData.organization.id,
++      });
++
++      const result2 = await bookingAuditViewerService.getAuditLogsForBooking({
++        bookingUid: booking2.uid,
++        userId: testData.owner.id,
++        userEmail: testData.owner.email,
++        userTimeZone: "UTC",
++        organizationId: testData.organization.id,
++      });
++
++      const result3 = await bookingAuditViewerService.getAuditLogsForBooking({
++        bookingUid: booking3.uid,
++        userId: testData.owner.id,
++        userEmail: testData.owner.email,
++        userTimeZone: "UTC",
++        organizationId: testData.organization.id,
++      });
++
++      expect(result1.auditLogs).toHaveLength(1);
++      expect(result2.auditLogs).toHaveLength(1);
++      expect(result3.auditLogs).toHaveLength(1);
++
++      expect(result1.auditLogs[0].action).toBe("ACCEPTED");
++      expect(result2.auditLogs[0].action).toBe("ACCEPTED");
++      expect(result3.auditLogs[0].action).toBe("ACCEPTED");
++
++      // Verify all bookings share the same operationId
++      expect(result1.auditLogs[0].operationId).toBe(operationId);
++      expect(result2.auditLogs[0].operationId).toBe(operationId);
++      expect(result3.auditLogs[0].operationId).toBe(operationId);
++    });
++  });
++});
+diff --git a/packages/features/booking-audit/lib/types/actionSource.ts b/packages/features/booking-audit/lib/types/actionSource.ts
+index 627a2e4c6904..2762afd2e3bf 100644
+--- a/packages/features/booking-audit/lib/types/actionSource.ts
++++ b/packages/features/booking-audit/lib/types/actionSource.ts
+@@ -1,5 +1,9 @@
+ import { z } from "zod";
+ 
+-// Action sources for audit tracking
+-export const ActionSourceSchema = z.enum(["API_V1", "API_V2", "WEBAPP", "WEBHOOK", "UNKNOWN"]);
++// This is the schema for DB value, here we use UNKNOWN in case client didn't pass an explicit action source.
++export const ActionSourceSchema = z.enum(["API_V1", "API_V2", "WEBAPP", "WEBHOOK", "MAGIC_LINK", "UNKNOWN"]);
+ export type ActionSource = z.infer<typeof ActionSourceSchema>;
++
++// We don't keep UNKNOWN here because we don't want clients to pass UNKNOWN.
++export const ValidActionSourceSchema = z.enum(["API_V1", "API_V2", "WEBAPP", "WEBHOOK", "MAGIC_LINK"]);
++export type ValidActionSource = z.infer<typeof ValidActionSourceSchema>;
+diff --git a/packages/features/bookings/lib/handleConfirmation.ts b/packages/features/bookings/lib/handleConfirmation.ts
+index 548b6f28f03a..d17621460adc 100644
+--- a/packages/features/bookings/lib/handleConfirmation.ts
++++ b/packages/features/bookings/lib/handleConfirmation.ts
+@@ -1,6 +1,9 @@
+ import { eventTypeAppMetadataOptionalSchema } from "@calcom/app-store/zod-utils";
+ import { scheduleMandatoryReminder } from "@calcom/ee/workflows/lib/reminders/scheduleMandatoryReminder";
+ import { sendScheduledEmailsAndSMS } from "@calcom/emails/email-manager";
++import type { Actor } from "@calcom/features/booking-audit/lib/dto/types";
++import type { ActionSource } from "@calcom/features/booking-audit/lib/types/actionSource";
++import { getBookingEventHandlerService } from "@calcom/features/bookings/di/BookingEventHandlerService.container";
+ import type { EventManagerUser } from "@calcom/features/bookings/lib/EventManager";
+ import EventManager, { placeholderCreatedEvent } from "@calcom/features/bookings/lib/EventManager";
+ import { CreditService } from "@calcom/features/ee/billing/credit-service";
+@@ -19,22 +22,70 @@ import type { EventPayloadType, EventTypeInfo } from "@calcom/features/webhooks/
+ import { getVideoCallUrlFromCalEvent } from "@calcom/lib/CalEventParser";
+ import getOrgIdFromMemberOrTeamId from "@calcom/lib/getOrgIdFromMemberOrTeamId";
+ import { getTeamIdFromEventType } from "@calcom/lib/getTeamIdFromEventType";
+-import logger from "@calcom/lib/logger";
+ import { safeStringify } from "@calcom/lib/safeStringify";
+ import type { TraceContext } from "@calcom/lib/tracing";
+ import { distributedTracing } from "@calcom/lib/tracing/factory";
+ import type { PrismaClient } from "@calcom/prisma";
+ import type { Prisma } from "@calcom/prisma/client";
+ import type { SchedulingType } from "@calcom/prisma/enums";
+-import { BookingStatus, WebhookTriggerEvents, WorkflowTriggerEvents } from "@calcom/prisma/enums";
++import { BookingStatus, WebhookTriggerEvents } from "@calcom/prisma/enums";
+ import type { PlatformClientParams } from "@calcom/prisma/zod-utils";
+ import { EventTypeMetaDataSchema } from "@calcom/prisma/zod-utils";
+ import type { AdditionalInformation, CalendarEvent } from "@calcom/types/Calendar";
++import { v4 as uuidv4 } from "uuid";
+ 
+ import { getCalEventResponses } from "./getCalEventResponses";
+ import { scheduleNoShowTriggers } from "./handleNewBooking/scheduleNoShowTriggers";
+-
+-const log = logger.getSubLogger({ prefix: ["[handleConfirmation] book:user"] });
++import type { ISimpleLogger } from "@calcom/features/di/shared/services/logger.service";
++
++async function fireBookingAcceptedEvent({
++  actor,
++  organizationId,
++  actionSource,
++  acceptedBookings,
++  tracingLogger,
++}: {
++  actor: Actor;
++  organizationId: number | null;
++  actionSource: ActionSource;
++  acceptedBookings: {
++    uid: string;
++    oldStatus: BookingStatus;
++  }[];
++  tracingLogger: ISimpleLogger;
++}) {
++  try {
++    const bookingEventHandlerService = getBookingEventHandlerService();
++    if (acceptedBookings.length > 1) {
++      const operationId = uuidv4();
++      await bookingEventHandlerService.onBulkBookingsAccepted({
++        bookings: acceptedBookings.map((acceptedBooking) => ({
++          bookingUid: acceptedBooking.uid,
++          auditData: {
++            status: { old: acceptedBooking.oldStatus, new: BookingStatus.ACCEPTED },
++          },
++        })),
++        actor,
++        organizationId,
++        operationId,
++        source: actionSource,
++      });
++    } else if (acceptedBookings.length === 1) {
++      const acceptedBooking = acceptedBookings[0];
++      await bookingEventHandlerService.onBookingAccepted({
++        bookingUid: acceptedBooking.uid,
++        actor,
++        organizationId,
++        auditData: {
++          status: { old: acceptedBooking.oldStatus, new: BookingStatus.ACCEPTED },
++        },
++        source: actionSource,
++      });
++    }
++  } catch (error) {
++    tracingLogger.error("Error firing booking accepted event", safeStringify(error));
++  }
++}
+ 
+ export async function handleConfirmation(args: {
+   user: EventManagerUser & { username: string | null };
+@@ -72,11 +123,14 @@ export async function handleConfirmation(args: {
+     smsReminderNumber: string | null;
+     userId: number | null;
+     location: string | null;
++    status: BookingStatus;
+   };
+   paid?: boolean;
+   emailsEnabled?: boolean;
+   platformClientParams?: PlatformClientParams;
+   traceContext: TraceContext;
++  actionSource: ActionSource;
++  actor: Actor;
+ }) {
+   const {
+     user,
+@@ -89,6 +143,8 @@ export async function handleConfirmation(args: {
+     emailsEnabled = true,
+     platformClientParams,
+     traceContext,
++    actionSource,
++    actor,
+   } = args;
+   const eventType = booking.eventType;
+   const eventTypeMetadata = EventTypeMetaDataSchema.parse(eventType?.metadata || {});
+@@ -152,6 +208,7 @@ export async function handleConfirmation(args: {
+   }
+   let updatedBookings: {
+     id: number;
++    status: BookingStatus;
+     description: string | null;
+     location: string | null;
+     attendees: {
+@@ -189,6 +246,10 @@ export async function handleConfirmation(args: {
+   const videoCallUrl = metadata.hangoutLink ? metadata.hangoutLink : evt.videoCallData?.url || "";
+   const meetingUrl = getVideoCallUrlFromCalEvent(evt) || videoCallUrl;
+ 
++  let acceptedBookings: {
++    oldStatus: BookingStatus;
++    uid: string;
++  }[];
+   if (recurringEventId) {
+     // The booking to confirm is a recurring event and comes from /booking/recurring, proceeding to mark all related
+     // bookings as confirmed. Prisma updateMany does not support relations, so doing this in two steps for now.
+@@ -199,6 +260,30 @@ export async function handleConfirmation(args: {
+       },
+     });
+ 
++    acceptedBookings = unconfirmedRecurringBookings.map((booking) => ({
++      oldStatus: booking.status,
++      uid: booking.uid,
++    }));
++
++    const teamId = await getTeamIdFromEventType({
++      eventType: {
++        team: { id: eventType?.teamId ?? null },
++        parentId: eventType?.parentId ?? null,
++      },
++    });
++
++    const triggerForUser = !teamId || (teamId && eventType?.parentId);
++    const userId = triggerForUser ? booking.userId : null;
++    const orgId = await getOrgIdFromMemberOrTeamId({ memberId: userId, teamId });
++
++    await fireBookingAcceptedEvent({
++      actor,
++      acceptedBookings,
++      organizationId: orgId ?? null,
++      actionSource,
++      tracingLogger,
++    });
++
+     const updateBookingsPromise = unconfirmedRecurringBookings.map((recurringBooking) =>
+       prisma.booking.update({
+         where: {
+@@ -242,6 +327,7 @@ export async function handleConfirmation(args: {
+               },
+             },
+           },
++          status: true,
+           description: true,
+           cancellationReason: true,
+           attendees: true,
+@@ -306,6 +392,7 @@ export async function handleConfirmation(args: {
+           },
+         },
+         uid: true,
++        status: true,
+         startTime: true,
+         responses: true,
+         title: true,
+@@ -321,6 +408,12 @@ export async function handleConfirmation(args: {
+       },
+     });
+     updatedBookings.push(updatedBooking);
++    acceptedBookings = [
++      {
++        oldStatus: BookingStatus.ACCEPTED,
++        uid: booking.uid,
++      },
++    ];
+   }
+ 
+   const teamId = await getTeamIdFromEventType({
+@@ -338,6 +431,16 @@ export async function handleConfirmation(args: {
+ 
+   const bookerUrl = await getBookerBaseUrl(orgId ?? null);
+ 
++  if (!recurringEventId) {
++    await fireBookingAcceptedEvent({
++      actor,
++      acceptedBookings,
++      organizationId: orgId ?? null,
++      actionSource,
++      tracingLogger,
++    });
++  }
++
+   //Workflows - set reminders for confirmed events
+   try {
+     for (let index = 0; index < updatedBookings.length; index++) {
+diff --git a/packages/features/bookings/lib/onBookingEvents/BookingEventHandlerService.ts b/packages/features/bookings/lib/onBookingEvents/BookingEventHandlerService.ts
+index ee8974b0173d..2124a1a23dba 100644
+--- a/packages/features/bookings/lib/onBookingEvents/BookingEventHandlerService.ts
++++ b/packages/features/bookings/lib/onBookingEvents/BookingEventHandlerService.ts
+@@ -356,4 +356,29 @@ export class BookingEventHandlerService {
+       context,
+     });
+   }
++
++  async onBulkBookingsRejected(params: {
++    bookings: Array<{
++      bookingUid: string;
++      auditData: RejectedAuditData;
++    }>;
++    actor: Actor;
++    organizationId: number | null;
++    operationId?: string | null;
++    source: ActionSource;
++    context?: BookingAuditContext;
++  }) {
++    const { bookings, actor, organizationId, operationId, source, context } = params;
++    await this.bookingAuditProducerService.queueBulkRejectedAudit({
++      bookings: bookings.map((booking) => ({
++        bookingUid: booking.bookingUid,
++        data: booking.auditData,
++      })),
++      actor,
++      organizationId,
++      source,
++      operationId,
++      context,
++    });
++  }
+ }
+diff --git a/packages/features/ee/payments/api/webhook.ts b/packages/features/ee/payments/api/webhook.ts
+index ce4430d91496..db4e31a3c68a 100644
+--- a/packages/features/ee/payments/api/webhook.ts
++++ b/packages/features/ee/payments/api/webhook.ts
+@@ -3,7 +3,11 @@ import type { NextApiRequest, NextApiResponse } from "next";
+ import type Stripe from "stripe";
+ 
+ import { handlePaymentSuccess } from "@calcom/app-store/_utils/payments/handlePaymentSuccess";
+-import { eventTypeMetaDataSchemaWithTypedApps } from "@calcom/app-store/zod-utils";
++import { getAppActor } from "@calcom/app-store/_utils/getAppActor";
++import {
++  eventTypeMetaDataSchemaWithTypedApps,
++  eventTypeAppMetadataOptionalSchema,
++} from "@calcom/app-store/zod-utils";
+ import { sendAttendeeRequestEmailAndSMS, sendOrganizerRequestEmail } from "@calcom/emails/email-manager";
+ import EventManager, { placeholderCreatedEvent } from "@calcom/features/bookings/lib/EventManager";
+ import { doesBookingRequireConfirmation } from "@calcom/features/bookings/lib/doesBookingRequireConfirmation";
+@@ -50,7 +54,12 @@ export async function handleStripePaymentSuccess(event: Stripe.Event, traceConte
+   }
+   if (!payment?.bookingId) throw new HttpCode({ statusCode: 204, message: "Payment not found" });
+ 
+-  await handlePaymentSuccess(payment.id, payment.bookingId, traceContext);
++  await handlePaymentSuccess({
++    paymentId: payment.id,
++    bookingId: payment.bookingId,
++    appSlug: "stripe",
++    traceContext,
++  });
+ }
+ 
+ const handleSetupSuccess = async (event: Stripe.Event, traceContext: TraceContext) => {
+@@ -124,6 +133,8 @@ const handleSetupSuccess = async (event: Stripe.Event, traceContext: TraceContex
+   // If the card information was already captured in the same customer. Delete the previous payment method
+ 
+   if (!requiresConfirmation) {
++    const apps = eventTypeAppMetadataOptionalSchema.parse(eventType?.metadata?.apps);
++    const actor = getAppActor({ appSlug: "stripe", bookingId: booking.id, apps });
+     await handleConfirmation({
+       user: { ...user, credentials: allCredentials },
+       evt,
+@@ -133,6 +144,8 @@ const handleSetupSuccess = async (event: Stripe.Event, traceContext: TraceContex
+       paid: true,
+       platformClientParams: platformOAuthClient ? getPlatformParams(platformOAuthClient) : undefined,
+       traceContext: updatedTraceContext,
++      actionSource: "WEBHOOK",
++      actor,
+     });
+   } else if (areEmailsEnabled) {
+     await sendOrganizerRequestEmail({ ...evt }, eventType.metadata);
+diff --git a/packages/platform/libraries/bookings.ts b/packages/platform/libraries/bookings.ts
+index e0aad367025f..0ffcea6205b8 100644
+--- a/packages/platform/libraries/bookings.ts
++++ b/packages/platform/libraries/bookings.ts
+@@ -19,3 +19,4 @@ export { BookingEmailAndSmsTasker } from "@calcom/features/bookings/lib/tasker/B
+ export { BookingEmailSmsHandler } from "@calcom/features/bookings/lib/BookingEmailSmsHandler";
+ export { BookingAuditTaskerProducerService } from "@calcom/features/booking-audit/lib/service/BookingAuditTaskerProducerService";
+ export { getAuditActorRepository } from "@calcom/features/booking-audit/di/AuditActorRepository.container";
++export { makeUserActor } from "@calcom/features/booking-audit/lib/makeActor";
+diff --git a/packages/prisma/migrations/20260107093019_add_magic_link_source/migration.sql b/packages/prisma/migrations/20260107093019_add_magic_link_source/migration.sql
+new file mode 100644
+index 000000000000..e32e218fd1ff
+--- /dev/null
++++ b/packages/prisma/migrations/20260107093019_add_magic_link_source/migration.sql
+@@ -0,0 +1,2 @@
++-- AlterEnum
++ALTER TYPE "public"."BookingAuditSource" ADD VALUE 'magic_link';
+diff --git a/packages/prisma/schema.prisma b/packages/prisma/schema.prisma
+index aaf4e265d8fb..e1bb187727de 100644
+--- a/packages/prisma/schema.prisma
++++ b/packages/prisma/schema.prisma
+@@ -2742,11 +2742,12 @@ enum BookingAuditAction {
+ }
+ 
+ enum BookingAuditSource {
+-  API_V1  @map("api_v1")
+-  API_V2  @map("api_v2")
+-  WEBAPP  @map("webapp")
+-  WEBHOOK @map("webhook")
+-  UNKNOWN @map("unknown")
++  API_V1     @map("api_v1")
++  API_V2     @map("api_v2")
++  WEBAPP     @map("webapp")
++  WEBHOOK    @map("webhook")
++  MAGIC_LINK @map("magic_link")
++  UNKNOWN    @map("unknown")
+ }
+ 
+ enum AuditActorType {
+diff --git a/packages/trpc/server/routers/viewer/bookings/_router.tsx b/packages/trpc/server/routers/viewer/bookings/_router.tsx
+index 6d7f5fee855f..736336a90c51 100644
+--- a/packages/trpc/server/routers/viewer/bookings/_router.tsx
++++ b/packages/trpc/server/routers/viewer/bookings/_router.tsx
+@@ -15,7 +15,7 @@ import { ZInstantBookingInputSchema } from "./getInstantBookingLocation.schema";
+ import { ZReportBookingInputSchema } from "./reportBooking.schema";
+ import { ZRequestRescheduleInputSchema } from "./requestReschedule.schema";
+ import { bookingsProcedure } from "./util";
+-
++import { makeUserActor } from "@calcom/features/booking-audit/lib/makeActor";
+ export const bookingsRouter = router({
+   get: authedProcedure.input(ZGetInputSchema).query(async ({ input, ctx }) => {
+     const { getHandler } = await import("./get.handler");
+@@ -59,7 +59,11 @@ export const bookingsRouter = router({
+ 
+     return confirmHandler({
+       ctx,
+-      input,
++      input: {
++        ...input,
++        actor: makeUserActor(ctx.user.uuid),
++        actionSource: "WEBAPP",
++      }
+     });
+   }),
+ 
+diff --git a/packages/trpc/server/routers/viewer/bookings/confirm.handler.ts b/packages/trpc/server/routers/viewer/bookings/confirm.handler.ts
+index c4850356efa1..86202ab152e9 100644
+--- a/packages/trpc/server/routers/viewer/bookings/confirm.handler.ts
++++ b/packages/trpc/server/routers/viewer/bookings/confirm.handler.ts
+@@ -2,6 +2,7 @@ import { getUsersCredentialsIncludeServiceAccountKey } from "@calcom/app-store/d
+ import type { LocationObject } from "@calcom/app-store/locations";
+ import { getLocationValueForDB } from "@calcom/app-store/locations";
+ import { sendDeclinedEmailsAndSMS } from "@calcom/emails/email-manager";
++import { getBookingEventHandlerService } from "@calcom/features/bookings/di/BookingEventHandlerService.container";
+ import { getAllCredentialsIncludeServiceAccountKey } from "@calcom/features/bookings/lib/getAllCredentialsForUsersOnEvent/getAllCredentials";
+ import { getCalEventResponses } from "@calcom/features/bookings/lib/getCalEventResponses";
+ import { handleConfirmation } from "@calcom/features/bookings/lib/handleConfirmation";
+@@ -27,12 +28,15 @@ import { Prisma } from "@calcom/prisma/client";
+ import { BookingStatus, WebhookTriggerEvents, WorkflowTriggerEvents } from "@calcom/prisma/enums";
+ import type { EventTypeMetadata } from "@calcom/prisma/zod-utils";
+ import type { CalendarEvent } from "@calcom/types/Calendar";
+-
+ import { TRPCError } from "@trpc/server";
+-
++import { v4 as uuidv4 } from "uuid";
+ import type { TrpcSessionUser } from "../../../types";
+ import type { TConfirmInputSchema } from "./confirm.schema";
+-
++import type { ValidActionSource } from "@calcom/features/booking-audit/lib/types/actionSource";
++import type { Actor } from "@calcom/features/booking-audit/lib/dto/types";
++import type { ISimpleLogger } from "@calcom/features/di/shared/services/logger.service";
++import { safeStringify } from "@calcom/lib/safeStringify";
++import logger from "@calcom/lib/logger";
+ type ConfirmOptions = {
+   ctx: {
+     user: Pick<
+@@ -41,10 +45,66 @@ type ConfirmOptions = {
+     >;
+     traceContext: TraceContext;
+   };
+-  input: TConfirmInputSchema;
++  input: TConfirmInputSchema & { actionSource: ValidActionSource; actor: Actor };
+ };
+ 
++async function fireRejectionEvent({
++  actor,
++  organizationId,
++  actionSource,
++  rejectedBookings,
++  rejectionReason,
++  tracingLogger,
++}: {
++  actor: Actor;
++  organizationId: number | null;
++  rejectionReason: string | null;
++  actionSource: ValidActionSource;
++  rejectedBookings: {
++    uid: string;
++    oldStatus: BookingStatus;
++  }[];
++  tracingLogger: ISimpleLogger;
++}): Promise<void> {
++  try {
++    const bookingEventHandlerService = getBookingEventHandlerService();
++    if (rejectedBookings.length > 1) {
++      const operationId = uuidv4();
++      await bookingEventHandlerService.onBulkBookingsRejected({
++        bookings: rejectedBookings.map((booking) => ({
++          bookingUid: booking.uid,
++          auditData: {
++            rejectionReason,
++            status: { old: booking.oldStatus, new: BookingStatus.REJECTED },
++          },
++        })),
++        actor,
++        organizationId,
++        operationId,
++        source: actionSource,
++      });
++    } else if (rejectedBookings.length === 1) {
++      const booking = rejectedBookings[0];
++      await bookingEventHandlerService.onBookingRejected({
++        bookingUid: booking.uid,
++        actor,
++        organizationId,
++        auditData: {
++          rejectionReason,
++          status: { old: booking.oldStatus, new: BookingStatus.REJECTED },
++        },
++        source: actionSource,
++      });
++    }
++  } catch (error) {
++    tracingLogger.error("Error firing booking rejection event", safeStringify(error));
++  }
++}
++/**
++ * TODO: Convert it to a service as this fn is the single point of entry across trpc, magic-links, and API v2
++ */
+ export const confirmHandler = async ({ ctx, input }: ConfirmOptions) => {
++  const log = logger.getSubLogger({ prefix: ["confirmHandler"] });
+   const {
+     bookingId,
+     recurringEventId,
+@@ -52,6 +112,8 @@ export const confirmHandler = async ({ ctx, input }: ConfirmOptions) => {
+     confirmed,
+     emailsEnabled,
+     platformClientParams,
++    actionSource,
++    actor,
+   } = input;
+ 
+   const booking = await prisma.booking.findUniqueOrThrow({
+@@ -241,8 +303,8 @@ export const confirmHandler = async ({ ctx, input }: ConfirmOptions) => {
+     destinationCalendar: booking.destinationCalendar
+       ? [booking.destinationCalendar]
+       : booking.user?.destinationCalendar
+-      ? [booking.user?.destinationCalendar]
+-      : [],
++        ? [booking.user?.destinationCalendar]
++        : [],
+     requiresConfirmation: booking?.eventType?.requiresConfirmation ?? false,
+     hideOrganizerEmail: booking.eventType?.hideOrganizerEmail,
+     hideCalendarNotes: booking.eventType?.hideCalendarNotes,
+@@ -331,22 +393,58 @@ export const confirmHandler = async ({ ctx, input }: ConfirmOptions) => {
+       emailsEnabled,
+       platformClientParams,
+       traceContext,
++      actionSource,
++      actor,
+     });
+   } else {
+     evt.rejectionReason = rejectionReason;
++    let rejectedBookings: {
++      uid: string;
++      oldStatus: BookingStatus;
++    }[] = [];
++
+     if (recurringEventId) {
+       // The booking to reject is a recurring event and comes from /booking/upcoming, proceeding to mark all related
+       // bookings as rejected.
+-      await prisma.booking.updateMany({
++      const unconfirmedRecurringBookings = await prisma.booking.findMany({
+         where: {
+           recurringEventId,
+           status: BookingStatus.PENDING,
+         },
++        select: {
++          uid: true,
++          status: true,
++        },
++      });
++
++      await prisma.booking.updateMany({
++        where: {
++          uid: {
++            in: unconfirmedRecurringBookings.map((booking) => booking.uid),
++          },
++        },
+         data: {
+           status: BookingStatus.REJECTED,
+           rejectionReason,
+         },
+       });
++
++      const updatedRecurringBookings = await prisma.booking.findMany({
++        where: {
++          uid: {
++            in: unconfirmedRecurringBookings.map((booking) => booking.uid),
++          },
++        },
++        select: {
++          uid: true,
++          status: true,
++        },
++      });
++
++      rejectedBookings = updatedRecurringBookings.map((recurringBooking) => ({
++        uid: recurringBooking.uid,
++        oldStatus: recurringBooking.status,
++      }));
+     } else {
+       // handle refunds
+       if (booking.payment.length) {
+@@ -366,6 +464,13 @@ export const confirmHandler = async ({ ctx, input }: ConfirmOptions) => {
+           rejectionReason,
+         },
+       });
++
++      rejectedBookings = [
++        {
++          uid: booking.uid,
++          oldStatus: booking.status,
++        },
++      ];
+     }
+ 
+     if (emailsEnabled) {
+@@ -381,6 +486,15 @@ export const confirmHandler = async ({ ctx, input }: ConfirmOptions) => {
+ 
+     const orgId = await getOrgIdFromMemberOrTeamId({ memberId: booking.userId, teamId });
+ 
++    await fireRejectionEvent({
++      actor,
++      actionSource,
++      organizationId: orgId ?? null,
++      rejectionReason: rejectionReason ?? null,
++      rejectedBookings,
++      tracingLogger: log,
++    });
++
+     // send BOOKING_REJECTED webhooks
+     const subscriberOptions: GetSubscriberOptions = {
+       userId: booking.userId,

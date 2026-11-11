@@ -1,0 +1,237 @@
+diff --git a/BrowserKit/Sources/ToolbarKit/AddressToolbar/BrowserAddressToolbar.swift b/BrowserKit/Sources/ToolbarKit/AddressToolbar/BrowserAddressToolbar.swift
+index 7bf3a8729a36c..fd4ea9e6e7d11 100644
+--- a/BrowserKit/Sources/ToolbarKit/AddressToolbar/BrowserAddressToolbar.swift
++++ b/BrowserKit/Sources/ToolbarKit/AddressToolbar/BrowserAddressToolbar.swift
+@@ -8,8 +8,8 @@ import Common
+ /// Simple address toolbar implementation.
+ /// +-------------+--------------------------------------------------------+----------+
+ /// | navigation  | [ leading ]     indicators      url       [ trailing ] | browser  |
+-/// | actions     | [ page    ]                               [ page     ] | browser  |
+-/// |             | [ actions ]                               [ actions  ] | actions  |
++/// | actions     | [ page    ]                               [ page     ] | actions  |
++/// |             | [ actions ]                               [ actions  ] |          |
+ /// +-------------+--------------------------------------------------------+----------+
+ public class BrowserAddressToolbar: UIView,
+                                     Notifiable,
+@@ -48,7 +48,7 @@ public class BrowserAddressToolbar: UIView,
+ 
+     private lazy var leadingPageActionStack: UIStackView = .build()
+ 
+-    private lazy var pageActionStack: UIStackView = .build { view in
++    private lazy var trailingPageActionStack: UIStackView = .build { view in
+         view.spacing = UX.actionSpacing
+     }
+ 
+@@ -123,7 +123,7 @@ public class BrowserAddressToolbar: UIView,
+                           trailingSpace: CGFloat,
+                           isUnifiedSearchEnabled: Bool,
+                           animated: Bool) {
+-        [navigationActionStack, leadingPageActionStack, pageActionStack, browserActionStack].forEach {
++        [navigationActionStack, leadingPageActionStack, trailingPageActionStack, browserActionStack].forEach {
+             $0.isHidden = config.uxConfiguration.scrollAlpha.isZero
+         }
+         if #available(iOS 26.0, *) {
+@@ -193,7 +193,7 @@ public class BrowserAddressToolbar: UIView,
+         locationContainer.addSubview(leadingPageActionStack)
+         locationContainer.addSubview(locationView)
+         locationContainer.addSubview(locationDividerView)
+-        locationContainer.addSubview(pageActionStack)
++        locationContainer.addSubview(trailingPageActionStack)
+ 
+         toolbarContainerView.addSubview(navigationActionStack)
+         toolbarContainerView.addSubview(locationContainer)
+@@ -214,7 +214,7 @@ public class BrowserAddressToolbar: UIView,
+ 
+         [navigationActionStack,
+          leadingPageActionStack,
+-         pageActionStack,
++         trailingPageActionStack,
+          browserActionStack].forEach(setZeroWidthConstraint)
+ 
+         toolbarTopBorderHeightConstraint = toolbarTopBorderView.heightAnchor.constraint(equalToConstant: 0)
+@@ -269,12 +269,12 @@ public class BrowserAddressToolbar: UIView,
+             locationView.bottomAnchor.constraint(equalTo: locationContainer.bottomAnchor),
+ 
+             locationDividerView.topAnchor.constraint(equalTo: locationContainer.topAnchor),
+-            locationDividerView.trailingAnchor.constraint(equalTo: pageActionStack.leadingAnchor),
++            locationDividerView.trailingAnchor.constraint(equalTo: trailingPageActionStack.leadingAnchor),
+             locationDividerView.bottomAnchor.constraint(equalTo: locationContainer.bottomAnchor),
+ 
+-            pageActionStack.topAnchor.constraint(equalTo: locationContainer.topAnchor),
+-            pageActionStack.trailingAnchor.constraint(equalTo: locationContainer.trailingAnchor),
+-            pageActionStack.bottomAnchor.constraint(equalTo: locationContainer.bottomAnchor),
++            trailingPageActionStack.topAnchor.constraint(equalTo: locationContainer.topAnchor),
++            trailingPageActionStack.trailingAnchor.constraint(equalTo: locationContainer.trailingAnchor),
++            trailingPageActionStack.bottomAnchor.constraint(equalTo: locationContainer.bottomAnchor),
+ 
+             browserActionStack.topAnchor.constraint(equalTo: toolbarContainerView.topAnchor),
+             browserActionStack.bottomAnchor.constraint(equalTo: toolbarContainerView.bottomAnchor),
+@@ -319,7 +319,7 @@ public class BrowserAddressToolbar: UIView,
+ 
+         // Page actions
+         updateActionStack(stackView: leadingPageActionStack, toolbarElements: config.leadingPageActions)
+-        updateActionStack(stackView: pageActionStack, toolbarElements: config.trailingPageActions)
++        updateActionStack(stackView: trailingPageActionStack, toolbarElements: config.trailingPageActions)
+ 
+         updateActionSpacing(uxConfig: config.uxConfiguration)
+         updateToolbarLayout(animated: animated)
+@@ -329,7 +329,7 @@ public class BrowserAddressToolbar: UIView,
+         let stacks = browserActionStack.arrangedSubviews +
+                      navigationActionStack.arrangedSubviews +
+                      leadingPageActionStack.arrangedSubviews +
+-                     pageActionStack.arrangedSubviews
++                     browserActionStack.arrangedSubviews
+         let isAnimationEnabled = !UIAccessibility.isReduceMotionEnabled && animated
+ 
+         if isAnimationEnabled {
+@@ -416,7 +416,7 @@ public class BrowserAddressToolbar: UIView,
+         leadingLocationContainerConstraint?.constant = hasNavigationActions && isRegular ? -UX.horizontalSpace : 0
+ 
+         // Page action spacing
+-        let hasPageActions = !pageActionStack.arrangedSubviews.isEmpty
++        let hasPageActions = !leadingPageActionStack.arrangedSubviews.isEmpty
+         dividerWidthConstraint?.constant = hasPageActions ? uxConfig.browserActionsAddressBarDividerWidth : 0
+     }
+ 
+diff --git a/firefox-ios/Client/Application/AccessibilityIdentifiers.swift b/firefox-ios/Client/Application/AccessibilityIdentifiers.swift
+index 3e2d840af478f..ed7b1ace3ef75 100644
+--- a/firefox-ios/Client/Application/AccessibilityIdentifiers.swift
++++ b/firefox-ios/Client/Application/AccessibilityIdentifiers.swift
+@@ -64,6 +64,13 @@ struct AccessibilityIdentifiers {
+         struct WebView {
+             static let documentLoadingLabel = "WebView.documentLoadingLabel"
+         }
++
++        static let overKeyboardContainer = "Browser.overKeyboardContainer"
++        static let headerContainer = "Browser.headerContainer"
++        static let bottomContainer = "Browser.bottomContainer"
++        static let bottomContentStackView = "Browser.bottomContentStackView"
++        static let contentContainer = "Browser.contentContainer"
++        static let statusBarOverlay = "Browser.statusBarOverlay"
+     }
+ 
+     struct ContextualHints {
+diff --git a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift
+index 51a39b7718e88..511bdc0e5a2ad 100644
+--- a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift
++++ b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift
+@@ -134,7 +134,9 @@ class BrowserViewController: UIViewController,
+     // MARK: Lazy loading UI elements
+     private var documentLoadingView: TemporaryDocumentLoadingView?
+     private(set) lazy var mailtoLinkHandler = MailtoLinkHandler()
+-    private lazy var statusBarOverlay: StatusBarOverlay = .build { _ in }
++    private lazy var statusBarOverlay: StatusBarOverlay = .build { view in
++        view.accessibilityIdentifier = AccessibilityIdentifiers.Browser.statusBarOverlay
++    }
+     private var statusBarOverlayConstraints = [NSLayoutConstraint]()
+     private(set) lazy var addressToolbarContainer: AddressToolbarContainer = .build(nil, {
+         AddressToolbarContainer(isMinimalAddressBarEnabled: self.isMinimalAddressBarEnabled,
+@@ -144,11 +146,15 @@ class BrowserViewController: UIViewController,
+     private(set) lazy var overlayManager: OverlayModeManager = DefaultOverlayModeManager()
+ 
+     // Header stack view can contain the top url bar, top reader mode, top ZoomPageBar
+-    private(set) lazy var header: BaseAlphaStackView = .build { _ in }
++    private(set) lazy var header: BaseAlphaStackView = .build { view in
++        view.accessibilityIdentifier = AccessibilityIdentifiers.Browser.headerContainer
++    }
+ 
+     // OverKeyboardContainer stack view contains
+     // the bottom reader mode, the bottom url bar and the ZoomPageBar
+-    private(set) lazy var overKeyboardContainer: BaseAlphaStackView = .build { _ in }
++    private(set) lazy var overKeyboardContainer: BaseAlphaStackView = .build { view in
++        view.accessibilityIdentifier = AccessibilityIdentifiers.Browser.overKeyboardContainer
++    }
+ 
+     // Constraints used to show/hide toolbars
+     var headerTopConstraint: Constraint?
+@@ -170,16 +176,21 @@ class BrowserViewController: UIViewController,
+     }
+ 
+     // BottomContainer stack view contains toolbar
+-    lazy var bottomContainer: BaseAlphaStackView = .build { _ in }
++    lazy var bottomContainer: BaseAlphaStackView = .build { view in
++        view.accessibilityIdentifier = AccessibilityIdentifiers.Browser.bottomContainer
++    }
+ 
+     // Alert content that appears on top of the content
+     // ex: Find In Page, SnackBar from LoginsHelper
+     private(set) lazy var bottomContentStackView: BaseAlphaStackView = .build { stackview in
+         stackview.isClearBackground = true
++        stackview.accessibilityIdentifier = AccessibilityIdentifiers.Browser.bottomContentStackView
+     }
+ 
+     // The content container contains the homepage, error page or webview. Embedded by the coordinator.
+-    private(set) lazy var contentContainer: ContentContainer = .build { _ in }
++    private(set) lazy var contentContainer: ContentContainer = .build { view in
++        view.accessibilityIdentifier = AccessibilityIdentifiers.Browser.contentContainer
++    }
+ 
+     // A view for displaying a preview of the web page.
+     private lazy var webPagePreview: TabWebViewPreview = .build {
+diff --git a/firefox-ios/Client/Frontend/Browser/Toolbars/AddressToolbarContainer.swift b/firefox-ios/Client/Frontend/Browser/Toolbars/AddressToolbarContainer.swift
+index 3ca45d7baf30c..ce459d608f582 100644
+--- a/firefox-ios/Client/Frontend/Browser/Toolbars/AddressToolbarContainer.swift
++++ b/firefox-ios/Client/Frontend/Browser/Toolbars/AddressToolbarContainer.swift
+@@ -221,7 +221,7 @@ final class AddressToolbarContainer: UIView,
+         guard #available(iOS 26.0, *), let windowUUID else { return 0 }
+ 
+         let isEditingAddress = state?.addressToolbar.isEditing == true
+-        let shoudShowKeyboard = state?.addressToolbar.shouldShowKeyboard
++        let shouldShowKeyboard = state?.addressToolbar.shouldShowKeyboard
+         let isBottomToolbar = state?.toolbarPosition == .bottom
+         let shouldAdjustForAccessory = hasAccessoryView &&
+                                        !isEditingAddress &&
+@@ -231,7 +231,7 @@ final class AddressToolbarContainer: UIView,
+ 
+         /// We want to check here if the keyboard accessory view state has changed
+         /// To avoid spamming redux actions.
+-        guard hasAccessoryView != shoudShowKeyboard else { return accessoryViewOffset }
++        guard hasAccessoryView != shouldShowKeyboard else { return accessoryViewOffset }
+         store.dispatch(
+             ToolbarAction(
+                 shouldShowKeyboard: hasAccessoryView,
+@@ -445,7 +445,7 @@ final class AddressToolbarContainer: UIView,
+             insertSubview(leftSkeletonAddressBar, aboveSubview: toolbar)
+             insertSubview(rightSkeletonAddressBar, aboveSubview: toolbar)
+ 
+-            toolbar.leadingAnchor.constraint(equalTo: leftSkeletonAddressBar.trailingAnchor).isActive = true
++            toolbar.leadingAnchor.constraint(equalTo: rightSkeletonAddressBar.trailingAnchor).isActive = true
+             toolbar.trailingAnchor.constraint(equalTo: rightSkeletonAddressBar.leadingAnchor).isActive = true
+         } else {
+             toolbar.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+@@ -459,19 +459,22 @@ final class AddressToolbarContainer: UIView,
+     }
+ 
+     private func setupSkeletonAddressBarsLayout() {
+-        if toolbarHelper.isSwipingTabsEnabled {
+-            NSLayoutConstraint.activate([
+-                leftSkeletonAddressBar.topAnchor.constraint(equalTo: topAnchor),
+-                leftSkeletonAddressBar.trailingAnchor.constraint(equalTo: leadingAnchor),
+-                leftSkeletonAddressBar.bottomAnchor.constraint(equalTo: bottomAnchor),
+-                leftSkeletonAddressBar.widthAnchor.constraint(equalTo: widthAnchor, constant: -UX.skeletonBarWidthOffset),
+-
+-                rightSkeletonAddressBar.topAnchor.constraint(equalTo: topAnchor),
+-                rightSkeletonAddressBar.leadingAnchor.constraint(equalTo: trailingAnchor),
+-                rightSkeletonAddressBar.bottomAnchor.constraint(equalTo: bottomAnchor),
+-                rightSkeletonAddressBar.widthAnchor.constraint(equalTo: widthAnchor, constant: -UX.skeletonBarWidthOffset)
+-            ])
+-        }
++        guard toolbarHelper.isSwipingTabsEnabled else { return }
++
++        // Check if the interface is in landscape mode for layout adjustments
++        let isLandscape = UIApplication.shared.statusBarOrientation.isLandscape
++
++        NSLayoutConstraint.activate([
++            leftSkeletonAddressBar.topAnchor.constraint(equalTo: topAnchor),
++            leftSkeletonAddressBar.trailingAnchor.constraint(equalTo: leadingAnchor),
++            leftSkeletonAddressBar.bottomAnchor.constraint(equalTo: bottomAnchor),
++            leftSkeletonAddressBar.widthAnchor.constraint(equalTo: widthAnchor, constant: -UX.skeletonBarWidthOffset),
++
++            rightSkeletonAddressBar.topAnchor.constraint(equalTo: topAnchor),
++            rightSkeletonAddressBar.leadingAnchor.constraint(equalTo: trailingAnchor),
++            rightSkeletonAddressBar.bottomAnchor.constraint(equalTo: bottomAnchor),
++            rightSkeletonAddressBar.widthAnchor.constraint(equalTo: widthAnchor, constant: -UX.skeletonBarWidthOffset)
++        ])
+     }
+ 
+     private func updateProgressBarPosition(_ position: AddressToolbarPosition) {

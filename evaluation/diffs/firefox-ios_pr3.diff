@@ -1,0 +1,486 @@
+diff --git a/BrowserKit/Sources/OnboardingKit/Models/OnboardingFlowViewModel.swift b/BrowserKit/Sources/OnboardingKit/Models/OnboardingFlowViewModel.swift
+index a33203462a128..744d3add84cc0 100644
+--- a/BrowserKit/Sources/OnboardingKit/Models/OnboardingFlowViewModel.swift
++++ b/BrowserKit/Sources/OnboardingKit/Models/OnboardingFlowViewModel.swift
+@@ -12,9 +12,9 @@ public final class OnboardingFlowViewModel<ViewModel: OnboardingCardInfoModelPro
+     public let onActionTap: @MainActor (
+         ViewModel.OnboardingActionType,
+         String,
+-        @escaping (Result<TabAction, Error>) -> Void
++        @MainActor @escaping (Result<TabAction, Error>) -> Void
+     ) -> Void
+-    public let onMultipleChoiceActionTap: (
++    public let onMultipleChoiceActionTap: @MainActor (
+         ViewModel.OnboardingMultipleChoiceActionType,
+         String
+     ) -> Void
+@@ -24,13 +24,13 @@ public final class OnboardingFlowViewModel<ViewModel: OnboardingCardInfoModelPro
+         case none
+     }
+ 
+-    public let onComplete: (String) -> Void
++    public let onComplete: @MainActor (String) -> Void
+     public private(set) var multipleChoiceSelections: [String: ViewModel.OnboardingMultipleChoiceActionType] = [:]
+ 
+-    public var onCardView: ((String) -> Void)?
+-    public var onButtonTap: ((String, ViewModel.OnboardingActionType, Bool) -> Void)?
+-    public var onMultipleChoiceTap: ((String, ViewModel.OnboardingMultipleChoiceActionType) -> Void)?
+-    public var onDismiss: ((String) -> Void)?
++    public var onCardView: (@MainActor (String) -> Void)?
++    public var onButtonTap: (@MainActor (String, ViewModel.OnboardingActionType, Bool) -> Void)?
++    public var onMultipleChoiceTap: (@MainActor (String, ViewModel.OnboardingMultipleChoiceActionType) -> Void)?
++    public var onDismiss: (@MainActor (String) -> Void)?
+ 
+     public init(
+         onboardingCards: [ViewModel],
+@@ -38,12 +38,12 @@ public final class OnboardingFlowViewModel<ViewModel: OnboardingCardInfoModelPro
+         onActionTap: @MainActor @escaping (
+             ViewModel.OnboardingActionType,
+             String,
+-            @escaping (Result<TabAction, Error>) -> Void) -> Void,
+-        onMultipleChoiceActionTap: @escaping (
++            @MainActor @escaping (Result<TabAction, Error>) -> Void) -> Void,
++        onMultipleChoiceActionTap: @MainActor @escaping (
+             ViewModel.OnboardingMultipleChoiceActionType,
+             String
+         ) -> Void,
+-        onComplete: @escaping (String) -> Void
++        onComplete: @MainActor @escaping (String) -> Void
+     ) {
+         self.onboardingCards = onboardingCards
+         self.skipText = skipText
+diff --git a/firefox-ios/Client.xcodeproj/project.pbxproj b/firefox-ios/Client.xcodeproj/project.pbxproj
+index 2c380baa7d3ca..fe3440d7db1b1 100644
+--- a/firefox-ios/Client.xcodeproj/project.pbxproj
++++ b/firefox-ios/Client.xcodeproj/project.pbxproj
+@@ -27948,7 +27948,7 @@
+ 				SWIFT_UPCOMING_FEATURE_ISOLATED_DEFAULT_VALUES = YES;
+ 				SWIFT_UPCOMING_FEATURE_NONFROZEN_ENUM_EXHAUSTIVITY = YES;
+ 				SWIFT_UPCOMING_FEATURE_REGION_BASED_ISOLATION = YES;
+-				SWIFT_VERSION = 5.0;
++				SWIFT_VERSION = 6.0;
+ 				TARGETED_DEVICE_FAMILY = "iPhone, iPad";
+ 				TEST_TARGET_NAME = Client;
+ 				VALIDATE_PRODUCT = YES;
+@@ -27988,6 +27988,7 @@
+ 				SWIFT_STRICT_CONCURRENCY = minimal;
+ 				SWIFT_TREAT_WARNINGS_AS_ERRORS = NO;
+ 				SWIFT_UPCOMING_FEATURE_ISOLATED_DEFAULT_VALUES = YES;
++				SWIFT_VERSION = 6.0;
+ 				TARGETED_DEVICE_FAMILY = "1,2";
+ 				VALIDATE_WORKSPACE = YES;
+ 			};
+@@ -28253,6 +28254,7 @@
+ 				INFOPLIST_FILE = "firefox-ios-tests/Tests/ClientTests/Info.plist";
+ 				LOCALIZATION_EXPORT_SUPPORTED = NO;
+ 				PRODUCT_NAME = ClientTests;
++				SWIFT_VERSION = 6.0;
+ 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Client.app/Client";
+ 			};
+ 			name = FirefoxStaging;
+@@ -28461,6 +28463,7 @@
+ 				SWIFT_UPCOMING_FEATURE_ISOLATED_DEFAULT_VALUES = YES;
+ 				SWIFT_UPCOMING_FEATURE_NONFROZEN_ENUM_EXHAUSTIVITY = YES;
+ 				SWIFT_UPCOMING_FEATURE_REGION_BASED_ISOLATION = YES;
++				SWIFT_VERSION = 6.0;
+ 				VALIDATE_WORKSPACE = YES;
+ 			};
+ 			name = Fennec_Testing;
+@@ -28494,6 +28497,7 @@
+ 				SWIFT_STRICT_CONCURRENCY = complete;
+ 				SWIFT_TREAT_WARNINGS_AS_ERRORS = NO;
+ 				SWIFT_UPCOMING_FEATURE_ISOLATED_DEFAULT_VALUES = YES;
++				SWIFT_VERSION = 6.0;
+ 				VALIDATE_WORKSPACE = YES;
+ 			};
+ 			name = Fennec_Testing;
+@@ -28687,6 +28691,7 @@
+ 				INFOPLIST_FILE = "firefox-ios-tests/Tests/ClientTests/Info.plist";
+ 				LOCALIZATION_EXPORT_SUPPORTED = NO;
+ 				PRODUCT_NAME = ClientTests;
++				SWIFT_VERSION = 6.0;
+ 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Client.app/Client";
+ 			};
+ 			name = Fennec_Testing;
+@@ -29771,6 +29776,7 @@
+ 				SWIFT_UPCOMING_FEATURE_ISOLATED_DEFAULT_VALUES = YES;
+ 				SWIFT_UPCOMING_FEATURE_NONFROZEN_ENUM_EXHAUSTIVITY = YES;
+ 				SWIFT_UPCOMING_FEATURE_REGION_BASED_ISOLATION = YES;
++				SWIFT_VERSION = 6.0;
+ 				VALIDATE_WORKSPACE = YES;
+ 			};
+ 			name = Firefox;
+@@ -29807,6 +29813,7 @@
+ 				SWIFT_STRICT_CONCURRENCY = minimal;
+ 				SWIFT_TREAT_WARNINGS_AS_ERRORS = NO;
+ 				SWIFT_UPCOMING_FEATURE_ISOLATED_DEFAULT_VALUES = YES;
++				SWIFT_VERSION = 6.0;
+ 				VALIDATE_WORKSPACE = YES;
+ 			};
+ 			name = Firefox;
+@@ -29819,6 +29826,7 @@
+ 				INFOPLIST_FILE = "firefox-ios-tests/Tests/ClientTests/Info.plist";
+ 				LOCALIZATION_EXPORT_SUPPORTED = NO;
+ 				PRODUCT_NAME = ClientTests;
++				SWIFT_VERSION = 6.0;
+ 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Client.app/Client";
+ 			};
+ 			name = Firefox;
+@@ -30092,6 +30100,7 @@
+ 				SWIFT_UPCOMING_FEATURE_ISOLATED_DEFAULT_VALUES = YES;
+ 				SWIFT_UPCOMING_FEATURE_NONFROZEN_ENUM_EXHAUSTIVITY = YES;
+ 				SWIFT_UPCOMING_FEATURE_REGION_BASED_ISOLATION = YES;
++				SWIFT_VERSION = 6.0;
+ 				VALIDATE_WORKSPACE = YES;
+ 			};
+ 			name = Fennec_Enterprise;
+@@ -30136,6 +30145,7 @@
+ 				SWIFT_STRICT_CONCURRENCY = complete;
+ 				SWIFT_TREAT_WARNINGS_AS_ERRORS = NO;
+ 				SWIFT_UPCOMING_FEATURE_ISOLATED_DEFAULT_VALUES = YES;
++				SWIFT_VERSION = 6.0;
+ 				VALIDATE_WORKSPACE = YES;
+ 			};
+ 			name = Fennec_Enterprise;
+@@ -30251,6 +30261,7 @@
+ 				INFOPLIST_FILE = "firefox-ios-tests/Tests/ClientTests/Info.plist";
+ 				LOCALIZATION_EXPORT_SUPPORTED = NO;
+ 				PRODUCT_NAME = ClientTests;
++				SWIFT_VERSION = 6.0;
+ 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Client.app/Client";
+ 			};
+ 			name = Fennec_Enterprise;
+@@ -30416,6 +30427,7 @@
+ 				SWIFT_UPCOMING_FEATURE_ISOLATED_DEFAULT_VALUES = YES;
+ 				SWIFT_UPCOMING_FEATURE_NONFROZEN_ENUM_EXHAUSTIVITY = YES;
+ 				SWIFT_UPCOMING_FEATURE_REGION_BASED_ISOLATION = YES;
++				SWIFT_VERSION = 6.0;
+ 				VALIDATE_WORKSPACE = YES;
+ 			};
+ 			name = FirefoxBeta;
+@@ -30452,6 +30464,7 @@
+ 				SWIFT_STRICT_CONCURRENCY = minimal;
+ 				SWIFT_TREAT_WARNINGS_AS_ERRORS = NO;
+ 				SWIFT_UPCOMING_FEATURE_ISOLATED_DEFAULT_VALUES = YES;
++				SWIFT_VERSION = 6.0;
+ 				VALIDATE_WORKSPACE = YES;
+ 			};
+ 			name = FirefoxBeta;
+@@ -30464,6 +30477,7 @@
+ 				INFOPLIST_FILE = "firefox-ios-tests/Tests/ClientTests/Info.plist";
+ 				LOCALIZATION_EXPORT_SUPPORTED = NO;
+ 				PRODUCT_NAME = ClientTests;
++				SWIFT_VERSION = 6.0;
+ 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Client.app/Client";
+ 			};
+ 			name = FirefoxBeta;
+@@ -30955,6 +30969,7 @@
+ 				SWIFT_UPCOMING_FEATURE_ISOLATED_DEFAULT_VALUES = YES;
+ 				SWIFT_UPCOMING_FEATURE_NONFROZEN_ENUM_EXHAUSTIVITY = YES;
+ 				SWIFT_UPCOMING_FEATURE_REGION_BASED_ISOLATION = YES;
++				SWIFT_VERSION = 6.0;
+ 				VALIDATE_WORKSPACE = YES;
+ 			};
+ 			name = Fennec;
+@@ -30987,6 +31002,7 @@
+ 				SWIFT_STRICT_CONCURRENCY = complete;
+ 				SWIFT_TREAT_WARNINGS_AS_ERRORS = NO;
+ 				SWIFT_UPCOMING_FEATURE_ISOLATED_DEFAULT_VALUES = YES;
++				SWIFT_VERSION = 6.0;
+ 				VALIDATE_WORKSPACE = YES;
+ 			};
+ 			name = Fennec;
+@@ -30999,6 +31015,7 @@
+ 				INFOPLIST_FILE = "firefox-ios-tests/Tests/ClientTests/Info.plist";
+ 				LOCALIZATION_EXPORT_SUPPORTED = NO;
+ 				PRODUCT_NAME = ClientTests;
++				SWIFT_VERSION = 6.0;
+ 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Client.app/Client";
+ 			};
+ 			name = Fennec;
+diff --git a/firefox-ios/Client/Coordinators/Launch/LaunchCoordinator.swift b/firefox-ios/Client/Coordinators/Launch/LaunchCoordinator.swift
+index fca409fa4a18a..499f5db20bd30 100644
+--- a/firefox-ios/Client/Coordinators/Launch/LaunchCoordinator.swift
++++ b/firefox-ios/Client/Coordinators/Launch/LaunchCoordinator.swift
+@@ -268,15 +268,17 @@ final class LaunchCoordinator: BaseCoordinator,
+         let flowViewModel = OnboardingFlowViewModel<OnboardingKitCardInfoModel>(
+             onboardingCards: onboardingModel.cards,
+             skipText: .Onboarding.LaterAction,
+-            onActionTap: { @MainActor [weak self] action, cardName, completion in
++            onActionTap: { [weak self] action, cardName, completion in
+                 guard let onboardingService = self?.onboardingService else { return }
+-                onboardingService.handleAction(
+-                    action,
+-                    from: cardName,
+-                    cards: onboardingModel.cards,
+-                    with: activityEventHelper,
+-                    completion: completion
+-                )
++                Task {
++                    onboardingService.handleAction(
++                        action,
++                        from: cardName,
++                        cards: onboardingModel.cards,
++                        with: activityEventHelper,
++                        completion: completion
++                    )
++                }
+             },
+             onMultipleChoiceActionTap: { [weak self] action, cardName in
+                 guard let onboardingService = self?.onboardingService else { return }
+diff --git a/firefox-ios/Client/Frontend/Autofill/AutofillAccessoryViewButtonItem.swift b/firefox-ios/Client/Frontend/Autofill/AutofillAccessoryViewButtonItem.swift
+index 8d4a8b7f8b2be..ff2826d95a1d0 100644
+--- a/firefox-ios/Client/Frontend/Autofill/AutofillAccessoryViewButtonItem.swift
++++ b/firefox-ios/Client/Frontend/Autofill/AutofillAccessoryViewButtonItem.swift
+@@ -58,7 +58,11 @@ final class AutofillAccessoryViewButtonItem: UIBarButtonItem {
+     ///   - image: The image for the accessory image view.
+     ///   - labelText: The text for the accessory view label.
+     ///   - tappedAction: The closure to be executed when the accessory view is tapped.
+-    init(image: UIImage?, labelText: String, tappedAction: (() -> Void)? = nil) {
++    init(
++        image: UIImage?,
++        labelText: String,
++        tappedAction: (@MainActor () -> Void)? = nil
++    ) {
+         self.accessoryImageView = .build { imageView in
+             imageView.image = image?.withRenderingMode(.alwaysTemplate)
+             imageView.contentMode = .scaleAspectFit
+diff --git a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Actions/WebContextMenuActionsProvider.swift b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Actions/WebContextMenuActionsProvider.swift
+index 666222983c38d..a4b3a9f14391f 100644
+--- a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Actions/WebContextMenuActionsProvider.swift
++++ b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Actions/WebContextMenuActionsProvider.swift
+@@ -28,7 +28,7 @@ class WebContextMenuActionsProvider {
+     }
+ 
+     @MainActor
+-    func addOpenInNewTab(url: URL, currentTab: Tab, addTab: @escaping (URL, Bool, Tab) -> Void) {
++    func addOpenInNewTab(url: URL, currentTab: Tab, addTab: @escaping @MainActor @Sendable (URL, Bool, Tab) -> Void) {
+         actions.append(
+             UIAction(
+                 title: .ContextMenuOpenInNewTab,
+@@ -41,7 +41,7 @@ class WebContextMenuActionsProvider {
+     }
+ 
+     @MainActor
+-    func addOpenInNewPrivateTab(url: URL, currentTab: Tab, addTab: @escaping (URL, Bool, Tab) -> Void) {
++    func addOpenInNewPrivateTab(url: URL, currentTab: Tab, addTab: @escaping @MainActor @Sendable (URL, Bool, Tab) -> Void) {
+         actions.append(
+             UIAction(
+                 title: .ContextMenuOpenInNewPrivateTab,
+diff --git a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Extensions/BrowserViewController+WebViewDelegates.swift b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Extensions/BrowserViewController+WebViewDelegates.swift
+index 7bd195fe03fc6..2638a499e6984 100644
+--- a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Extensions/BrowserViewController+WebViewDelegates.swift
++++ b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Extensions/BrowserViewController+WebViewDelegates.swift
+@@ -76,7 +76,7 @@ extension BrowserViewController: WKUIDelegate {
+     private func handleJavaScriptAlert<T: WKJavaScriptAlertInfo>(
+         _ alert: T,
+         for webView: WKWebView,
+-        spamCallback: @escaping () -> Void
++        spamCallback: @escaping @MainActor @Sendable () -> Void
+     ) {
+         if jsAlertExceedsSpamLimits(webView) {
+             handleSpammedJSAlert(spamCallback)
+@@ -95,7 +95,7 @@ extension BrowserViewController: WKUIDelegate {
+         _ webView: WKWebView,
+         runJavaScriptAlertPanelWithMessage message: String,
+         initiatedByFrame frame: WKFrameInfo,
+-        completionHandler: @escaping @MainActor () -> Void
++        completionHandler: @escaping @MainActor @Sendable () -> Void
+     ) {
+         let messageAlert = MessageAlert(message: message,
+                                         frame: frame,
+@@ -110,7 +110,7 @@ extension BrowserViewController: WKUIDelegate {
+         _ webView: WKWebView,
+         runJavaScriptConfirmPanelWithMessage message: String,
+         initiatedByFrame frame: WKFrameInfo,
+-        completionHandler: @escaping @MainActor (Bool) -> Void
++        completionHandler: @escaping @MainActor @Sendable (Bool) -> Void
+     ) {
+         let confirmAlert = ConfirmPanelAlert(message: message, frame: frame) { confirm in
+             self.logger.log("JavaScript confirm panel was completed with result: \(confirm)", level: .info, category: .webview)
+@@ -127,7 +127,7 @@ extension BrowserViewController: WKUIDelegate {
+         runJavaScriptTextInputPanelWithPrompt prompt: String,
+         defaultText: String?,
+         initiatedByFrame frame: WKFrameInfo,
+-        completionHandler: @escaping @MainActor (String?) -> Void
++        completionHandler: @escaping @MainActor @Sendable (String?) -> Void
+     ) {
+         let textInputAlert = TextInputAlert(message: prompt, frame: frame, defaultText: defaultText) { input in
+             self.logger.log("JavaScript text input panel was completed with input", level: .info, category: .webview)
+@@ -153,7 +153,7 @@ extension BrowserViewController: WKUIDelegate {
+     func webView(
+         _ webView: WKWebView,
+         contextMenuConfigurationForElement elementInfo: WKContextMenuElementInfo,
+-        completionHandler: @escaping @MainActor (UIContextMenuConfiguration?) -> Void
++        completionHandler: @escaping @MainActor @Sendable (UIContextMenuConfiguration?) -> Void
+     ) {
+         guard let url = elementInfo.linkURL,
+               let currentTab = tabManager.selectedTab,
+@@ -184,7 +184,7 @@ extension BrowserViewController: WKUIDelegate {
+         requestMediaCapturePermissionFor origin: WKSecurityOrigin,
+         initiatedByFrame frame: WKFrameInfo,
+         type: WKMediaCaptureType,
+-        decisionHandler: @escaping @MainActor (WKPermissionDecision) -> Void
++        decisionHandler: @escaping @MainActor @Sendable (WKPermissionDecision) -> Void
+     ) {
+         // If the tab isn't the selected one or we're on the homepage, do not show the media capture prompt
+         guard tabManager.selectedTab?.webView === webView, !contentContainer.hasAnyHomepage else {
+@@ -312,7 +312,7 @@ extension BrowserViewController: WKUIDelegate {
+ 
+     func createActions(isPrivate: Bool,
+                        url: URL,
+-                       addTab: @escaping (URL, Bool, Tab) -> Void,
++                       addTab: @escaping @MainActor @Sendable (URL, Bool, Tab) -> Void,
+                        title: String?,
+                        image: URL?,
+                        currentTab: Tab,
+@@ -705,7 +705,7 @@ extension BrowserViewController: WKNavigationDelegate {
+     func webView(
+         _ webView: WKWebView,
+         decidePolicyFor navigationResponse: WKNavigationResponse,
+-        decisionHandler: @escaping @MainActor (WKNavigationResponsePolicy) -> Void
++        decisionHandler: @escaping @MainActor @Sendable (WKNavigationResponsePolicy) -> Void
+     ) {
+         let response = navigationResponse.response
+         let responseURL = response.url
+@@ -1053,7 +1053,7 @@ extension BrowserViewController: WKNavigationDelegate {
+     func webView(
+         _ webView: WKWebView,
+         didReceive challenge: URLAuthenticationChallenge,
+-        completionHandler: @escaping @Sendable @MainActor (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
++        completionHandler: @escaping @MainActor @Sendable (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+     ) {
+         guard challenge.protectionSpace.authenticationMethod != NSURLAuthenticationMethodServerTrust else {
+             handleServerTrust(
+@@ -1232,7 +1232,7 @@ private extension BrowserViewController {
+ 
+     // Use for sms and mailto, which do not show a confirmation before opening.
+     func showExternalAlert(withText text: String,
+-                           completion: @escaping (UIAlertAction) -> Void) {
++                           completion: @escaping @MainActor @Sendable (UIAlertAction) -> Void) {
+         let alert = UIAlertController(title: nil,
+                                       message: text,
+                                       preferredStyle: .alert)
+@@ -1329,7 +1329,7 @@ private extension BrowserViewController {
+     func handleServerTrust(
+         challenge: URLAuthenticationChallenge,
+         dispatchQueue: DispatchQueueInterface,
+-        completionHandler: @escaping @Sendable @MainActor (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
++        completionHandler: @escaping @MainActor @Sendable (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+     ) {
+         dispatchQueue.async {
+             // If this is a certificate challenge, see if the certificate has previously been
+diff --git a/firefox-ios/Client/Frontend/Browser/BrowserViewController/WebEngineIntegration/BrowserWebUIDelegate.swift b/firefox-ios/Client/Frontend/Browser/BrowserViewController/WebEngineIntegration/BrowserWebUIDelegate.swift
+index bdabfcfd69468..5357ec45c7863 100644
+--- a/firefox-ios/Client/Frontend/Browser/BrowserViewController/WebEngineIntegration/BrowserWebUIDelegate.swift
++++ b/firefox-ios/Client/Frontend/Browser/BrowserViewController/WebEngineIntegration/BrowserWebUIDelegate.swift
+@@ -39,7 +39,7 @@ class BrowserWebUIDelegate: NSObject, WKUIDelegate {
+         _ webView: WKWebView,
+         runJavaScriptAlertPanelWithMessage message: String,
+         initiatedByFrame frame: WKFrameInfo,
+-        completionHandler: @escaping @MainActor @Sendable () -> Void
++        completionHandler: @escaping @MainActor () -> Void
+     ) {
+         legacyResponder?.webView?(
+             webView,
+diff --git a/firefox-ios/Client/Frontend/Browser/DownloadHelper/DownloadToast.swift b/firefox-ios/Client/Frontend/Browser/DownloadHelper/DownloadToast.swift
+index 1a913227a98a0..66ee6e7ae9377 100644
+--- a/firefox-ios/Client/Frontend/Browser/DownloadHelper/DownloadToast.swift
++++ b/firefox-ios/Client/Frontend/Browser/DownloadHelper/DownloadToast.swift
+@@ -7,10 +7,6 @@ import Shared
+ import UIKit
+ 
+ class DownloadToast: Toast, DownloadProgressDelegate {
+-    struct UX {
+-        static let buttonSize: CGFloat = 40
+-    }
+-
+     lazy var progressView: UIView = .build { view in
+         view.layer.cornerRadius = Toast.UX.toastCornerRadius
+     }
+@@ -110,10 +106,11 @@ class DownloadToast: Toast, DownloadProgressDelegate {
+         )
+     }
+ 
+-    init(downloadProgressManager: DownloadProgressManager,
+-         theme: Theme,
+-
+-         completion: @escaping (Bool) -> Void) {
++    init(
++        downloadProgressManager: DownloadProgressManager,
++        theme: Theme,
++        completion: @MainActor @escaping (Bool) -> Void
++    ) {
+         self.downloadProgressManager = downloadProgressManager
+         super.init(frame: .zero)
+ 
+@@ -192,8 +189,8 @@ class DownloadToast: Toast, DownloadProgressDelegate {
+                 contentStackView.topAnchor.constraint(equalTo: toastView.topAnchor,
+                                                       constant: ButtonToast.UX.spacing),
+ 
+-                closeButton.heightAnchor.constraint(equalToConstant: UX.buttonSize),
+-                closeButton.widthAnchor.constraint(equalToConstant: UX.buttonSize),
++                closeButton.heightAnchor.constraint(equalToConstant: 40),
++                closeButton.widthAnchor.constraint(equalToConstant: 40),
+             ]
+         )
+ 
+diff --git a/firefox-ios/Client/Frontend/Browser/TabScrollController/TabProviderAdapter.swift b/firefox-ios/Client/Frontend/Browser/TabScrollController/TabProviderAdapter.swift
+index 7133b61041059..f51439f047c46 100644
+--- a/firefox-ios/Client/Frontend/Browser/TabScrollController/TabProviderAdapter.swift
++++ b/firefox-ios/Client/Frontend/Browser/TabScrollController/TabProviderAdapter.swift
+@@ -11,7 +11,7 @@ protocol TabProviderProtocol: AnyObject {
+     var isFindInPageMode: Bool { get }
+     var isLoading: Bool { get }
+     // Pull to refresh related
+-    var onLoadingStateChanged: (() -> Void)? { get set }
++    var onLoadingStateChanged: (@MainActor @Sendable () -> Void)? { get set }
+     func removePullToRefresh()
+     func addPullToRefresh(onReload: @escaping () -> Void)
+     func reloadPage()
+@@ -29,7 +29,7 @@ final class TabProviderAdapter: TabProviderProtocol {
+     var isLoading: Bool { tab.isLoading }
+     var scrollView: UIScrollView? { tab.webView?.scrollView }
+ 
+-    var onLoadingStateChanged: (() -> Void)? {
++    var onLoadingStateChanged: (@MainActor @Sendable () -> Void)? {
+         get { tab.onWebViewLoadingStateChanged }
+         set { tab.onWebViewLoadingStateChanged = newValue }
+     }
+diff --git a/firefox-ios/Client/Frontend/Onboarding/Protocols/OnboardingService.swift b/firefox-ios/Client/Frontend/Onboarding/Protocols/OnboardingService.swift
+index 3dfe809803bec..6f0e1fa730cf0 100644
+--- a/firefox-ios/Client/Frontend/Onboarding/Protocols/OnboardingService.swift
++++ b/firefox-ios/Client/Frontend/Onboarding/Protocols/OnboardingService.swift
+@@ -62,7 +62,9 @@ final class OnboardingService: FeatureFlaggable {
+         from cardName: String,
+         cards: [OnboardingKitCardInfoModel],
+         with activityEventHelper: ActivityEventHelper,
+-        completion: @escaping (Result<OnboardingFlowViewModel<OnboardingKitCardInfoModel>.TabAction, Error>) -> Void
++        completion: @Sendable @escaping @MainActor (
++            Result<OnboardingFlowViewModel<OnboardingKitCardInfoModel>.TabAction, Error>
++        ) -> Void
+     ) {
+         switch action {
+         case .requestNotifications:
+@@ -205,7 +207,7 @@ final class OnboardingService: FeatureFlaggable {
+ 
+     private func handleOpenInstructionsPopup(
+         from popupViewModel: OnboardingInstructionsPopupInfoModel<OnboardingInstructionsPopupActions>,
+-        completion: @escaping () -> Void
++        completion: @Sendable @escaping @MainActor () -> Void
+     ) {
+         presentDefaultBrowserPopup(from: popupViewModel, completion: completion)
+     }
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Mocks/MockTabProviderProtocol.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Mocks/MockTabProviderProtocol.swift
+index 8281701c0b908..4d76005b77bf6 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Mocks/MockTabProviderProtocol.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Mocks/MockTabProviderProtocol.swift
+@@ -12,7 +12,7 @@ final class MockTabProviderProtocol: TabProviderProtocol {
+     var isFindInPageMode = false
+     var isLoading = false
+ 
+-    var onLoadingStateChanged: (() -> Void)?
++    var onLoadingStateChanged: (@MainActor @Sendable () -> Void)?
+ 
+     var scrollView: UIScrollView?
+     var pullToRefreshAddCount = 0

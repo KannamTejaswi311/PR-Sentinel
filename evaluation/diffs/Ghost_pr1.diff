@@ -1,0 +1,481 @@
+diff --git a/ghost/core/core/boot.js b/ghost/core/core/boot.js
+index b091b097eedc..2c4ed3f1340e 100644
+--- a/ghost/core/core/boot.js
++++ b/ghost/core/core/boot.js
+@@ -310,12 +310,12 @@ async function initServices() {
+     debug('Begin: initServices');
+ 
+     debug('Begin: Services');
++    // NOTE: If you need to add dependencies for services, use npm install <package>
+     const identityTokens = require('./server/services/identity-tokens');
+     const stripe = require('./server/services/stripe');
+     const members = require('./server/services/members');
+     const tiers = require('./server/services/tiers');
+     const permissions = require('./server/services/permissions');
+-    const xmlrpc = require('./server/services/xmlrpc');
+     const slack = require('./server/services/slack');
+     const webhooks = require('./server/services/webhooks');
+     const scheduling = require('./server/adapters/scheduling');
+@@ -347,9 +347,9 @@ async function initServices() {
+     await stripe.init();
+ 
+     // NOTE: newsletter service and email service depend on email address service
+-    await emailAddressService.init(),
+ 
+     await Promise.all([
++        emailAddressService.init(),
+         identityTokens.init(),
+         memberAttribution.init(),
+         mentionsService.init(),
+@@ -361,15 +361,11 @@ async function initServices() {
+         postsPublic.init(),
+         membersEvents.init(),
+         permissions.init(),
+-        xmlrpc.listen(),
+-        slack.listen(),
+         audienceFeedback.init(),
+         emailService.init(),
+         emailAnalytics.init(),
+         webhooks.listen(),
+-        scheduling.init({
+-            apiUrl: urlUtils.urlFor('api', {type: 'admin'}, true)
+-        }),
++        scheduling.init(),
+         comments.init(),
+         linkTracking.init(),
+         emailSuppressionList.init(),
+diff --git a/ghost/core/core/server/services/xmlrpc.js b/ghost/core/core/server/services/xmlrpc.js
+deleted file mode 100644
+index 8d5e9c664f25..000000000000
+--- a/ghost/core/core/server/services/xmlrpc.js
++++ /dev/null
+@@ -1,134 +0,0 @@
+-const _ = require('lodash');
+-const xml = require('xml');
+-const config = require('../../shared/config');
+-const urlService = require('./url');
+-const errors = require('@tryghost/errors');
+-const tpl = require('@tryghost/tpl');
+-const logging = require('@tryghost/logging');
+-const request = require('@tryghost/request');
+-const settingsCache = require('../../shared/settings-cache');
+-
+-// Used to receive post.published model event
+-const events = require('../lib/common/events');
+-
+-const messages = {
+-    requestFailedError: 'The {service} service was unable to send a ping request, your site will continue to function.',
+-    requestFailedHelp: 'If you get this error repeatedly, please seek help on {url}.'
+-};
+-
+-const defaultPostSlugs = [
+-    'welcome',
+-    'the-editor',
+-    'using-tags',
+-    'managing-users',
+-    'private-sites',
+-    'advanced-markdown',
+-    'themes'
+-];
+-
+-// ToDo: Make this configurable
+-const pingList = [
+-    {
+-        url: 'http://rpc.pingomatic.com'
+-    }
+-];
+-
+-function ping(post) {
+-    let pingXML;
+-    const title = post.title;
+-    const url = urlService.getUrlByResourceId(post.id, {absolute: true});
+-
+-    if (post.type === 'page' || config.isPrivacyDisabled('useRpcPing') || settingsCache.get('is_private')) {
+-        return;
+-    }
+-
+-    // Don't ping for the default posts.
+-    // This also handles the case where during ghost's first run
+-    // models.init() inserts this post but permissions.init() hasn't
+-    // (can't) run yet.
+-    if (defaultPostSlugs.indexOf(post.slug) > -1) {
+-        return;
+-    }
+-
+-    // Build XML object.
+-    pingXML = xml({
+-        methodCall: [{
+-            methodName: 'weblogUpdates.ping'
+-        }, {
+-            params: [{
+-                param: [{
+-                    value: [{
+-                        string: title
+-                    }]
+-                }]
+-            }, {
+-                param: [{
+-                    value: [{
+-                        string: url
+-                    }]
+-                }]
+-            }]
+-        }]
+-    }, {declaration: true});
+-
+-    // Ping each of the defined services.
+-    _.each(pingList, function (pingHost) {
+-        const options = {
+-            body: pingXML,
+-            timeout: {
+-                request: 2 * 1000
+-            }
+-        };
+-
+-        const goodResponse = /<member>[\s]*<name>flerror<\/name>[\s]*<value>[\s]*<boolean>0<\/boolean><\/value><\/member>/;
+-        const errorMessage = /<name>(?:faultString|message)<\/name>[\s]*<value>[\s]*<string>([^<]+)/;
+-
+-        request(pingHost.url, options)
+-            .then(function (res) {
+-                if (!goodResponse.test(res.body)) {
+-                    const matches = res.body.match(errorMessage);
+-                    const message = matches ? matches[1] : res.body;
+-                    throw new errors.InternalServerError({message});
+-                }
+-            })
+-            .catch(function (err) {
+-                let error;
+-                if (err.statusCode === 429) {
+-                    error = new errors.TooManyRequestsError({
+-                        err,
+-                        message: err.message,
+-                        context: tpl(messages.requestFailedError, {service: 'xmlrpc'}),
+-                        help: tpl(messages.requestFailedHelp, {url: 'https://ghost.org/docs/'})
+-                    });
+-                } else {
+-                    error = new errors.InternalServerError({
+-                        err: err,
+-                        message: err.message,
+-                        context: tpl(messages.requestFailedError, {service: 'xmlrpc'}),
+-                        help: tpl(messages.requestFailedHelp, {url: 'https://ghost.org/docs/'})
+-                    });
+-                }
+-                logging.error(error);
+-            });
+-    });
+-}
+-
+-function xmlrpcListener(model, options) {
+-    // CASE: do not rpc ping if we import a database
+-    // TODO: refactor post.published events to never fire on importing
+-    if (options && options.importing) {
+-        return;
+-    }
+-
+-    ping(model.toJSON());
+-}
+-
+-function listen() {
+-    events
+-        .removeListener('post.published', xmlrpcListener)
+-        .on('post.published', xmlrpcListener);
+-}
+-
+-module.exports = {
+-    listen: listen
+-};
+diff --git a/ghost/core/core/shared/config/env/config.development.json b/ghost/core/core/shared/config/env/config.development.json
+index d9551493f513..f99014c3ae9d 100644
+--- a/ghost/core/core/shared/config/env/config.development.json
++++ b/ghost/core/core/shared/config/env/config.development.json
+@@ -23,7 +23,6 @@
+         "contentPath": "content/"
+     },
+     "privacy": {
+-        "useRpcPing": false,
+         "useUpdateCheck": true
+     },
+     "useMinFiles": false,
+diff --git a/ghost/core/test/unit/server/services/xmlrpc.test.js b/ghost/core/test/unit/server/services/xmlrpc.test.js
+deleted file mode 100644
+index 12a719caf62b..000000000000
+--- a/ghost/core/test/unit/server/services/xmlrpc.test.js
++++ /dev/null
+@@ -1,277 +0,0 @@
+-const sinon = require('sinon');
+-const _ = require('lodash');
+-const nock = require('nock');
+-const rewire = require('rewire');
+-const testUtils = require('../../../utils');
+-const configUtils = require('../../../utils/config-utils');
+-const xmlrpc = rewire('../../../../core/server/services/xmlrpc');
+-const events = require('../../../../core/server/lib/common/events');
+-const logging = require('@tryghost/logging');
+-
+-describe('XMLRPC', function () {
+-    let eventStub;
+-    let loggingStub;
+-
+-    beforeEach(function () {
+-        eventStub = sinon.stub(events, 'on');
+-        configUtils.set('privacy:useRpcPing', true);
+-    });
+-
+-    afterEach(async function () {
+-        sinon.restore();
+-        await configUtils.restore();
+-        nock.cleanAll();
+-    });
+-
+-    it('listen() should initialise event correctly', function () {
+-        xmlrpc.listen();
+-        eventStub.calledOnce.should.be.true();
+-        eventStub.calledWith('post.published', xmlrpc.__get__('xmlrpcListener')).should.be.true();
+-    });
+-
+-    it('listener() calls ping() with toJSONified model', function () {
+-        const testPost = _.clone(testUtils.DataGenerator.Content.posts[2]);
+-
+-        const testModel = {
+-            toJSON: function () {
+-                return testPost;
+-            }
+-        };
+-
+-        const pingStub = sinon.stub();
+-        const resetXmlRpc = xmlrpc.__set__('ping', pingStub);
+-        const listener = xmlrpc.__get__('xmlrpcListener');
+-
+-        listener(testModel);
+-
+-        pingStub.calledOnce.should.be.true();
+-        pingStub.calledWith(testPost).should.be.true();
+-
+-        // Reset xmlrpc ping method
+-        resetXmlRpc();
+-    });
+-
+-    it('listener() does not call ping() when importing', function () {
+-        const testPost = _.clone(testUtils.DataGenerator.Content.posts[2]);
+-
+-        const testModel = {
+-            toJSON: function () {
+-                return testPost;
+-            }
+-        };
+-
+-        const pingStub = sinon.stub();
+-        const resetXmlRpc = xmlrpc.__set__('ping', pingStub);
+-        const listener = xmlrpc.__get__('xmlrpcListener');
+-
+-        listener(testModel, {importing: true});
+-
+-        pingStub.calledOnce.should.be.false();
+-
+-        // Reset xmlrpc ping method
+-        resetXmlRpc();
+-    });
+-
+-    describe('ping()', function () {
+-        const ping = xmlrpc.__get__('ping');
+-
+-        it('with a post should execute two pings', function (done) {
+-            loggingStub = sinon.stub(logging, 'error');
+-            const ping1 = nock('http://rpc.pingomatic.com').post('/').reply(200);
+-            const testPost = _.clone(testUtils.DataGenerator.Content.posts[2]);
+-
+-            ping(testPost);
+-
+-            (function retry() {
+-                if (ping1.isDone()) {
+-                    return done();
+-                }
+-
+-                setTimeout(retry, 100);
+-            }());
+-        });
+-
+-        it('with default post should not execute pings', function () {
+-            const ping1 = nock('http://rpc.pingomatic.com').post('/').reply(200);
+-            const testPost = _.clone(testUtils.DataGenerator.Content.posts[2]);
+-
+-            testPost.slug = 'welcome';
+-
+-            ping(testPost);
+-
+-            ping1.isDone().should.be.false();
+-        });
+-
+-        it('with a page should not execute pings', function () {
+-            const ping1 = nock('http://rpc.pingomatic.com').post('/').reply(200);
+-            const testPage = _.clone(testUtils.DataGenerator.Content.posts[5]);
+-
+-            ping(testPage);
+-
+-            ping1.isDone().should.be.false();
+-        });
+-
+-        it('when privacy.useRpcPing is false should not execute pings', function () {
+-            const ping1 = nock('http://rpc.pingomatic.com').post('/').reply(200);
+-            const testPost = _.clone(testUtils.DataGenerator.Content.posts[2]);
+-
+-            configUtils.set({privacy: {useRpcPing: false}});
+-
+-            ping(testPost);
+-
+-            ping1.isDone().should.be.false();
+-        });
+-
+-        it('captures && logs errors from requests', function (done) {
+-            const testPost = _.clone(testUtils.DataGenerator.Content.posts[2]);
+-            const ping1 = nock('http://rpc.pingomatic.com').post('/').reply(400);
+-            loggingStub = sinon.stub(logging, 'error');
+-
+-            ping(testPost);
+-
+-            (function retry() {
+-                if (ping1.isDone()) {
+-                    loggingStub.calledOnce.should.eql(true);
+-                    loggingStub.args[0][0].message.should.containEql('Response code 400');
+-                    return done();
+-                }
+-
+-                setTimeout(retry, 100);
+-            }());
+-        });
+-
+-        it('captures && logs XML errors from requests with newlines between tags', function (done) {
+-            const testPost = _.clone(testUtils.DataGenerator.Content.posts[2]);
+-
+-            const ping1 = nock('http://rpc.pingomatic.com').post('/').reply(200,
+-                `<?xml version="1.0"?>
+-             <methodResponse>
+-               <params>
+-                 <param>
+-                   <value>
+-                     <struct>
+-                       <member>
+-                         <name>flerror</name>
+-                         <value>
+-                           <boolean>1</boolean>
+-                         </value>
+-                       </member>
+-                       <member>
+-                         <name>message</name>
+-                         <value>
+-                          <string>Uh oh. A wee lil error.</string>
+-                         </value>
+-                       </member>
+-                     </struct>
+-                   </value>
+-                 </param>
+-               </params>
+-             </methodResponse>`);
+-
+-            loggingStub = sinon.stub(logging, 'error');
+-
+-            ping(testPost);
+-
+-            (function retry() {
+-                if (ping1.isDone()) {
+-                    loggingStub.calledOnce.should.eql(true);
+-                    loggingStub.args[0][0].message.should.equal('Uh oh. A wee lil error.');
+-                    return done();
+-                }
+-
+-                setTimeout(retry, 100);
+-            }());
+-        });
+-
+-        it('captures && logs XML errors from requests without newlines between tags', function (done) {
+-            const testPost = _.clone(testUtils.DataGenerator.Content.posts[2]);
+-
+-            const ping1 = nock('http://rpc.pingomatic.com').post('/').reply(200,
+-                (`<?xml version="1.0"?>
+-             <methodResponse>
+-               <params>
+-                 <param>
+-                   <value>
+-                     <struct>
+-                       <member>
+-                         <name>flerror</name>
+-                         <value>
+-                           <boolean>1</boolean>
+-                         </value>
+-                       </member>
+-                       <member>
+-                         <name>message</name>
+-                         <value>
+-                          <string>Uh oh. A wee lil error.</string>
+-                         </value>
+-                       </member>
+-                     </struct>
+-                   </value>
+-                 </param>
+-               </params>
+-             </methodResponse>`).replace('\n', ''));
+-
+-            loggingStub = sinon.stub(logging, 'error');
+-
+-            ping(testPost);
+-
+-            (function retry() {
+-                if (ping1.isDone()) {
+-                    loggingStub.calledOnce.should.eql(true);
+-                    loggingStub.args[0][0].message.should.equal('Uh oh. A wee lil error.');
+-                    return done();
+-                }
+-
+-                setTimeout(retry, 100);
+-            }());
+-        });
+-
+-        it('does not error with responses that have 0 as flerror value', function (done) {
+-            const testPost = _.clone(testUtils.DataGenerator.Content.posts[2]);
+-
+-            const ping1 = nock('http://rpc.pingomatic.com').post('/').reply(200,
+-                `<?xml version="1.0"?>
+-                <methodResponse>
+-                  <params>
+-                    <param>
+-                      <value>
+-                        <struct>
+-                          <member><name>flerror</name><value><boolean>0</boolean></value></member>
+-                          <member><name>message</name><value><string>Pings being forwarded to 9 services!</string></value></member>
+-                </struct>
+-                      </value>
+-                    </param>
+-                  </params>
+-                </methodResponse>`);
+-
+-            loggingStub = sinon.stub(logging, 'error');
+-
+-            ping(testPost);
+-
+-            (function retry() {
+-                if (ping1.isDone()) {
+-                    loggingStub.calledOnce.should.eql(false);
+-                    return done();
+-                }
+-
+-                setTimeout(retry, 100);
+-            }());
+-        });
+-
+-        it('should behave correctly when getting a 429', function (done) {
+-            loggingStub = sinon.stub(logging, 'error');
+-            const ping1 = nock('http://rpc.pingomatic.com').post('/').reply(429);
+-            const testPost = _.clone(testUtils.DataGenerator.Content.posts[2]);
+-
+-            ping(testPost);
+-
+-            (function retry() {
+-                if (ping1.isDone()) {
+-                    return done();
+-                }
+-
+-                setTimeout(retry, 100);
+-            }());
+-        });
+-    });
+-});

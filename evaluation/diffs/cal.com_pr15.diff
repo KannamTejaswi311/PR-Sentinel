@@ -1,0 +1,253 @@
+diff --git a/apps/web/test/lib/getSchedule/expects.ts b/apps/web/test/lib/getSchedule/expects.ts
+index 8c84c99f080f..15a01218d6e3 100644
+--- a/apps/web/test/lib/getSchedule/expects.ts
++++ b/apps/web/test/lib/getSchedule/expects.ts
+@@ -1,7 +1,7 @@
+ import { diff } from "jest-diff";
+ import { expect } from "vitest";
+ 
+-import type { Slot } from "@calcom/trpc/server/routers/viewer/slots/types";
++import type { Slot } from "@calcom/atoms/booker/types";
+ 
+ export const expectedSlotsForSchedule = {
+   IstWorkHours: {
+diff --git a/biome.json b/biome.json
+index 4d0682229da2..44cc714769f3 100644
+--- a/biome.json
++++ b/biome.json
+@@ -337,17 +337,17 @@
+                 "patterns": [
+                   {
+                     "group": [
+-                      "@calcom/trpc/react",
+-                      "@calcom/trpc/react/**"
++                      "@calcom/trpc",
++                      "@calcom/trpc/**"
+                     ],
+-                    "message": "atoms package should not import from @calcom/trpc/react."
++                    "message": "atoms package should not import from @calcom/trpc."
+                   },
+                   {
+                     "group": [
+-                      "../../trpc/react",
+-                      "../../trpc/react/**"
++                      "../../trpc",
++                      "../../trpc/**"
+                     ],
+-                    "message": "atoms package should not import from trpc/react."
++                    "message": "atoms package should not import from trpc."
+                   }
+                 ]
+               }
+diff --git a/packages/platform/atoms/booker/types.ts b/packages/platform/atoms/booker/types.ts
+index 29c35a6800c8..c34adff8ec37 100644
+--- a/packages/platform/atoms/booker/types.ts
++++ b/packages/platform/atoms/booker/types.ts
+@@ -11,10 +11,17 @@ import type {
+   ApiSuccessResponseWithoutData,
+   RoutingFormSearchParams,
+ } from "@calcom/platform-types";
+-import type { Slot } from "@calcom/trpc/server/routers/viewer/slots/types";
+ 
+ import type { UseCreateBookingInput } from "../hooks/bookings/useCreateBooking";
+ 
++export type Slot = {
++  time: string;
++  userIds?: string[];
++  attendees?: number;
++  bookingUid?: string;
++  users?: string[];
++};
++
+ // Type that includes only the data values from BookerStore (excluding functions)
+ export type BookerStoreValues = Omit<
+   BookerStore,
+@@ -104,3 +111,26 @@ export type BookerPlatformWrapperAtomPropsForTeam = BookerPlatformWrapperAtomPro
+   routingFormSearchParams?: RoutingFormSearchParams;
+   rrHostSubsetIds?: number[];
+ };
++
++type SlotInfo = {
++  time: string;
++  attendees?: number;
++  bookingUid?: string;
++  away?: boolean;
++  fromUser?: {
++    id: string;
++    displayName: string | null;
++  };
++  toUser?: {
++    id: number;
++    username: string | null;
++    displayName: string | null;
++  };
++  reason?: string;
++  emoji?: string;
++  showNotePublicly?: boolean;
++};
++
++export type GetAvailableSlotsResponse = {
++  slots: Record<string, SlotInfo[]>;
++};
+diff --git a/packages/platform/atoms/hooks/schedules/types.ts b/packages/platform/atoms/hooks/schedules/types.ts
+new file mode 100644
+index 000000000000..9b6ed0e5e360
+--- /dev/null
++++ b/packages/platform/atoms/hooks/schedules/types.ts
+@@ -0,0 +1,50 @@
++type Schedule = {
++  id: number;
++  userId: number;
++  name: string;
++  timeZone: string | null;
++};
++
++export type CreateScheduleHandlerReturn = {
++  schedule: Schedule;
++};
++
++export type DuplicateScheduleHandlerReturn = {
++  schedule: Schedule;
++};
++
++export type GetAvailabilityListHandlerReturn = {
++  schedules: (Omit<Schedule, "userId"> & {
++    availability: {
++      id: number;
++      userId: number | null;
++      eventTypeId: number | null;
++      days: string[];
++      startTime: Date;
++      endTime: Date;
++      date: Date | null;
++      scheduleId: number | null;
++    }[];
++    isDefault: boolean;
++  })[];
++};
++
++export type CreateScheduleInput = {
++  name: string;
++  schedule?: { start: Date; end: Date }[][];
++  eventTypeId?: number;
++};
++
++export function validateCreateScheduleInput(input: unknown): CreateScheduleInput {
++  if (!input || typeof input !== 'object') {
++    throw new Error('Invalid input: must be an object');
++  }
++
++  const data = input as Record<string, unknown>;
++
++  if (typeof data.name !== 'string' || data.name.length === 0) {
++    throw new Error('Invalid input: name must be a non-empty string');
++  }
++
++  return data as CreateScheduleInput;
++}
+diff --git a/packages/platform/atoms/hooks/schedules/useAtomCreateSchedule.ts b/packages/platform/atoms/hooks/schedules/useAtomCreateSchedule.ts
+index ef9d7fac11f0..27538b03850c 100644
+--- a/packages/platform/atoms/hooks/schedules/useAtomCreateSchedule.ts
++++ b/packages/platform/atoms/hooks/schedules/useAtomCreateSchedule.ts
+@@ -2,10 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
+ 
+ import { SUCCESS_STATUS } from "@calcom/platform-constants";
+ import type { ApiResponse, ApiErrorResponse, ApiSuccessResponse } from "@calcom/platform-types";
+-import type { CreateScheduleHandlerReturn } from "@calcom/trpc/server/routers/viewer/availability/schedule/create.handler";
+-import { TCreateInputSchema as CreateScheduleSchema } from "@calcom/trpc/server/routers/viewer/availability/schedule/create.schema";
+ 
+ import http from "../../lib/http";
++import type { CreateScheduleHandlerReturn, CreateScheduleInput as CreateScheduleSchema } from "./types";
+ import { QUERY_KEY as SchedulesQueryKey } from "./useAtomGetAllSchedules";
+ import { QUERY_KEY as ScheduleQueryKey } from "./useAtomSchedule";
+ 
+diff --git a/packages/platform/atoms/hooks/schedules/useAtomDuplicateSchedule.ts b/packages/platform/atoms/hooks/schedules/useAtomDuplicateSchedule.ts
+index 2d7458485880..8c443f5c71cd 100644
+--- a/packages/platform/atoms/hooks/schedules/useAtomDuplicateSchedule.ts
++++ b/packages/platform/atoms/hooks/schedules/useAtomDuplicateSchedule.ts
+@@ -2,9 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
+ 
+ import { SUCCESS_STATUS } from "@calcom/platform-constants";
+ import type { ApiResponse, ApiErrorResponse } from "@calcom/platform-types";
+-import type { DuplicateScheduleHandlerReturn } from "@calcom/trpc/server/routers/viewer/availability/schedule/duplicate.handler";
+ 
+ import http from "../../lib/http";
++import type { DuplicateScheduleHandlerReturn } from "./types";
+ import { QUERY_KEY as ScheduleQueryKey } from "./useAtomSchedule";
+ 
+ interface useAtomDuplicateScheduleOptions {
+diff --git a/packages/platform/atoms/hooks/schedules/useAtomGetAllSchedules.ts b/packages/platform/atoms/hooks/schedules/useAtomGetAllSchedules.ts
+index f0b1a1327ac7..e785ecee9d7e 100644
+--- a/packages/platform/atoms/hooks/schedules/useAtomGetAllSchedules.ts
++++ b/packages/platform/atoms/hooks/schedules/useAtomGetAllSchedules.ts
+@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
+ 
+ import { SUCCESS_STATUS } from "@calcom/platform-constants";
+ import type { ApiResponse } from "@calcom/platform-types";
+-import type { GetAvailabilityListHandlerReturn } from "@calcom/trpc/server/routers/viewer/availability/list.handler";
+ 
+ import http from "../../lib/http";
++import type { GetAvailabilityListHandlerReturn } from "./types";
+ import { useAtomsContext } from "../useAtomsContext";
+ 
+ export const QUERY_KEY = "use-atom-user-schedules";
+diff --git a/packages/platform/atoms/hooks/useAvailableSlots.ts b/packages/platform/atoms/hooks/useAvailableSlots.ts
+index e2ac30bab539..11f93960ed02 100644
+--- a/packages/platform/atoms/hooks/useAvailableSlots.ts
++++ b/packages/platform/atoms/hooks/useAvailableSlots.ts
+@@ -6,9 +6,9 @@ import type {
+   ApiResponse,
+   ApiSuccessResponse,
+ } from "@calcom/platform-types";
+-import type { GetAvailableSlotsResponse } from "@calcom/trpc/server/routers/viewer/slots/util";
+ 
+ import http from "../lib/http";
++import type { GetAvailableSlotsResponse } from "../booker/types";
+ 
+ export const QUERY_KEY = "get-available-slots";
+ 
+diff --git a/packages/platform/atoms/package.json b/packages/platform/atoms/package.json
+index 48fe012df14d..f7e77ed84317 100644
+--- a/packages/platform/atoms/package.json
++++ b/packages/platform/atoms/package.json
+@@ -55,7 +55,7 @@
+     },
+     "./add-members-switch/AddMembersWithSwitchPlatformWrapper": "./add-members-switch/AddMembersWithSwitchPlatformWrapper.tsx",
+     "./availability/AvailabilitySettings": "./availability/AvailabilitySettings.tsx",
+-    "./booker": "./booker/index.ts",
++    "./booker/types": "./booker/types.ts",
+     "./selected-calendars/SelectedCalendarsSettings": "./selected-calendars/SelectedCalendarsSettings.tsx",
+     "./components/ui/shell": "./src/components/ui/shell.tsx",
+     "./dist/index.ts": "./index.ts",
+diff --git a/packages/platform/atoms/tsconfig.json b/packages/platform/atoms/tsconfig.json
+index c53c46f20699..8ed76d79748f 100644
+--- a/packages/platform/atoms/tsconfig.json
++++ b/packages/platform/atoms/tsconfig.json
+@@ -38,8 +38,6 @@
+     "../../dayjs",
+     "../../prisma/zod-utils.ts",
+     "../../prisma/zod",
+-    "../../trpc/server/routers/viewer/slots",
+-    "../../trpc/server/types",
+     "../../features/eventtypes",
+     "../../features/schedules",
+     "../../features/bookings/Booker",
+diff --git a/packages/trpc/server/routers/viewer/slots/types.ts b/packages/trpc/server/routers/viewer/slots/types.ts
+index a2ccf214d177..01320ea4f4a1 100644
+--- a/packages/trpc/server/routers/viewer/slots/types.ts
++++ b/packages/trpc/server/routers/viewer/slots/types.ts
+@@ -76,14 +76,6 @@ export const reserveSlotSchema = z
+     "Either slotUtcStartDate, slotUtcEndDate or eventTypeId should be filled in."
+   );
+ 
+-export type Slot = {
+-  time: string;
+-  userIds?: number[];
+-  attendees?: number;
+-  bookingUid?: string;
+-  users?: string[];
+-};
+-
+ export const removeSelectedSlotSchema = z.object({
+   uid: z.string().nullable(),
+ });

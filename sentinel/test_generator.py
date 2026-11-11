@@ -4,7 +4,6 @@ Generates comprehensive unit, boundary, negative, and security test scenarios
 based on synthesized code review findings and modified source code.
 """
 
-import ast
 import re
 from typing import Any, Dict, List, Optional
 
@@ -34,9 +33,10 @@ class AutomatedTestGenerator:
         for f in findings:
             title_lower = f.get("title", "").lower()
             target_func = self._guess_function_for_finding(f, modified_functions)
+            finding_id = f.get("finding_id")
 
             if "sql" in title_lower or "injection" in title_lower:
-                recommendations.append({
+                rec = {
                     "test_type": "Security / Negative Test",
                     "target_component": target_func,
                     "scenario": "SQL Injection Resistance & Parameterization Verification",
@@ -50,10 +50,13 @@ class AutomatedTestGenerator:
                         f"    assert result is None or result.get('username') == malicious_payload"
                     ),
                     "status": "Recommended (Not Executed)",
-                })
+                }
+                if finding_id:
+                    rec["finding_id"] = finding_id
+                recommendations.append(rec)
 
             elif "command" in title_lower:
-                recommendations.append({
+                rec = {
                     "test_type": "Security Test",
                     "target_component": target_func,
                     "scenario": "Shell Command Injection Prevention",
@@ -67,10 +70,13 @@ class AutomatedTestGenerator:
                         f"        {target_func}(payload)"
                     ),
                     "status": "Recommended (Not Executed)",
-                })
+                }
+                if finding_id:
+                    rec["finding_id"] = finding_id
+                recommendations.append(rec)
 
             elif "secret" in title_lower or "credential" in title_lower or "password" in title_lower:
-                recommendations.append({
+                rec = {
                     "test_type": "Secret Scanning Test",
                     "target_component": target_func,
                     "scenario": "Environment Variable Secret Loading Verification",
@@ -84,10 +90,13 @@ class AutomatedTestGenerator:
                         f"    assert res is not None"
                     ),
                     "status": "Recommended (Not Executed)",
-                })
+                }
+                if finding_id:
+                    rec["finding_id"] = finding_id
+                recommendations.append(rec)
 
             elif "zero" in title_lower or "division" in title_lower:
-                recommendations.append({
+                rec = {
                     "test_type": "Boundary / Edge-Case Test",
                     "target_component": target_func,
                     "scenario": "Division by Zero Boundary Guard",
@@ -100,7 +109,10 @@ class AutomatedTestGenerator:
                         f"        {target_func}(divisor=0)"
                     ),
                     "status": "Recommended (Not Executed)",
-                })
+                }
+                if finding_id:
+                    rec["finding_id"] = finding_id
+                recommendations.append(rec)
 
         # 3. Generate baseline unit & boundary tests for all modified functions
         for func_name in modified_functions:
@@ -148,13 +160,17 @@ class AutomatedTestGenerator:
         return unique
 
     def _extract_modified_functions(self, diff_content: str) -> List[str]:
-        """Parse diff to find names of functions defined or touched."""
+        """Parse diff to find names of functions defined or touched in added/modified hunks."""
         funcs = []
         for line in diff_content.splitlines():
-            # Match def function_name(...)
-            m = re.search(r"def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", line)
-            if m:
-                funcs.append(m.group(1))
+            # Skip file header diff lines
+            if line.startswith("+++") or line.startswith("---"):
+                continue
+            # Match def function_name(...) on added lines or hunk headers
+            if line.startswith("+") or line.startswith("@@"):
+                m = re.search(r"def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", line)
+                if m:
+                    funcs.append(m.group(1))
 
         if not funcs:
             funcs.append("main_handler")

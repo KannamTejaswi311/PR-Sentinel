@@ -2,6 +2,7 @@
 PR-Sentinel: Module 3 - Static Code Analysis Engine
 Integrates Bandit, Flake8, and Python AST analysis to detect deterministic
 security vulnerabilities, code style violations, and logical flaws.
+Adheres to Frozen Experimental Protocol v1.0 and Amendment v1.1.
 """
 
 import ast
@@ -12,61 +13,136 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+from sentinel.schemas import (
+    ModelFinding,
+    FindingCategory,
+    SeverityLevel,
+    ExecutionStatus,
+    FindingGranularity,
+)
 
 
 class StaticAnalyzer:
     """
-    Orchestrates static analysis using Bandit, Flake8, and AST checks,
-    normalizing findings into a unified schema for multi-agent review and synthesis.
+    Orchestrates static analysis using Bandit, Flake8, and AST checks across
+    all files and hunks in a multi-file unified diff.
     """
+
+    PYTHON_EXTENSIONS = {".py"}
+    SUPPORTED_EXTENSIONS = {".py"}
 
     def __init__(self, python_exe: Optional[str] = None):
         self.python_exe = python_exe or sys.executable
 
-    def analyze_diff(self, diff_content: str, filename: str = "patch.py") -> List[Dict[str, Any]]:
+    def analyze_diff(self, diff_content: str, filename: str = "patch.py", pr_id: str = "pr_unknown") -> List[Dict[str, Any]]:
         """
-        Analyze code diff by reconstructing target file content and running
-        deterministic static analysis tools.
+        Analyze code diff by reconstructing target file content across all modified files
+        and hunks, running deterministic static analysis tools.
         """
         findings: List[Dict[str, Any]] = []
-
-        # 1. Extract added / modified code blocks from diff
-        extracted_code, target_file, line_offset = self._extract_code_from_diff(diff_content, filename)
-
-        if not extracted_code.strip():
+        if not diff_content or not diff_content.strip():
             return findings
 
-        # 2. Run AST-based structural code analysis
-        ast_findings = self._run_ast_analysis(extracted_code, target_file, line_offset)
-        findings.extend(ast_findings)
+        # Split multi-file diff into per-file chunks
+        file_diffs = self._split_multi_file_diff(diff_content, default_filename=filename)
 
-        # 3. Create a temporary file to run Bandit and Flake8
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            suffix=Path(target_file).suffix or ".py",
-            delete=False,
-            encoding="utf-8"
-        ) as tmp:
-            tmp.write(extracted_code)
-            tmp_path = tmp.name
+        for file_path, file_diff_content in file_diffs.items():
+            ext = Path(file_path).suffix.lower()
 
-        try:
-            # 4. Run Bandit security analysis
-            bandit_findings = self._run_bandit(tmp_path, target_file, line_offset)
-            findings.extend(bandit_findings)
+            # Handle unsupported languages explicitly per protocol
+            if ext and ext not in self.PYTHON_EXTENSIONS:
+                findings.append({
+                    "source": "StaticAnalyzer",
+                    "rule_id": "LANG_UNSUPPORTED",
+                    "title": f"Unsupported Language ({ext})",
+                    "description": f"Static analysis currently supports Python. File '{file_path}' has unsupported extension '{ext}'.",
+                    "severity": "INFORMATIONAL",
+                    "confidence": "HIGH",
+                    "file": file_path,
+                    "line": 1,
+                    "evidence": "",
+                    "recommendation": f"Add external static analyzer for '{ext}' (e.g. ESLint, SwiftLint, Clippy).",
+                    "category": FindingCategory.CONVENTION.value,
+                    "execution_status": ExecutionStatus.UNSUPPORTED_LANGUAGE.value,
+                    "granularity": FindingGranularity.FILE.value,
+                })
+                continue
 
-            # 5. Run Flake8 code quality & style analysis
-            flake8_findings = self._run_flake8(tmp_path, target_file, line_offset)
-            findings.extend(flake8_findings)
-        finally:
+            # Extract added code with hunk-accurate line mapping
+            extracted_code, line_map = self._extract_code_with_line_map(file_diff_content, file_path)
+
+            if not extracted_code.strip():
+                continue
+
+            # 1. Run AST-based structural code analysis
+            ast_findings = self._run_ast_analysis(extracted_code, file_path, line_map)
+            findings.extend(ast_findings)
+
+            # 2. Create temporary file for Bandit and Flake8
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                suffix=".py",
+                delete=False,
+                encoding="utf-8"
+            ) as tmp:
+                tmp.write(extracted_code)
+                tmp_path = tmp.name
+
             try:
-                os.remove(tmp_path)
-            except OSError:
-                pass
+                # 3. Run Bandit security analysis
+                bandit_findings = self._run_bandit(tmp_path, file_path, line_map)
+                findings.extend(bandit_findings)
 
-        # 6. Deduplicate findings
+                # 4. Run Flake8 code quality & style analysis
+                flake8_findings = self._run_flake8(tmp_path, file_path, line_map)
+                findings.extend(flake8_findings)
+            finally:
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
+
         return self._deduplicate_findings(findings)
+
+    def analyze_diff_to_findings(self, diff_content: str, pr_id: str = "pr_unknown", filename: str = "patch.py") -> List[ModelFinding]:
+        """Convert findings to standard ModelFinding instances."""
+        raw_findings = self.analyze_diff(diff_content, filename=filename, pr_id=pr_id)
+        model_findings: List[ModelFinding] = []
+
+        for f in raw_findings:
+            src = f.get("source", "static_analyzer")
+            if "bandit" in src.lower():
+                source_tag = "static_bandit"
+            elif "flake8" in src.lower():
+                source_tag = "static_flake8"
+            else:
+                source_tag = "static_ast"
+
+            cat = f.get("category", FindingCategory.CODE_QUALITY.value)
+            if "security" in f.get("title", "").lower() or "sql" in f.get("title", "").lower() or "secret" in f.get("title", "").lower():
+                cat = FindingCategory.SECURITY.value
+            elif "syntax" in f.get("title", "").lower() or "runtime" in f.get("title", "").lower():
+                cat = FindingCategory.BUG.value
+
+            model_findings.append(ModelFinding(
+                pr_id=pr_id,
+                source=source_tag,
+                category=cat,
+                file_path=f.get("file", filename),
+                line_start=f.get("line", 1),
+                line_end=f.get("line", 1),
+                evidence=f.get("evidence", ""),
+                rule_id=f.get("rule_id"),
+                severity=f.get("severity", SeverityLevel.MEDIUM.value),
+                description=f.get("description", ""),
+                recommendation=f.get("recommendation", ""),
+                execution_status=f.get("execution_status", ExecutionStatus.SUCCESS.value),
+                granularity=f.get("granularity", FindingGranularity.STATEMENT.value),
+            ))
+
+        return model_findings
 
     def analyze_file(self, file_path: str) -> List[Dict[str, Any]]:
         """Run static analysis on an existing repository file."""
@@ -75,74 +151,137 @@ class StaticAnalyzer:
         if not path.is_file():
             return findings
 
-        try:
-            code = path.read_text(encoding="utf-8", errors="replace")
-        except Exception:
+        ext = path.suffix.lower()
+        if ext not in self.PYTHON_EXTENSIONS:
+            findings.append({
+                "source": "StaticAnalyzer",
+                "rule_id": "LANG_UNSUPPORTED",
+                "title": f"Unsupported Language ({ext})",
+                "description": f"File '{file_path}' has unsupported extension '{ext}'.",
+                "severity": "INFORMATIONAL",
+                "confidence": "HIGH",
+                "file": file_path,
+                "line": 1,
+                "evidence": "",
+                "recommendation": "Use language-specific linter.",
+                "execution_status": ExecutionStatus.UNSUPPORTED_LANGUAGE.value,
+            })
             return findings
 
-        findings.extend(self._run_ast_analysis(code, file_path, line_offset=0))
-        findings.extend(self._run_bandit(file_path, file_path, line_offset=0))
-        findings.extend(self._run_flake8(file_path, file_path, line_offset=0))
+        try:
+            code = path.read_text(encoding="utf-8", errors="replace")
+        except Exception as e:
+            findings.append({
+                "source": "StaticAnalyzer",
+                "rule_id": "READ_ERROR",
+                "title": "File Read Error",
+                "description": str(e),
+                "severity": "HIGH",
+                "confidence": "HIGH",
+                "file": file_path,
+                "line": 1,
+                "evidence": "",
+                "recommendation": "Verify file permissions.",
+                "execution_status": ExecutionStatus.TOOL_ERROR.value,
+            })
+            return findings
+
+        # Identity line map for full files
+        line_map = {i: i for i in range(1, len(code.splitlines()) + 2)}
+        findings.extend(self._run_ast_analysis(code, file_path, line_map))
+        findings.extend(self._run_bandit(file_path, file_path, line_map))
+        findings.extend(self._run_flake8(file_path, file_path, line_map))
 
         return self._deduplicate_findings(findings)
 
-    def _extract_code_from_diff(self, diff_content: str, default_filename: str) -> tuple[str, str, int]:
-        """
-        Extract code additions from unified diff and identify target filename.
-        """
-        target_file = default_filename
-        # Check diff headers for filename
-        file_match = re.search(r"^\+\+\+\s+b/(.+)$", diff_content, re.MULTILINE)
-        if file_match:
-            target_file = file_match.group(1).strip()
-        else:
-            git_match = re.search(r"^diff --git a/.+ b/(.+)$", diff_content, re.MULTILINE)
-            if git_match:
-                target_file = git_match.group(1).strip()
+    def _split_multi_file_diff(self, diff_content: str, default_filename: str) -> Dict[str, str]:
+        """Split a unified diff containing multiple files into a mapping of file_path -> file_diff."""
+        file_diffs: Dict[str, List[str]] = {}
+        current_file = default_filename
+        current_lines: List[str] = []
 
-        # Parse hunks to get added code and starting line number
-        lines = diff_content.splitlines()
-        first_line = 1
-        code_lines = []
+        diff_file_pattern = re.compile(r"^diff --git a/(.+?)\s+b/(.+)$")
+        plus_file_pattern = re.compile(r"^\+\+\+\s+(?:b/)?(.+)$")
 
-        hunk_started = False
-        for line in lines:
-            hunk_match = re.search(r"@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@", line)
+        for line in diff_content.splitlines():
+            m_diff = diff_file_pattern.match(line)
+            m_plus = plus_file_pattern.match(line)
+
+            if m_diff:
+                if current_lines:
+                    file_diffs.setdefault(current_file, []).extend(current_lines)
+                    current_lines = []
+                current_file = m_diff.group(2).strip()
+                current_lines.append(line)
+            elif m_plus and not line.startswith("+++ /dev/null"):
+                # If diff --git was not present, catch +++ b/
+                candidate = m_plus.group(1).strip()
+                if candidate != current_file and not any(current_file in k for k in file_diffs):
+                    current_file = candidate
+                current_lines.append(line)
+            else:
+                current_lines.append(line)
+
+        if current_lines:
+            file_diffs.setdefault(current_file, []).extend(current_lines)
+
+        return {f: "\n".join(lines) for f, lines in file_diffs.items() if lines}
+
+    def _extract_code_with_line_map(self, file_diff: str, file_path: str) -> Tuple[str, Dict[int, int]]:
+        """
+        Extract code additions from unified diff hunks and construct an accurate
+        line_map mapping 1-based temp-file line numbers to real target file line numbers.
+        """
+        hunk_pattern = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
+        extracted_lines: List[str] = []
+        line_map: Dict[int, int] = {}  # temp_line_no -> real_target_line_no
+
+        current_real_line = 1
+        in_hunk = False
+        temp_line_counter = 1
+
+        for raw_line in file_diff.splitlines():
+            hunk_match = hunk_pattern.match(raw_line)
             if hunk_match:
-                if not hunk_started:
-                    first_line = int(hunk_match.group(1))
-                    hunk_started = True
+                current_real_line = int(hunk_match.group(1))
+                in_hunk = True
                 continue
 
-            if hunk_started:
-                if line.startswith("+") and not line.startswith("+++"):
-                    code_lines.append(line[1:])
-                elif line.startswith(" "):
-                    code_lines.append(line[1:])
-                elif not line.startswith("-"):
-                    code_lines.append(line)
+            if in_hunk:
+                if raw_line.startswith("+") and not raw_line.startswith("+++"):
+                    extracted_lines.append(raw_line[1:])
+                    line_map[temp_line_counter] = current_real_line
+                    temp_line_counter += 1
+                    current_real_line += 1
+                elif raw_line.startswith(" "):
+                    extracted_lines.append(raw_line[1:])
+                    line_map[temp_line_counter] = current_real_line
+                    temp_line_counter += 1
+                    current_real_line += 1
+                elif raw_line.startswith("-"):
+                    # Deleted line: does not advance real target file line count
+                    pass
 
-        # Fallback if no diff headers were matched
-        if not code_lines:
-            for line in lines:
-                if line.startswith("+") and not line.startswith("+++"):
-                    code_lines.append(line[1:])
-                elif not line.startswith("-") and not line.startswith("@@"):
-                    code_lines.append(line)
+        # Fallback if diff lacks hunk markers (plain code additions)
+        if not extracted_lines:
+            for raw_line in file_diff.splitlines():
+                if raw_line.startswith("+") and not raw_line.startswith("+++"):
+                    extracted_lines.append(raw_line[1:])
+                    line_map[temp_line_counter] = temp_line_counter
+                    temp_line_counter += 1
 
-        return "\n".join(code_lines), target_file, first_line - 1
+        return "\n".join(extracted_lines), line_map
 
-    def _run_bandit(self, temp_file_path: str, original_file: str, line_offset: int) -> List[Dict[str, Any]]:
-        """Run Bandit security analysis via subprocess."""
+    def _run_bandit(self, temp_file_path: str, original_file: str, line_map: Dict[int, int]) -> List[Dict[str, Any]]:
+        """Run Bandit security analysis via subprocess, mapping line numbers accurately."""
         findings = []
         try:
-            # Check if bandit is executable in python env
             cmd = [self.python_exe, "-m", "bandit", "-f", "json", "-q", temp_file_path]
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=15,
+                timeout=20,
                 check=False
             )
             output = result.stdout.strip()
@@ -154,7 +293,7 @@ class StaticAnalyzer:
 
             for item in results:
                 raw_line = item.get("line_number", 1)
-                adjusted_line = max(1, raw_line + line_offset)
+                real_line = line_map.get(raw_line, raw_line)
                 severity = item.get("issue_severity", "MEDIUM").upper()
 
                 findings.append({
@@ -165,16 +304,47 @@ class StaticAnalyzer:
                     "severity": severity,
                     "confidence": item.get("issue_confidence", "HIGH").upper(),
                     "file": original_file,
-                    "line": adjusted_line,
+                    "line": real_line,
                     "evidence": item.get("code", "").strip(),
                     "recommendation": item.get("more_info", "Review security best practices."),
+                    "category": FindingCategory.SECURITY.value,
+                    "execution_status": ExecutionStatus.SUCCESS.value,
+                    "granularity": FindingGranularity.STATEMENT.value,
                 })
-        except Exception:
-            pass
+        except subprocess.TimeoutExpired:
+            findings.append({
+                "source": "Bandit",
+                "rule_id": "BANDIT_TIMEOUT",
+                "title": "Bandit Timeout",
+                "description": "Bandit security check timed out after 20 seconds.",
+                "severity": "LOW",
+                "confidence": "HIGH",
+                "file": original_file,
+                "line": 1,
+                "evidence": "",
+                "recommendation": "Analyze smaller diff chunks.",
+                "category": FindingCategory.SECURITY.value,
+                "execution_status": ExecutionStatus.TIMEOUT.value,
+            })
+        except Exception as exc:
+            findings.append({
+                "source": "Bandit",
+                "rule_id": "BANDIT_ERROR",
+                "title": "Bandit Tool Error",
+                "description": f"Bandit execution failed: {exc}",
+                "severity": "LOW",
+                "confidence": "HIGH",
+                "file": original_file,
+                "line": 1,
+                "evidence": "",
+                "recommendation": "Verify bandit is installed in python environment.",
+                "category": FindingCategory.SECURITY.value,
+                "execution_status": ExecutionStatus.TOOL_ERROR.value,
+            })
         return findings
 
-    def _run_flake8(self, temp_file_path: str, original_file: str, line_offset: int) -> List[Dict[str, Any]]:
-        """Run Flake8 linting and code quality analysis."""
+    def _run_flake8(self, temp_file_path: str, original_file: str, line_map: Dict[int, int]) -> List[Dict[str, Any]]:
+        """Run Flake8 linting and code quality analysis, mapping line numbers accurately."""
         findings = []
         try:
             cmd = [
@@ -189,7 +359,7 @@ class StaticAnalyzer:
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=15,
+                timeout=20,
                 check=False
             )
             output = result.stdout.strip()
@@ -200,24 +370,29 @@ class StaticAnalyzer:
                 parts = line.split("|", 3)
                 if len(parts) == 4:
                     code, row, col, text = parts
-                    row_num = max(1, int(row) + line_offset)
-                    # Classify severity based on Flake8 error codes
-                    # F: Pyflakes (errors, unused vars), E/W: PEP8, C: Complexity
+                    temp_row = int(row)
+                    real_row = line_map.get(temp_row, temp_row)
+
                     if code.startswith("F821") or code.startswith("F822") or code.startswith("F831"):
                         severity = "HIGH"
                         category = "Undefined Variable / Runtime Error"
+                        std_cat = FindingCategory.BUG.value
                     elif code.startswith("F"):
                         severity = "MEDIUM"
                         category = "Code Quality / Logic Issue"
+                        std_cat = FindingCategory.BUG.value
                     elif code.startswith("E") or code.startswith("W"):
                         severity = "LOW"
                         category = "Code Style / PEP8"
+                        std_cat = FindingCategory.CODE_QUALITY.value
                     elif code.startswith("C"):
                         severity = "MEDIUM"
                         category = "Cyclomatic Complexity"
+                        std_cat = FindingCategory.PERFORMANCE.value
                     else:
                         severity = "INFORMATIONAL"
                         category = "Code Quality"
+                        std_cat = FindingCategory.CODE_QUALITY.value
 
                     findings.append({
                         "source": "Flake8",
@@ -227,22 +402,53 @@ class StaticAnalyzer:
                         "severity": severity,
                         "confidence": "HIGH",
                         "file": original_file,
-                        "line": row_num,
+                        "line": real_row,
                         "evidence": f"Column {col}",
                         "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+                        "category": std_cat,
+                        "execution_status": ExecutionStatus.SUCCESS.value,
+                        "granularity": FindingGranularity.STATEMENT.value,
                     })
-        except Exception:
-            pass
+        except subprocess.TimeoutExpired:
+            findings.append({
+                "source": "Flake8",
+                "rule_id": "FLAKE8_TIMEOUT",
+                "title": "Flake8 Timeout",
+                "description": "Flake8 execution timed out after 20 seconds.",
+                "severity": "LOW",
+                "confidence": "HIGH",
+                "file": original_file,
+                "line": 1,
+                "evidence": "",
+                "recommendation": "Check diff size.",
+                "category": FindingCategory.CODE_QUALITY.value,
+                "execution_status": ExecutionStatus.TIMEOUT.value,
+            })
+        except Exception as exc:
+            findings.append({
+                "source": "Flake8",
+                "rule_id": "FLAKE8_ERROR",
+                "title": "Flake8 Tool Error",
+                "description": f"Flake8 execution failed: {exc}",
+                "severity": "LOW",
+                "confidence": "HIGH",
+                "file": original_file,
+                "line": 1,
+                "evidence": "",
+                "recommendation": "Verify flake8 is installed in python environment.",
+                "category": FindingCategory.CODE_QUALITY.value,
+                "execution_status": ExecutionStatus.TOOL_ERROR.value,
+            })
         return findings
 
-    def _run_ast_analysis(self, code: str, filename: str, line_offset: int) -> List[Dict[str, Any]]:
-        """
-        Deterministic AST-level inspection for security vulnerabilities and code smells.
-        """
+    def _run_ast_analysis(self, code: str, filename: str, line_map: Dict[int, int]) -> List[Dict[str, Any]]:
+        """Deterministic AST-level inspection for security vulnerabilities and code smells."""
         findings = []
         try:
             tree = ast.parse(code)
         except SyntaxError as e:
+            raw_line = e.lineno or 1
+            real_line = line_map.get(raw_line, raw_line)
             findings.append({
                 "source": "AST_Parser",
                 "rule_id": "SYNTAX_ERR",
@@ -251,17 +457,21 @@ class StaticAnalyzer:
                 "severity": "CRITICAL",
                 "confidence": "HIGH",
                 "file": filename,
-                "line": max(1, (e.lineno or 1) + line_offset),
+                "line": real_line,
                 "evidence": e.text.strip() if e.text else "",
                 "recommendation": "Correct syntax error before deployment.",
+                "category": FindingCategory.BUG.value,
+                "execution_status": ExecutionStatus.SUCCESS.value,
+                "granularity": FindingGranularity.STATEMENT.value,
             })
             return findings
 
         # Walk AST
         for node in ast.walk(tree):
-            line_no = max(1, getattr(node, "lineno", 1) + line_offset)
+            raw_line = getattr(node, "lineno", 1)
+            real_line = line_map.get(raw_line, raw_line)
 
-            # 1. Check for dangerous builtin calls: eval, exec
+            # 1. Dangerous builtin calls: eval, exec
             if isinstance(node, ast.Call):
                 func_name = ""
                 if isinstance(node.func, ast.Name):
@@ -278,15 +488,17 @@ class StaticAnalyzer:
                         "severity": "CRITICAL",
                         "confidence": "HIGH",
                         "file": filename,
-                        "line": line_no,
+                        "line": real_line,
                         "evidence": f"Call to '{func_name}'",
                         "recommendation": "Avoid eval() and exec(). Use ast.literal_eval() or safe parsers.",
+                        "category": FindingCategory.SECURITY.value,
+                        "execution_status": ExecutionStatus.SUCCESS.value,
+                        "granularity": FindingGranularity.STATEMENT.value,
                     })
 
-                # 2. Check for sqlite3/DB execute with string concatenation or f-strings
+                # 2. SQL injection via execute(query + var) or execute(f"...")
                 if func_name == "execute" and node.args:
                     first_arg = node.args[0]
-                    # Check string concatenation: query + username
                     if isinstance(first_arg, ast.BinOp) and isinstance(first_arg.op, ast.Add):
                         findings.append({
                             "source": "AST_Security",
@@ -296,11 +508,13 @@ class StaticAnalyzer:
                             "severity": "HIGH",
                             "confidence": "HIGH",
                             "file": filename,
-                            "line": line_no,
+                            "line": real_line,
                             "evidence": "execute(query + ...)",
                             "recommendation": "Use parameterized queries or prepared statements (e.g. execute(query, (params,)))",
+                            "category": FindingCategory.SECURITY.value,
+                            "execution_status": ExecutionStatus.SUCCESS.value,
+                            "granularity": FindingGranularity.STATEMENT.value,
                         })
-                    # Check f-strings
                     elif isinstance(first_arg, ast.JoinedStr):
                         findings.append({
                             "source": "AST_Security",
@@ -310,12 +524,15 @@ class StaticAnalyzer:
                             "severity": "HIGH",
                             "confidence": "HIGH",
                             "file": filename,
-                            "line": line_no,
+                            "line": real_line,
                             "evidence": "execute(f'...{param}...')",
                             "recommendation": "Use parameterized queries with placeholders instead of string formatting.",
+                            "category": FindingCategory.SECURITY.value,
+                            "execution_status": ExecutionStatus.SUCCESS.value,
+                            "granularity": FindingGranularity.STATEMENT.value,
                         })
 
-            # 3. Check for bare except:
+            # 3. Bare except:
             if isinstance(node, ast.ExceptHandler) and node.type is None:
                 findings.append({
                     "source": "AST_Quality",
@@ -325,12 +542,15 @@ class StaticAnalyzer:
                     "severity": "MEDIUM",
                     "confidence": "HIGH",
                     "file": filename,
-                    "line": line_no,
+                    "line": real_line,
                     "evidence": "except:",
                     "recommendation": "Catch specific exceptions (e.g., except ValueError:, except Exception:).",
+                    "category": FindingCategory.BUG.value,
+                    "execution_status": ExecutionStatus.SUCCESS.value,
+                    "granularity": FindingGranularity.STATEMENT.value,
                 })
 
-            # 4. Check for hardcoded secrets in variable assignments
+            # 4. Hardcoded secrets
             if isinstance(node, ast.Assign):
                 for target in node.targets:
                     if isinstance(target, ast.Name):
@@ -347,15 +567,18 @@ class StaticAnalyzer:
                                         "severity": "HIGH",
                                         "confidence": "HIGH",
                                         "file": filename,
-                                        "line": line_no,
+                                        "line": real_line,
                                         "evidence": f"{target.id} = '***'",
                                         "recommendation": "Extract credentials to environment variables or secret managers.",
+                                        "category": FindingCategory.SECURITY.value,
+                                        "execution_status": ExecutionStatus.SUCCESS.value,
+                                        "granularity": FindingGranularity.STATEMENT.value,
                                     })
 
         return findings
 
     def _deduplicate_findings(self, findings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Deduplicate findings based on file, line, and rule or title."""
+        """Deduplicate findings based on file, line, rule_id, and title."""
         seen = set()
         unique = []
         for f in findings:

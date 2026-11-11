@@ -1,0 +1,702 @@
+diff --git a/src/defrag.c b/src/defrag.c
+index 5093349ed45..5a2374fba9d 100644
+--- a/src/defrag.c
++++ b/src/defrag.c
+@@ -277,10 +277,9 @@ void *activeDefragHfieldAndUpdateRef(void *ptr, void *privdata) {
+ 
+     /* Before the key is released, obtain the link to
+      * ensure we can safely access and update the key. */
+-    dictUseStoredKeyApi(d, 1);
++    const void *key = dictStoredKey2Key(d, ptr);
+     link = dictFindLink(d, ptr, NULL);
+     serverAssert(link);
+-    dictUseStoredKeyApi(d, 0);
+ 
+     Entry *newEntry = activeDefragEntry(ptr);
+     if (newEntry)
+@@ -481,7 +480,6 @@ void activeDefragLuaScriptDictCallback(void *privdata, const dictEntry *de, dict
+ }
+ 
+ void activeDefragHfieldDictCallback(void *privdata, const dictEntry *de, dictEntryLink plink) {
+-    UNUSED(plink);
+     dict *d = privdata;
+     Entry *newEntry = NULL, *entry = dictGetKey(de);
+ 
+@@ -490,7 +488,7 @@ void activeDefragHfieldDictCallback(void *privdata, const dictEntry *de, dictEnt
+      * during the hash expiry ebuckets defragmentation phase. */
+     if (entryGetExpiry(entry) == EB_EXPIRE_TIME_INVALID) {
+         if ((newEntry = activeDefragEntry(entry))) {
+-            /* Hash dicts use no_value=1, so we must use dictSetKeyAtLink */ 
++            /* Hash dicts use no_value=1, so we must use dictSetKeyAtLink */
+             dictSetKeyAtLink(d, newEntry, &plink, 0);
+         }
+     }
+diff --git a/src/dict.c b/src/dict.c
+index 82820d863ac..55d81c17c75 100644
+--- a/src/dict.c
++++ b/src/dict.c
+@@ -76,7 +76,7 @@ static void dictSetNext(dictEntry *de, dictEntry *next);
+ static int dictDefaultCompare(dictCmpCache *cache, const void *key1, const void *key2);
+ static dictEntryLink dictFindLinkInternal(dict *d, const void *key, dictEntryLink *bucket);
+ dictEntryLink dictFindLinkForInsert(dict *d, const void *key, dictEntry **existing);
+-static dictEntry *dictInsertKeyAtLink(dict *d, void *key, dictEntryLink link);
++static dictEntry *dictInsertKeyAtLink(dict *d, void *key __stored_key, dictEntryLink link);
+ 
+ /* -------------------------- unused  --------------------------- */
+ void dictSetSignedIntegerVal(dictEntry *de, int64_t val);
+@@ -89,18 +89,22 @@ int64_t dictIncrSignedIntegerVal(dictEntry *de, int64_t val);
+ 
+ typedef int (*keyCmpFunc)(dictCmpCache *cache, const void *key1, const void *key2);
+ static inline keyCmpFunc dictGetCmpFunc(dict *d) {
+-    if (d->useStoredKeyApi && d->type->storedKeyCompare)
+-        return d->type->storedKeyCompare;
+     if (d->type->keyCompare)
+         return d->type->keyCompare;
+     return dictDefaultCompare;
+ }
+ 
+-static inline uint64_t dictHashKey(dict *d, const void *key, int isStoredKey) {
+-    if (isStoredKey && d->type->storedHashFunction)
+-        return d->type->storedHashFunction(key);
+-    else
+-        return d->type->hashFunction(key);
++static const void *dictStoredKey2Key(dict *d, const void *key __stored_key) {
++    return (d->type->keyFromStoredKey) ? d->type->keyFromStoredKey(key) : key;
++}
++
++/* Validate that stored-key to key conversion works correctly */
++static int validateStoredKeyConversion(dict *d, const void *key __stored_key) {
++    const void *extracted = dictStoredKey2Key(d, key);
++    if (d->type->keyFromStoredKey) {
++        return extracted != NULL;
++    }
++    return extracted == key;
+ }
+ 
+ /* -------------------------- hash functions -------------------------------- */
+@@ -118,7 +122,7 @@ uint64_t siphash(const uint8_t *in, const size_t inlen, const uint8_t *k);
+ uint64_t siphash_nocase(const uint8_t *in, const size_t inlen, const uint8_t *k);
+ 
+ uint64_t dictGenHashFunction(const void *key, size_t len) {
+-    return siphash(key,len,dict_hash_function_seed);
++    return siphash(key, len, dict_hash_function_seed);
+ }
+ 
+ uint64_t dictGenCaseHashFunction(const unsigned char *buf, size_t len) {
+@@ -150,7 +154,7 @@ static inline int entryIsNormal(const dictEntry *de) {
+ }
+ 
+ /* Creates an entry without a value field. */
+-static inline dictEntry *createEntryNoValue(void *key, dictEntry *next) {
++static inline dictEntry *createEntryNoValue(void *key __stored_key, dictEntry *next) {
+     dictEntryNoValue *entry = zmalloc(sizeof(*entry));
+     entry->key = key;
+     entry->next = next;
+@@ -222,7 +226,6 @@ int _dictInit(dict *d, dictType *type)
+     d->rehashidx = -1;
+     d->pauserehash = 0;
+     d->pauseAutoResize = 0;
+-    d->useStoredKeyApi = 0;
+     return DICT_OK;
+ }
+ 
+@@ -333,10 +336,11 @@ static void rehashEntriesInBucketAtIndex(dict *d, uint64_t idx) {
+     dictEntry *nextde;
+     while (de) {
+         nextde = dictGetNext(de);
+-        void *key = dictGetKey(de);
++        void *storedKey = dictGetKey(de);
+         /* Get the index in the new hash table */
+         if (d->ht_size_exp[1] > d->ht_size_exp[0]) {
+-            h = dictHashKey(d, key, 1) & DICTHT_SIZE_MASK(d->ht_size_exp[1]);
++            const void *key = dictStoredKey2Key(d, storedKey);
++            h = dictGetHash(d, key) & DICTHT_SIZE_MASK(d->ht_size_exp[1]);
+         } else {
+             /* We're shrinking the table. The tables sizes are powers of
+              * two, so we simply mask the bucket index in the larger table
+@@ -351,13 +355,13 @@ static void rehashEntriesInBucketAtIndex(dict *d, uint64_t idx) {
+                 if (!entryIsKey(de)) zfree(decodeMaskedPtr(de));
+                 
+                 if (d->type->keys_are_odd)
+-                    de = key; /* ENTRY_PTR_IS_ODD_KEY trivially set by the odd key. */
++                    de = storedKey; /* ENTRY_PTR_IS_ODD_KEY trivially set by the odd key. */
+                 else
+-                    de = encodeMaskedPtr(key, ENTRY_PTR_IS_EVEN_KEY);
++                    de = encodeMaskedPtr(storedKey, ENTRY_PTR_IS_EVEN_KEY);
+                 
+             } else if (entryIsKey(de)) {
+                 /* We don't have an allocated entry but we need one. */
+-                de = createEntryNoValue(key, d->ht_table[1][h]);
++                de = createEntryNoValue(storedKey, d->ht_table[1][h]);
+             } else {
+                 dictSetNext(de, d->ht_table[1][h]);
+             }
+@@ -486,7 +490,7 @@ int _dictBucketRehash(dict *d, uint64_t idx) {
+ }
+ 
+ /* Add an element to the target hash table */
+-int dictAdd(dict *d, void *key, void *val)
++int dictAdd(dict *d, void *key __stored_key, void *val)
+ {
+     dictEntry *entry = dictAddRaw(d,key,NULL);
+ 
+@@ -519,10 +523,10 @@ int dictCompareKeys(dict *d, const void *key1, const void *key2) {
+  *
+  * If key was added, the hash entry is returned to be manipulated by the caller.
+  */
+-dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing)
++dictEntry *dictAddRaw(dict *d, void *key __stored_key, dictEntry **existing)
+ {
+     /* Get the position for the new key or NULL if the key already exists. */
+-    void *position = dictFindLinkForInsert(d, key, existing);
++    void *position = dictFindLinkForInsert(d, dictStoredKey2Key(d, key), existing);
+     if (!position) return NULL;
+ 
+     /* Dup the key if necessary. */
+@@ -535,7 +539,7 @@ dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing)
+  * call to dictFindLinkForInsert(). This is a low level function which allows
+  * splitting dictAddRaw in two parts. Normally, dictAddRaw or dictAdd should be
+  * used instead. It assumes that dictExpandIfNeeded() was called before. */
+-dictEntry *dictInsertKeyAtLink(dict *d, void *key, dictEntryLink link) {
++dictEntry *dictInsertKeyAtLink(dict *d, void *key __stored_key, dictEntryLink link) {
+     dictEntryLink bucket = link; /* It's a bucket, but the API hides that. */
+     dictEntry *entry;
+     /* If rehashing is ongoing, we insert in table 1, otherwise in table 0.
+@@ -580,7 +584,7 @@ dictEntry *dictInsertKeyAtLink(dict *d, void *key, dictEntryLink link) {
+  * Return 1 if the key was added from scratch, 0 if there was already an
+  * element with such key and dictReplace() just performed a value update
+  * operation. */
+-int dictReplace(dict *d, void *key, void *val)
++int dictReplace(dict *d, void *key __stored_key, void *val)
+ {
+     dictEntry *entry, *existing;
+ 
+@@ -611,7 +615,7 @@ int dictReplace(dict *d, void *key, void *val)
+  * existing key is returned.)
+  *
+  * See dictAddRaw() for more information. */
+-dictEntry *dictAddOrFind(dict *d, void *key) {
++dictEntry *dictAddOrFind(dict *d, void *key __stored_key) {
+     dictEntry *entry, *existing;
+     entry = dictAddRaw(d,key,&existing);
+     return entry ? entry : existing;
+@@ -629,7 +633,7 @@ static dictEntry *dictGenericDelete(dict *d, const void *key, int nofree) {
+     /* dict is empty */
+     if (dictSize(d) == 0) return NULL;
+ 
+-    h = dictHashKey(d, key, d->useStoredKeyApi);
++    h = dictGetHash(d, key);
+     idx = h & DICTHT_SIZE_MASK(d->ht_size_exp[0]);
+ 
+     /* Rehash the hash table if needed */
+@@ -643,7 +647,7 @@ static dictEntry *dictGenericDelete(dict *d, const void *key, int nofree) {
+         he = d->ht_table[table][idx];
+         prevHe = NULL;
+         while(he) {
+-            void *he_key = dictGetKey(he);
++            const void *he_key = dictStoredKey2Key(d, dictGetKey(he));
+             if (key == he_key || cmpFunc(&cmpCache, key, he_key)) {
+                 /* Unlink the element from the list */
+                 if (prevHe)
+@@ -772,7 +776,7 @@ static dictEntryLink dictFindLinkInternal(dict *d, const void *key, dictEntryLin
+         if (dictSize(d) == 0) return NULL; 
+     }
+ 
+-    const uint64_t hash = dictHashKey(d, key, d->useStoredKeyApi);
++    const uint64_t hash = dictGetHash(d, key);
+     idx = hash & DICTHT_SIZE_MASK(d->ht_size_exp[0]);
+     keyCmpFunc cmpFunc = dictGetCmpFunc(d);
+ 
+@@ -790,7 +794,7 @@ static dictEntryLink dictFindLinkInternal(dict *d, const void *key, dictEntryLin
+         link = &(d->ht_table[table][idx]);
+         if (bucket) *bucket = link;
+         while(link && *link) {
+-            void *visitedKey = dictGetKey(*link);
++            const void *visitedKey = dictStoredKey2Key(d, dictGetKey(*link));
+ 
+             /* Prefetch the next entry to improve cache efficiency */
+             redis_prefetch_read(dictGetNext(*link));
+@@ -880,7 +884,7 @@ dictEntryLink dictFindLink(dict *d, const void *key, dictEntryLink *bucket) {
+  * newItem: 1 = Add a key with a new dictEntry.
+  *          0 = Set a key to an existing dictEntry. 
+  */
+-void dictSetKeyAtLink(dict *d, void *key, dictEntryLink *link, int newItem) {
++void dictSetKeyAtLink(dict *d, void *key __stored_key, dictEntryLink *link, int newItem) {
+     dictEntryLink dummy = NULL;
+     if (link == NULL) link = &dummy;
+     void *addedKey = (d->type->keyDup) ? d->type->keyDup(d, key) : key;
+@@ -895,9 +899,7 @@ void dictSetKeyAtLink(dict *d, void *key, dictEntryLink *link, int newItem) {
+         if (snap[0] != d->ht_size_exp[0] || snap[1] != d->ht_size_exp[1] || *link == NULL) {
+             dictEntryLink bucket;
+             /* Bypass dictFindLink() to search bucket even if dict is empty!!! */
+-            dictUseStoredKeyApi(d, 1);
+-            *link = dictFindLinkInternal(d, key, &bucket);
+-            dictUseStoredKeyApi(d, 0);
++            *link = dictFindLinkInternal(d, dictStoredKey2Key(d, key), &bucket);
+             assert(bucket != NULL);
+             assert(*link == NULL);
+             *link = bucket; /* On newItem the link should be the bucket */
+@@ -907,9 +909,9 @@ void dictSetKeyAtLink(dict *d, void *key, dictEntryLink *link, int newItem) {
+     } 
+     
+     /* Setting key of existing dictEntry (newItem == 0)*/
+-    
++
+     if (*link == NULL) {
+-        *link = dictFindLink(d, key, NULL);
++        *link = dictFindLink(d, addedKey, NULL);
+         assert(*link != NULL);
+     }
+     
+@@ -959,7 +961,7 @@ dictEntryLink dictTwoPhaseUnlinkFind(dict *d, const void *key, int *table_index)
+     if (dictSize(d) == 0) return NULL; /* dict is empty */
+     if (dictIsRehashing(d)) _dictRehashStep(d);
+ 
+-    h = dictHashKey(d, key, d->useStoredKeyApi);    
++    h = dictGetHash(d, key);    
+     keyCmpFunc cmpFunc = dictGetCmpFunc(d);
+ 
+     for (table = 0; table <= 1; table++) {
+@@ -967,7 +969,7 @@ dictEntryLink dictTwoPhaseUnlinkFind(dict *d, const void *key, int *table_index)
+         if (table == 0 && (long)idx < d->rehashidx) continue;
+         dictEntry **ref = &d->ht_table[table][idx];
+         while (ref && *ref) {
+-            void *de_key = dictGetKey(*ref);
++            const void *de_key = dictStoredKey2Key(d, dictGetKey(*ref));
+             if (key == de_key || cmpFunc(&cmpCache, key, de_key)) {
+                 *table_index = table;
+                 dictPauseRehashing(d);
+@@ -993,7 +995,7 @@ void dictTwoPhaseUnlinkFree(dict *d, dictEntryLink plink, int table_index) {
+     dictResumeRehashing(d);
+ }
+ 
+-void dictSetKey(dict *d, dictEntry* de, void *key) {
++void dictSetKey(dict *d, dictEntry* de, void *key __stored_key) {
+     assert(!d->type->no_value);
+     if (d->type->keyDup)
+         de->key = d->type->keyDup(d, key);
+@@ -1747,7 +1749,7 @@ dictEntryLink dictFindLinkForInsert(dict *d, const void *key, dictEntry **existi
+     unsigned long idx, table;
+     dictCmpCache cmpCache = {0};
+     dictEntry *he;
+-    uint64_t hash = dictHashKey(d, key, d->useStoredKeyApi);
++    uint64_t hash = dictGetHash(d, key);
+     if (existing) *existing = NULL;
+     idx = hash & DICTHT_SIZE_MASK(d->ht_size_exp[0]);
+ 
+@@ -1764,7 +1766,7 @@ dictEntryLink dictFindLinkForInsert(dict *d, const void *key, dictEntry **existi
+         /* Search if this slot does not already contain the given key */
+         he = d->ht_table[table][idx];
+         while(he) {
+-            void *he_key = dictGetKey(he);
++            const void *he_key = dictStoredKey2Key(d, dictGetKey(he));            
+             if (key == he_key || cmpFunc(&cmpCache, key, he_key)) {
+                 if (existing) *existing = he;
+                 return NULL;
+@@ -1802,8 +1804,9 @@ void dictSetResizeEnabled(dictResizeEnable enable) {
+     dict_can_resize = enable;
+ }
+ 
++/* Compiler inlines this for internal calls within dict.c (verified with -O3). */
+ uint64_t dictGetHash(dict *d, const void *key) {
+-    return dictHashKey(d, key, d->useStoredKeyApi);
++    return d->type->hashFunction(key);
+ }
+ 
+ /* Provides the old and new ht size for a given dictionary during rehashing. This method
+diff --git a/src/dict.h b/src/dict.h
+index 049a3ad74f1..25e4cf1bd23 100644
+--- a/src/dict.h
++++ b/src/dict.h
+@@ -52,6 +52,19 @@
+ /* Hash table parameters */
+ #define HASHTABLE_MIN_FILL        8      /* Minimal hash table fill 12.5%(100/8) */
+ 
++/* stored-key vs. key
++ * ------------------
++ * If dictType.keyFromStoredKey is non-NULL, then dict distinguishes between the
++ * lookup key and the actual stored-key object. In this case, "key" is used to 
++ * locate entries, while "storedKey" is the actual element stored in the dict.
++ * If dictType.keyFromStoredKey is NULL, the lookup "key" and the stored-key are the
++ * same. This API is primarily relevant for no_value=1 dicts, where the key and value
++ * might be packed together. When values are stored separately, this identity 
++ * distinction does not arise. The marker __stored_key is used to indicate that 
++ * the pointer refers to the stored-key rather than the lookup key.
++ */
++#define __stored_key
++
+ typedef struct dictEntry dictEntry; /* opaque */
+ typedef struct dict dict;
+ typedef dictEntry **dictEntryLink; /* See description of dictFindLink() */
+@@ -78,10 +91,10 @@ typedef struct dictCmpCache {
+ typedef struct dictType {
+     /* Callbacks */
+     uint64_t (*hashFunction)(const void *key);
+-    void *(*keyDup)(dict *d, const void *key);
++    void *(*keyDup)(dict *d, const void *key __stored_key);
+     void *(*valDup)(dict *d, const void *obj);
+     int (*keyCompare)(dictCmpCache *cache, const void *key1, const void *key2);
+-    void (*keyDestructor)(dict *d, void *key);
++    void (*keyDestructor)(dict *d, void *key __stored_key);
+     void (*valDestructor)(dict *d, void *obj);
+     int (*resizeAllowed)(size_t moreMem, double usedRatio);
+     /* Invoked at the start of dict initialization/rehashing (old and new ht are already created) */
+@@ -112,30 +125,13 @@ typedef struct dictType {
+ 
+     /* Ensures that the entire hash table is rehashed at once if set. */
+     unsigned int force_full_rehash:1;
+-
+-    /* Sometimes we want the ability to store a key in a given way inside the hash
+-     * function, and lookup it in some other way without resorting to any kind of
+-     * conversion. For instance the key may be stored as a structure also
+-     * representing other things, but the lookup happens via just a pointer to a
+-     * null terminated string. Optionally providing additional hash/cmp functions,
+-     * dict supports such usage. In that case we'll have a hashFunction() that will
+-     * expect a null terminated C string, and a storedHashFunction() that will
+-     * instead expect the structure. Similarly, the two comparison functions will
+-     * work differently. The keyCompare() will treat the first argument as a pointer
+-     * to a C string and the other as a structure (this way we can directly lookup
+-     * the structure key using the C string). While the storedKeyCompare() will
+-     * check if two pointers to the key in structure form are the same.
+-     *
+-     * However, functions of dict that gets key as argument (void *key) don't get
+-     * any indication whether it is a lookup or stored key. To indicate that
+-     * you intend to use key of type stored-key, and, consequently, use
+-     * dedicated compare and hash functions of stored-key, is by calling
+-     * dictUseStoredKeyApi(1) before using any of the dict functions that gets
+-     * key as a parameter and then call again  dictUseStoredKeyApi(0) once done.
+-     *
+-     * Set to NULL both functions, if you don't want to support this feature. */
+-    uint64_t (*storedHashFunction)(const void *key);
+-    int (*storedKeyCompare)(dictCmpCache *cache, const void *key1, const void *key2);
++    
++    /* Callback to extract key from stored-key object. When set, the dict can
++     * store keys in one format (e.g., a structure) but look them up using a
++     * different format, extracted from the stored-key. (e.g., sds or integer). 
++     * Set to NULL if key and stored-key object are the same. Relevant only for
++     * no_value=1 dicts. */
++    const void *(*keyFromStoredKey)(const void *key __stored_key);
+ 
+     /* Optional callback called when the dict is destroyed. */
+     void (*onDictRelease)(dict *d);
+@@ -158,8 +154,7 @@ struct dict {
+ 
+     /* Keep small vars at end for optimal (minimal) struct padding */
+     signed char ht_size_exp[2]; /* exponent of size. (size = 1<<exp) */
+-    signed pauseAutoResize: 15;  /* If >0 automatic resizing is disallowed (<0 indicates coding error) */
+-    unsigned useStoredKeyApi: 1; /* See comment of storedHashFunction above */
++    int16_t pauseAutoResize;  /* If >0 automatic resizing is disallowed (<0 indicates coding error) */
+     void *metadata[];
+ };
+ 
+@@ -221,7 +216,6 @@ typedef struct {
+ #define dictIsRehashingPaused(d) ((d)->pauserehash > 0)
+ #define dictPauseAutoResize(d) ((d)->pauseAutoResize++)
+ #define dictResumeAutoResize(d) ((d)->pauseAutoResize--)
+-#define dictUseStoredKeyApi(d, flag) ((d)->useStoredKeyApi = (flag))
+ 
+ /* If our unsigned long type can store a 64 bit number, use a 64 bit PRNG. */
+ #if ULONG_MAX >= 0xffffffffffffffff
+@@ -242,10 +236,10 @@ void dictTypeAddMeta(dict **d, dictType *typeWithMeta);
+ int dictExpand(dict *d, unsigned long size);
+ int dictTryExpand(dict *d, unsigned long size);
+ int dictShrink(dict *d, unsigned long size);
+-int dictAdd(dict *d, void *key, void *val);
+-dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing);
+-dictEntry *dictAddOrFind(dict *d, void *key);
+-int dictReplace(dict *d, void *key, void *val);
++int dictAdd(dict *d, void *key __stored_key, void *val);
++dictEntry *dictAddRaw(dict *d, void *key __stored_key, dictEntry **existing);
++dictEntry *dictAddOrFind(dict *d, void *key __stored_key);
++int dictReplace(dict *d, void *key __stored_key, void *val);
+ int dictDelete(dict *d, const void *key);
+ dictEntry *dictUnlink(dict *d, const void *key);
+ void dictFreeUnlinkedEntry(dict *d, dictEntry *he);
+@@ -291,10 +285,10 @@ void dictCombineStats(dictStats *from, dictStats *into);
+ void dictFreeStats(dictStats *stats);
+ 
+ dictEntryLink dictFindLink(dict *d, const void *key, dictEntryLink *bucket);
+-void dictSetKeyAtLink(dict *d, void *key, dictEntryLink *link, int newItem);
++void dictSetKeyAtLink(dict *d, void *key __stored_key, dictEntryLink *link, int newItem);
+ 
+ /* API relevant only when dict is used as a hash-map (no_value=0) */ 
+-void dictSetKey(dict *d, dictEntry* de, void *key);
++void dictSetKey(dict *d, dictEntry* de, void *key __stored_key);
+ void dictSetVal(dict *d, dictEntry *de, void *val);
+ void *dictGetVal(const dictEntry *de);
+ void dictSetDoubleVal(dictEntry *de, double val);
+diff --git a/src/kvstore.c b/src/kvstore.c
+index 4399d029fa0..fb9e7d53ecd 100644
+--- a/src/kvstore.c
++++ b/src/kvstore.c
+@@ -889,9 +889,7 @@ void kvstoreDictSetAtLink(kvstore *kvs, int didx, void *kv, dictEntryLink *link,
+ 
+ dictEntry *kvstoreDictAddRaw(kvstore *kvs, int didx, void *key, dictEntry **existing) {
+     dict *d = createDictIfNeeded(kvs, didx);
+-    dictUseStoredKeyApi(d, 1);
+     dictEntry *ret = dictAddRaw(d, key, existing);
+-    dictUseStoredKeyApi(d, 0);
+     if (ret)
+         cumulativeKeyCountAdd(kvs, didx, 1);
+     return ret;
+diff --git a/src/memory_prefetch.c b/src/memory_prefetch.c
+index 651312d5bc9..dfe7a190b2a 100644
+--- a/src/memory_prefetch.c
++++ b/src/memory_prefetch.c
+@@ -230,11 +230,12 @@ static inline void prefetchKVOject(KeyPrefetchInfo *info) {
+ static void prefetchValueData(KeyPrefetchInfo *info) {
+     size_t i = batch->cur_idx;
+     kvobj *kv = info->current_kv;
++    sds key = kvobjGetKey(kv);
+ 
+     /* 1. If this is the last element, we assume a hit and don't compare the keys
+      * 2. This kv object is the target of the lookup. */
+     if ((!dictGetNext(info->current_entry) && !dictIsRehashing(batch->current_dicts[i])) ||
+-        dictCompareKeys(batch->current_dicts[i], batch->keys[i], kv))
++        dictCompareKeys(batch->current_dicts[i], batch->keys[i], key))
+     {
+         if (batch->get_value_data_func) {
+             void *value_data = batch->get_value_data_func(kv);
+diff --git a/src/module.c b/src/module.c
+index 9b8fdea4259..6f1294f9c7b 100644
+--- a/src/module.c
++++ b/src/module.c
+@@ -5452,7 +5452,7 @@ int RM_HashSet(RedisModuleKey *key, int flags, ...) {
+         if (value == REDISMODULE_HASH_DELETE) {
+             if (server.memory_tracking_per_slot)
+                 oldsize = hashTypeAllocSize(key->kv);
+-            count += hashTypeDelete(key->kv, field->ptr, 1);
++            count += hashTypeDelete(key->kv, field->ptr);
+             if (server.memory_tracking_per_slot)
+                 updateSlotAllocSize(key->db, getKeySlot(key->key->ptr), oldsize, hashTypeAllocSize(key->kv));
+             if (flags & REDISMODULE_HASH_CFIELDS) decrRefCount(field);
+diff --git a/src/rdb.c b/src/rdb.c
+index 00c9ee80b74..aefc8a2e8d7 100644
+--- a/src/rdb.c
++++ b/src/rdb.c
+@@ -2234,9 +2234,7 @@ robj *rdbLoadObject(int rdbtype, rio *rdb, sds key, int dbid, int *error)
+                 !lpSafeToAdd(o->ptr, entryFieldLen(entry) + sdslen(entryGetValue(entry))))
+             {
+                 hashTypeConvert(NULL, o, OBJ_ENCODING_HT);
+-                dictUseStoredKeyApi((dict *)o->ptr, 1);
+                 ret = dictAdd((dict*)o->ptr, entry, NULL);  /* no_value=1 */
+-                dictUseStoredKeyApi((dict *)o->ptr, 0);
+                 if (ret == DICT_ERR) {
+                     rdbReportCorruptRDB("Duplicate hash fields detected");
+                     if (dupSearchDict) dictRelease(dupSearchDict);
+@@ -2292,9 +2290,7 @@ robj *rdbLoadObject(int rdbtype, rio *rdb, sds key, int dbid, int *error)
+ 
+             /* Add entry to hash table */
+             dict *d = o->ptr;
+-            dictUseStoredKeyApi(d, 1);
+             ret = dictAdd(d, entry, NULL);  /* no_value=1 */
+-            dictUseStoredKeyApi(d, 0);
+             if (ret == DICT_ERR) {
+                 rdbReportCorruptRDB("Duplicate hash fields detected");
+                 entryFree(entry, NULL);
+@@ -2456,9 +2452,7 @@ robj *rdbLoadObject(int rdbtype, rio *rdb, sds key, int dbid, int *error)
+             if (o->encoding == OBJ_ENCODING_HT) {
+                 /* Add entry to hash table */
+                 dict *d = o->ptr;
+-                dictUseStoredKeyApi(d, 1);
+                 int ret = dictAdd(d, entry, NULL);  /* no_value=1 */
+-                dictUseStoredKeyApi(d, 0);
+ 
+                 /* Attach expiry to the hash field and register in hash private HFE DS */
+                 if ((ret != DICT_ERR) && expireAt) {
+diff --git a/src/server.c b/src/server.c
+index eb28a6f35eb..9d1270712f8 100644
+--- a/src/server.c
++++ b/src/server.c
+@@ -313,40 +313,23 @@ size_t dictSdsKeyLen(dict *d, const void *key) {
+     return sdslen((sds)key);
+ }
+ 
+-static uint64_t dictHashKV(const void *kv) {
++static const void *kvGetKey(const void *kv) {
+     sds sdsKey = kvobjGetKey((kvobj *) kv);
+-    return dictGenHashFunction(sdsKey, sdslen(sdsKey));
++    return sdsKey;
+ }
+ 
+-int dictCompareKV(dictCmpCache *cache, const void *kv1, const void *kv2) {
+-    /* Use caching to avoid compute key&len for each comparison on given lookup */
+-    if (cache->useCache == 0) {
+-        cache->useCache = 1;
+-        cache->data[0].p = kvobjGetKey((kvobj *) kv1);
+-        cache->data[1].sz = sdslen((sds) cache->data[0].p); 
+-    }
+-        
+-    sds key1 = cache->data[0].p;
+-    sds key2 = kvobjGetKey((kvobj *) kv2);
+-    int l1 = (int) cache->data[1].sz; 
+-    int l2 = sdslen((sds)key2);
+-    if (l1 != l2) return 0;
+-    return memcmp(key1, key2, l1) == 0;
+-}
+-
+-int dictSdsCompareKV(dictCmpCache *cache, const void *sdsLookup, const void *kv)
++int dictSdsCompareKV(dictCmpCache *cache, const void *sdsKey1, const void *sdsKey2)
+ {
+     /* is first cmp call of a new lookup */
+     if (cache->useCache == 0) {
+         cache->useCache = 1;
+-        cache->data[0].sz = sdslen((sds) sdsLookup);
++        cache->data[0].sz = sdslen((sds) sdsKey1);
+     }
+ 
+-    sds key2 = kvobjGetKey((kvobj *)kv);
+     size_t l1 = cache->data[0].sz;
+-    size_t l2 = sdslen((sds)key2);
++    size_t l2 = sdslen((sds)sdsKey2);
+     if (l1 != l2) return 0;
+-    return memcmp(sdsLookup, key2, l1) == 0;
++    return memcmp(sdsKey1, sdsKey2, l1) == 0;
+ }
+ 
+ static void dictDestructorKV(dict *d, void *kv) {
+@@ -628,8 +611,7 @@ dictType dbDictType = {
+     dictResizeAllowed,      /* allow to resize */
+     .no_value = 1,          /* keys and values are unified (kvobj) */
+     .keys_are_odd = 0,      /* simple kvobj (robj) struct */
+-    .storedHashFunction = dictHashKV,  /* stored hash function */
+-    .storedKeyCompare = dictCompareKV, /* stored key compare */
++    .keyFromStoredKey = kvGetKey,    /* get key from stored-key */
+ };
+ 
+ /* Db->expires */
+@@ -643,8 +625,7 @@ dictType dbExpiresDictType = {
+     dictResizeAllowed,          /* allow to resize */
+     .no_value = 1,              /* keys and values are unified (kvobj) */
+     .keys_are_odd = 0,          /* simple kvobj (robj) struct */
+-    .storedHashFunction = dictHashKV,  /* stored hash function */
+-    .storedKeyCompare = dictCompareKV, /* stored key compare */
++    .keyFromStoredKey = kvGetKey,   /* get key from stored-key */
+ };
+ 
+ /* Command table. sds string -> command struct pointer. */
+diff --git a/src/server.h b/src/server.h
+index b891f794765..a2f7c39e76d 100644
+--- a/src/server.h
++++ b/src/server.h
+@@ -3655,7 +3655,7 @@ static inline size_t *htGetMetadataSize(dict *d) {
+ void hashTypeConvert(redisDb *db, robj *o, int enc);
+ void hashTypeTryConversion(redisDb *db, kvobj *kv, robj **argv, int start, int end);
+ int hashTypeExists(redisDb *db, kvobj *kv, sds field, int hfeFlags, int *isHashDeleted);
+-int hashTypeDelete(robj *o, void *key, int isSdsField);
++int hashTypeDelete(robj *o, void *key);
+ unsigned long hashTypeLength(const robj *o, int subtractExpiredFields);
+ size_t hashTypeAllocSize(const robj *o);
+ void hashTypeInitIterator(hashTypeIterator *hi, robj *subject);
+diff --git a/src/t_hash.c b/src/t_hash.c
+index c868ec8a842..48fc1e7f2d0 100644
+--- a/src/t_hash.c
++++ b/src/t_hash.c
+@@ -534,7 +534,7 @@ SetExRes hashTypeSetExpiryListpack(HashTypeSetEx *ex, sds field,
+      * If replica, continue like the field is valid */
+     if (unlikely(checkAlreadyExpired(expireAt))) {
+         propagateHashFieldDeletion(ex->db, ex->key->ptr, field, sdslen(field));
+-        hashTypeDelete(ex->hashObj, field, 1);
++        hashTypeDelete(ex->hashObj, field);
+         server.stat_expired_subkeys++;
+         return HSETEX_DELETED;
+     }
+@@ -761,7 +761,7 @@ GetFieldRes hashTypeGetValue(redisDb *db, kvobj *o, sds field, unsigned char **v
+     /* delete the field and propagate the deletion */
+     if (server.memory_tracking_per_slot && !(hfeFlags & HFE_LAZY_NO_UPDATE_ALLOCSIZES))
+         oldsize = hashTypeAllocSize(o);
+-    serverAssert(hashTypeDelete(o, field, 1) == 1);
++    serverAssert(hashTypeDelete(o, field) == 1);
+     if (server.memory_tracking_per_slot && !(hfeFlags & HFE_LAZY_NO_UPDATE_ALLOCSIZES))
+         updateSlotAllocSize(db, getKeySlot(key), oldsize, hashTypeAllocSize(o));
+     propagateHashFieldDeletion(db, key, field, sdslen(field));
+@@ -1109,7 +1109,7 @@ SetExRes hashTypeSetExpiryHT(HashTypeSetEx *exInfo, sds field, uint64_t expireAt
+     if (unlikely(checkAlreadyExpired(expireAt))) {
+         /* replicas should not initiate deletion of fields */
+         propagateHashFieldDeletion(exInfo->db, exInfo->key->ptr, field, sdslen(field));
+-        hashTypeDelete(exInfo->hashObj, field, 1);
++        hashTypeDelete(exInfo->hashObj, field);
+         server.stat_expired_subkeys++;
+         return HSETEX_DELETED;
+     }
+@@ -1253,8 +1253,8 @@ void hashTypeSetExDone(HashTypeSetEx *ex) {
+ /* Delete an element from a hash.
+  *
+  * Return 1 on deleted and 0 on not found.
+- * isSdsField - 1 if the field is sds, 0 if it is entry* */
+-int hashTypeDelete(robj *o, void *field, int isSdsField) {
++ * field - sds field name to delete */
++int hashTypeDelete(robj *o, void *field) {
+     int deleted = 0;
+     int fieldLen = sdslen((sds)field);
+ 
+@@ -1287,12 +1287,9 @@ int hashTypeDelete(robj *o, void *field, int isSdsField) {
+         }
+     } else if (o->encoding == OBJ_ENCODING_HT) {
+         /* dictDelete() will call dictEntryDestructor() */
+-        dictUseStoredKeyApi((dict*)o->ptr, isSdsField ? 0 : 1);
+         if (dictDelete((dict*)o->ptr, field) == C_OK) {
+             deleted = 1;
+         }
+-        dictUseStoredKeyApi((dict*)o->ptr, 0);
+-
+     } else {
+         serverPanic("Unknown hash encoding");
+     }
+@@ -1640,9 +1637,7 @@ void hashTypeConvertListpack(robj *o, int enc) {
+         size_t usable, *alloc_size = htGetMetadataSize(dict);
+         while (hashTypeNext(&hi, 0) != C_ERR) {
+             Entry *entry = hashTypeCurrentObjectNewEntry(&hi, &usable);
+-            dictUseStoredKeyApi(dict, 1);
+             ret = dictAdd(dict, entry, NULL);
+-            dictUseStoredKeyApi(dict, 0);
+             if (ret != DICT_OK) {
+                 entryFree(entry, NULL); /* Needed for gcc ASAN */
+                 hashTypeResetIterator(&hi);  /* Needed for gcc ASAN */
+@@ -1695,9 +1690,7 @@ void hashTypeConvertListpackEx(redisDb *db, robj *o, int enc) {
+         while (hashTypeNext(&hi, 0) != C_ERR) {
+             /* Create entry with both field and value */
+             Entry *entry = hashTypeCurrentObjectNewEntry(&hi, &usable);
+-            dictUseStoredKeyApi(dict, 1);
+             ret = dictAdd(dict, entry, NULL);
+-            dictUseStoredKeyApi(dict, 0);
+             if (ret != DICT_OK) {
+                 entryFree(entry, NULL); /* Needed for gcc ASAN */
+                 hashTypeResetIterator(&hi);  /* Needed for gcc ASAN */
+@@ -1816,9 +1809,7 @@ robj *hashTypeDup(kvobj *o, uint64_t *minHashExpire) {
+             sdsfree(newFieldSds); /* (Only value ownership transferred to entry) */
+ 
+             /* Add entry to new hash object. */
+-            dictUseStoredKeyApi(d, 1);
+             dictAdd(d, newEntry, NULL);  /* no_value=1, so value is NULL */
+-            dictUseStoredKeyApi(d, 0);
+             *alloc_size += usable;
+         }
+         hashTypeResetIterator(&hi);
+@@ -2729,7 +2720,7 @@ void hgetdelCommand(client *c) {
+         /* Try to delete only if it's found and not expired lazily. */
+         if (res == GETF_OK) {
+             deleted++;
+-            serverAssert(hashTypeDelete(o, c->argv[i]->ptr, 1) == 1);
++            serverAssert(hashTypeDelete(o, c->argv[i]->ptr) == 1);
+         }
+     }
+ 
+@@ -2934,7 +2925,7 @@ void hdelCommand(client *c) {
+     int isHFE = hashTypeIsFieldsWithExpire(o);
+ 
+     for (j = 2; j < c->argc; j++) {
+-        if (hashTypeDelete(o,c->argv[j]->ptr,1)) {
++        if (hashTypeDelete(o,c->argv[j]->ptr)) {
+             deleted++;
+             if (hashTypeLength(o, 0) == 0) {
+                 if (server.memory_tracking_per_slot)
+@@ -3509,7 +3500,7 @@ static ExpireAction onFieldExpire(eItem item, void *ctx) {
+     unsigned long l = hashTypeLength(expCtx->hashObj, 0);
+     updateKeysizesHist(expCtx->db, getKeySlot(key), OBJ_HASH, l, l - 1);
+ 
+-    serverAssert(hashTypeDelete(expCtx->hashObj, field, 0) == 1);
++    serverAssert(hashTypeDelete(expCtx->hashObj, field) == 1);
+     if (server.memory_tracking_per_slot)
+         updateSlotAllocSize(expCtx->db, getKeySlot(key), oldsize, hashTypeAllocSize(kv));
+     server.stat_expired_subkeys++;

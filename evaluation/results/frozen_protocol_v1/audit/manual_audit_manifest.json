@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-11-11T16:03:48.497274+00:00",
+  "rubric": {
+    "CAT-A": "Valid Finding: Genuine defect or security flaw missed by benchmark ground truth annotations (True Positive).",
+    "CAT-B": "True False Positive: Hallucination, invalid rule firing, syntax misunderstanding, or incorrect advice.",
+    "CAT-C": "Borderline / Subjective: Stylistic suggestion, minor non-blocking convention, or debatable best practice."
+  },
+  "tier1_e6_total_fps": 22,
+  "tier1_e6_sampled_count": 10,
+  "tier1_file": "tier1_e6_sample_50.csv",
+  "tier2_total_sampled_count": 10,
+  "tier2_file": "tier2_baselines_sample_60.csv",
+  "audit_status": "PENDING_HUMAN_REVIEW",
+  "instruction": "Reviewers must populate reviewer_1_label and reviewer_2_label independently using CAT-A, CAT-B, CAT-C."
+}

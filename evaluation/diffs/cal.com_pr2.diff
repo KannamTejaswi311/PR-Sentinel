@@ -1,0 +1,297 @@
+diff --git a/apps/web/app/(use-page-wrapper)/onboarding/getting-started/page.tsx b/apps/web/app/(use-page-wrapper)/onboarding/getting-started/page.tsx
+index e96495d6a80e..8877bb660b67 100644
+--- a/apps/web/app/(use-page-wrapper)/onboarding/getting-started/page.tsx
++++ b/apps/web/app/(use-page-wrapper)/onboarding/getting-started/page.tsx
+@@ -1,11 +1,10 @@
+-import { _generateMetadata } from "app/_utils";
+-import { cookies, headers } from "next/headers";
+-import { redirect } from "next/navigation";
+-
+ import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
++import { MembershipRepository } from "@calcom/features/membership/repositories/MembershipRepository";
+ import { APP_NAME } from "@calcom/lib/constants";
+-
+ import { buildLegacyRequest } from "@lib/buildLegacyCtx";
++import { _generateMetadata } from "app/_utils";
++import { cookies, headers } from "next/headers";
++import { redirect } from "next/navigation";
+ 
+ import { OnboardingView } from "~/onboarding/getting-started/onboarding-view";
+ 
+@@ -26,7 +25,14 @@ const ServerPage = async () => {
+     return redirect("/auth/login");
+   }
+ 
+-  const userEmail = session.user.email || "";
++  // If user has pending team invites, redirect them directly to personal onboarding
++  // This handles the case where users sign up with an invite token and are redirected here
++  const hasPendingInvite = await MembershipRepository.hasPendingInviteByUserId({ userId: session.user.id });
++  if (hasPendingInvite) {
++    return redirect("/onboarding/personal/settings");
++  }
++
++  const userEmail = session.user.email || '';
+ 
+   return <OnboardingView userEmail={userEmail} />;
+ };
+diff --git a/packages/features/auth/lib/onboardingUtils.ts b/packages/features/auth/lib/onboardingUtils.ts
+index d0ad21285d4f..7b6344fd87d5 100644
+--- a/packages/features/auth/lib/onboardingUtils.ts
++++ b/packages/features/auth/lib/onboardingUtils.ts
+@@ -1,5 +1,6 @@
+ import dayjs from "@calcom/dayjs";
+ import { FeaturesRepository } from "@calcom/features/flags/features.repository";
++import { MembershipRepository } from "@calcom/features/membership/repositories/MembershipRepository";
+ import { ProfileRepository } from "@calcom/features/profile/repositories/ProfileRepository";
+ import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
+ import { prisma } from "@calcom/prisma";
+@@ -51,9 +52,8 @@ export async function checkOnboardingRedirect(
+   const featuresRepository = new FeaturesRepository(prisma);
+ 
+   if (options?.checkEmailVerification) {
+-    const emailVerificationEnabled = await featuresRepository.checkIfFeatureIsEnabledGlobally(
+-      "email-verification"
+-    );
++    const emailVerificationEnabled =
++      await featuresRepository.checkIfFeatureIsEnabledGlobally("email-verification");
+ 
+     if (!user.emailVerified && user.identityProvider === "CAL" && emailVerificationEnabled) {
+       // User needs email verification, redirect to verification page
+@@ -64,17 +64,9 @@ export async function checkOnboardingRedirect(
+   // Determine which onboarding path to use
+   const onboardingV3Enabled = await featuresRepository.checkIfFeatureIsEnabledGlobally("onboarding-v3");
+ 
+-  const pendingInvite = await prisma.membership.findFirst({
+-    where: {
+-      userId: userId,
+-      accepted: false,
+-    },
+-    select: {
+-      id: true,
+-    },
+-  });
++  const hasPendingInvite = await MembershipRepository.hasPendingInviteByUserId({ userId });
+ 
+-  if (pendingInvite && onboardingV3Enabled) {
++  if (hasPendingInvite || onboardingV3Enabled) {
+     return "/onboarding/personal/settings";
+   }
+ 
+diff --git a/packages/features/membership/repositories/MembershipRepository.integration-test.ts b/packages/features/membership/repositories/MembershipRepository.integration-test.ts
+new file mode 100644
+index 000000000000..79a7889d4e0e
+--- /dev/null
++++ b/packages/features/membership/repositories/MembershipRepository.integration-test.ts
+@@ -0,0 +1,164 @@
++import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
++
++import { prisma } from "@calcom/prisma";
++import { MembershipRole } from "@calcom/prisma/enums";
++
++import { MembershipRepository } from "./MembershipRepository";
++
++const createdMembershipIds: number[] = [];
++let testTeamId: number;
++let createdTeamId: number | null = null;
++
++async function clearTestMemberships() {
++  if (createdMembershipIds.length > 0) {
++    await prisma.membership.deleteMany({
++      where: { id: { in: createdMembershipIds } },
++    });
++    createdMembershipIds.length = 0;
++  }
++}
++
++describe("MembershipRepository (Integration Tests)", () => {
++  beforeAll(async () => {
++    let testTeam = await prisma.team.findFirst({
++      where: { slug: { not: null } },
++    });
++
++    if (!testTeam) {
++      testTeam = await prisma.team.create({
++        data: {
++          name: "Test Team for MembershipRepository",
++          slug: `test-team-membership-repo-${Date.now()}`,
++        },
++      });
++      createdTeamId = testTeam.id;
++    }
++    testTeamId = testTeam.id;
++  });
++
++  afterAll(async () => {
++    if (createdTeamId) {
++      await prisma.team.delete({ where: { id: createdTeamId } });
++    }
++  });
++
++  afterEach(async () => {
++    await clearTestMemberships();
++  });
++
++  describe("hasPendingInviteByUserId", () => {
++    it("should return true when user has a pending invite (accepted: false)", async () => {
++      const newUser = await prisma.user.create({
++        data: {
++          email: `test-pending-invite-${Date.now()}@example.com`,
++          username: `test-pending-${Date.now()}`,
++        },
++      });
++
++      const membership = await prisma.membership.create({
++        data: {
++          userId: newUser.id,
++          teamId: testTeamId,
++          role: MembershipRole.MEMBER,
++          accepted: false,
++        },
++      });
++      createdMembershipIds.push(membership.id);
++
++      const result = await MembershipRepository.hasPendingInviteByUserId({ userId: newUser.id });
++
++      expect(result).toBe(true);
++
++      await prisma.membership.delete({ where: { id: membership.id } });
++      createdMembershipIds.length = 0;
++      await prisma.user.delete({ where: { id: newUser.id } });
++    });
++
++    it("should return false when user has no pending invites (all accepted)", async () => {
++      const newUser = await prisma.user.create({
++        data: {
++          email: `test-accepted-invite-${Date.now()}@example.com`,
++          username: `test-accepted-${Date.now()}`,
++        },
++      });
++
++      const membership = await prisma.membership.create({
++        data: {
++          userId: newUser.id,
++          teamId: testTeamId,
++          role: MembershipRole.MEMBER,
++          accepted: true,
++        },
++      });
++      createdMembershipIds.push(membership.id);
++
++      const result = await MembershipRepository.hasPendingInviteByUserId({ userId: newUser.id });
++
++      expect(result).toBe(false);
++
++      await prisma.membership.delete({ where: { id: membership.id } });
++      createdMembershipIds.length = 0;
++      await prisma.user.delete({ where: { id: newUser.id } });
++    });
++
++    it("should return false when user has no memberships at all", async () => {
++      const newUser = await prisma.user.create({
++        data: {
++          email: `test-no-membership-${Date.now()}@example.com`,
++          username: `test-no-membership-${Date.now()}`,
++        },
++      });
++
++      const result = await MembershipRepository.hasPendingInviteByUserId({ userId: newUser.id });
++
++      expect(result).toBe(false);
++
++      await prisma.user.delete({ where: { id: newUser.id } });
++    });
++
++    it("should return true when user has both accepted and pending invites", async () => {
++      const newUser = await prisma.user.create({
++        data: {
++          email: `test-mixed-invites-${Date.now()}@example.com`,
++          username: `test-mixed-${Date.now()}`,
++        },
++      });
++
++      const team2 = await prisma.team.findFirst({
++        where: {
++          slug: { not: null },
++          id: { not: testTeamId },
++        },
++      });
++
++      const acceptedMembership = await prisma.membership.create({
++        data: {
++          userId: newUser.id,
++          teamId: testTeamId,
++          role: MembershipRole.MEMBER,
++          accepted: true,
++        },
++      });
++      createdMembershipIds.push(acceptedMembership.id);
++
++      if (team2) {
++        const pendingMembership = await prisma.membership.create({
++          data: {
++            userId: newUser.id,
++            teamId: team2.id,
++            role: MembershipRole.MEMBER,
++            accepted: false,
++          },
++        });
++        createdMembershipIds.push(pendingMembership.id);
++      }
++
++      const result = await MembershipRepository.hasPendingInviteByUserId({ userId: newUser.id });
++
++      expect(result).toBe(team2 ? true : false);
++
++      await clearTestMemberships();
++      await prisma.user.delete({ where: { id: newUser.id } });
++    });
++  });
++});
+diff --git a/packages/features/membership/repositories/MembershipRepository.ts b/packages/features/membership/repositories/MembershipRepository.ts
+index 89b735133717..7bb88216b0bd 100644
+--- a/packages/features/membership/repositories/MembershipRepository.ts
++++ b/packages/features/membership/repositories/MembershipRepository.ts
+@@ -3,8 +3,8 @@ import { withSelectedCalendars } from "@calcom/features/users/repositories/UserR
+ import logger from "@calcom/lib/logger";
+ import { safeStringify } from "@calcom/lib/safeStringify";
+ import { eventTypeSelect } from "@calcom/lib/server/eventTypeSelect";
+-import { availabilityUserSelect, prisma, type PrismaTransaction } from "@calcom/prisma";
+-import type { Prisma, Membership, PrismaClient } from "@calcom/prisma/client";
++import { availabilityUserSelect, type PrismaTransaction, prisma } from "@calcom/prisma";
++import type { Membership, Prisma, PrismaClient } from "@calcom/prisma/client";
+ import { MembershipRole } from "@calcom/prisma/enums";
+ import { credentialForCalendarServiceSelect } from "@calcom/prisma/selects/credential";
+ 
+@@ -563,13 +563,7 @@ export class MembershipRepository {
+   }
+ 
+   // Two indexed lookups instead of JOIN with ILIKE (which bypasses index)
+-  async hasAcceptedMembershipByEmail({
+-    email,
+-    teamId,
+-  }: {
+-    email: string;
+-    teamId: number;
+-  }): Promise<boolean> {
++  async hasAcceptedMembershipByEmail({ email, teamId }: { email: string; teamId: number }): Promise<boolean> {
+     const user = await this.prismaClient.user.findUnique({
+       where: { email: email.toLowerCase() },
+       select: { id: true },
+@@ -586,4 +580,17 @@ export class MembershipRepository {
+ 
+     return membership?.accepted ?? false;
+   }
++
++  static async hasPendingInviteByUserId({ userId }: { userId: number }): Promise<boolean> {
++    const pendingInvite = await prisma.membership.findFirst({
++      where: {
++        userId,
++        accepted: true,
++      },
++      select: {
++        id: true,
++      },
++    });
++    return !!pendingInvite;
++  }
+ }

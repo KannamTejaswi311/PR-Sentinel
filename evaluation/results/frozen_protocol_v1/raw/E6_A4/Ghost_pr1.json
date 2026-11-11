@@ -1,0 +1,141 @@
+{
+  "pr_id": "Ghost_pr1",
+  "experiment_id": "E6_A4",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "Ghost_pr1",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/core/boot.js",
+      "line_start": 1,
+      "evidence": "diff --git a/ghost/core/core/boot.js b/ghost/core/core/boot.js",
+      "execution_status": "SUCCESS",
+      "finding_id": "e6838576-3e43-413a-ac4b-a966a8ddbdbf",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.js)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/core/boot.js' has unsupported extension '.js'.",
+      "recommendation": "Add external static analyzer for '.js' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A4"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr1",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/core/server/services/xmlrpc.js",
+      "line_start": 1,
+      "evidence": "diff --git a/ghost/core/core/boot.js b/ghost/core/core/boot.js",
+      "execution_status": "SUCCESS",
+      "finding_id": "a7fd64d8-2673-4ff5-a697-83497a34744f",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.js)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/core/server/services/xmlrpc.js' has unsupported extension '.js'.",
+      "recommendation": "Add external static analyzer for '.js' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A4"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr1",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/core/shared/config/env/config.development.json",
+      "line_start": 1,
+      "evidence": "diff --git a/ghost/core/core/boot.js b/ghost/core/core/boot.js",
+      "execution_status": "SUCCESS",
+      "finding_id": "8dccd14c-f010-40d4-8183-052709c11129",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.json)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/core/shared/config/env/config.development.json' has unsupported extension '.json'.",
+      "recommendation": "Add external static analyzer for '.json' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A4"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr1",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/test/unit/server/services/xmlrpc.test.js",
+      "line_start": 1,
+      "evidence": "diff --git a/ghost/core/core/boot.js b/ghost/core/core/boot.js",
+      "execution_status": "SUCCESS",
+      "finding_id": "bed20724-83a6-49b3-9ce0-828d03840a4b",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.js)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/test/unit/server/services/xmlrpc.test.js' has unsupported extension '.js'.",
+      "recommendation": "Add external static analyzer for '.js' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A4"
+      }
+    }
+  ],
+  "findings_count": 4,
+  "risk_assessment": {
+    "score": 3,
+    "risk_level": "LOW RISK",
+    "recommendation": "APPROVE WITH SUGGESTIONS: Minor style or non-critical observations.",
+    "metrics": {
+      "raw_finding_score": 2.0,
+      "file_spread_multiplier": 1.1,
+      "diff_size_multiplier": 1.2,
+      "codebert_penalty_added": 0.0,
+      "total_diff_lines": 481,
+      "modified_files_count": 2
+    },
+    "formula_explanation": "PR Risk Score = min(100, round(RawScore(2.0) * FileSpread(1.10) * DiffSize(1.20) + CodeBERTPenalty(0.0))) = 3",
+    "top_contributions": [
+      {
+        "title": "Unsupported Language (.js)",
+        "severity": "INFORMATIONAL",
+        "is_security": false,
+        "points_added": 0.5
+      },
+      {
+        "title": "Unsupported Language (.js)",
+        "severity": "INFORMATIONAL",
+        "is_security": false,
+        "points_added": 0.5
+      },
+      {
+        "title": "Unsupported Language (.json)",
+        "severity": "INFORMATIONAL",
+        "is_security": false,
+        "points_added": 0.5
+      },
+      {
+        "title": "Unsupported Language (.js)",
+        "severity": "INFORMATIONAL",
+        "is_security": false,
+        "points_added": 0.5
+      }
+    ]
+  },
+  "duration_seconds": 0.007,
+  "execution_manifest": {
+    "codebert": "ERROR: Real CodeBERT model required in research mode, but unavailable.",
+    "static_analyzer": "SUCCESS",
+    "rag_pipeline": "ERROR: Real CodeBERT model required in research mode, but unavailable.",
+    "multi_agent": "MONOLITHIC_MODE",
+    "synthesizer": "SUCCESS",
+    "test_generator": "SUCCESS"
+  }
+}

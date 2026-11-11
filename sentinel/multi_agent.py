@@ -5,23 +5,35 @@ Implements four specialized review agents:
 2. Security Review Agent (Vulnerabilities, injection, credentials, auth)
 3. Performance Review Agent (Inefficient loops, memory, redundant computations)
 4. Code Quality Agent (Maintainability, readability, PEP8, naming, duplication)
-Orchestrates agent execution using Qwen2.5-Coder via Ollama with robust offline fallback.
+Orchestrates agent execution using Qwen2.5-Coder via Ollama with robust offline fallback,
+provenance preservation, and canonical ModelFinding schema validation.
+Adheres to Frozen Experimental Protocol v1.0 and Amendment v1.1.
 """
 
-import ast
 import json
+import os
 import re
-from typing import Any, Dict, List, Optional
+import time
+from typing import Any, Dict, List, Optional, Tuple
 import httpx
+
+from sentinel.schemas import (
+    ModelFinding,
+    FindingCategory,
+    SeverityLevel,
+    ExecutionStatus,
+    FindingGranularity,
+)
 
 
 class BaseReviewAgent:
     """Base class for specialized code review agents."""
 
-    def __init__(self, name: str, role: str, focus_areas: List[str]):
+    def __init__(self, name: str, role: str, focus_areas: List[str], category: str):
         self.name = name
         self.role = role
         self.focus_areas = focus_areas
+        self.category = category
 
     def build_agent_prompt(
         self,
@@ -61,7 +73,7 @@ Respond ONLY with a JSON array of findings matching this exact schema:
 [
   {{
     "title": "Clear concise finding title",
-    "category": "{self.name}",
+    "category": "{self.category}",
     "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFORMATIONAL",
     "file": "{filename}",
     "line": <line_number_or_1>,
@@ -80,7 +92,7 @@ Do not include any conversational preamble or markdown outside the JSON block.
         self,
         diff_content: str,
         filename: str,
-        static_findings: List[Dict[str, Any]]
+        static_findings: Optional[List[Dict[str, Any]]] = None
     ) -> List[Dict[str, Any]]:
         """Specialized heuristic and rule-based analysis for this agent."""
         return []
@@ -98,155 +110,88 @@ class BugDetectionAgent(BaseReviewAgent):
                 "Off-by-one errors",
                 "Null/None pointer dereference",
                 "Unhandled exceptions",
-                "Incorrect boolean conditions",
-                "Division by zero",
+                "Incorrect return values or state mutations",
+                "Division by zero without guard",
             ],
+            category=FindingCategory.BUG.value,
         )
 
     def analyze_heuristically(
         self,
         diff_content: str,
         filename: str,
-        static_findings: List[Dict[str, Any]]
+        static_findings: Optional[List[Dict[str, Any]]] = None
     ) -> List[Dict[str, Any]]:
+        static_findings = static_findings or []
+        """
+        Documented Agent Heuristic Rules:
+        - BUG-01: Division by zero literal (/ 0)
+        - BUG-02: Unguarded variable division
+        - BUG-03: Mutable default argument in function definition
+        - BUG-04: Subscripting fetchone() without None check
+        """
         findings = []
-        added_lines = []
+
         for idx, line in enumerate(diff_content.splitlines(), 1):
             if line.startswith("+") and not line.startswith("+++"):
                 code = line[1:].strip()
-                added_lines.append((idx, code))
 
-                # Check for possible division by zero
-                if re.search(r"/\s*0\b", code):
+                # Rule BUG-01: Division by zero literal
+                if re.search(r"/\s*0(?:\.0*)?(?!\d)", code):
                     findings.append({
-                        "title": "Definite ZeroDivisionError (Division by Literal Zero)",
-                        "category": self.name,
+                        "title": "Division by Zero Error",
+                        "category": self.category,
                         "severity": "CRITICAL",
                         "file": filename,
                         "line": idx,
-                        "description": "Division by literal zero will raise a ZeroDivisionError at runtime.",
+                        "description": "Division operation with a zero denominator will cause ZeroDivisionError.",
                         "evidence": code,
-                        "suggested_fix": "Fix divisor expression to avoid division by zero.",
-                        "confidence": 1.0,
+                        "suggested_fix": "Add a pre-condition guard check ensuring the denominator is non-zero.",
+                        "confidence": 0.95,
                     })
-                elif re.search(r"/\s*[A-Za-z_][A-Za-z0-9_]*", code) and not re.search(r"if\s+.*!=\s*0", code):
-                    match = re.search(r"/\s*([A-Za-z_][A-Za-z0-9_]*)", code)
-                    var_name = match.group(1) if match else "variable"
-                    if var_name not in ("len", "2", "10", "100"):
+
+                # Rule BUG-02: Unguarded division by variable
+                elif re.search(r"/\s*[A-Za-z_][A-Za-z0-9_]*", code) and not any(k in code for k in ("!= 0", "> 0", "if")):
+                    # Exclude comment lines or URL strings
+                    if not code.startswith("#") and "://" not in code:
                         findings.append({
-                            "title": f"Potential ZeroDivisionError on variable '{var_name}'",
-                            "category": self.name,
+                            "title": "Potential Zero-Division by Variable",
+                            "category": self.category,
                             "severity": "HIGH",
                             "file": filename,
                             "line": idx,
-                            "description": f"Division by variable '{var_name}' without zero check can cause runtime crash.",
+                            "description": "Division by variable without apparent non-zero validation.",
                             "evidence": code,
-                            "suggested_fix": f"Add zero-check guard before division: if {var_name} != 0:",
-                            "confidence": 0.85,
+                            "suggested_fix": "Ensure variable is validated != 0 before division.",
+                            "confidence": 0.70,
                         })
 
-                # Check for mutable default argument in Python
-                if re.search(r"def\s+\w+\(.*=\s*(\[\]|\{\})\)", code):
+                # Rule BUG-03: Mutable default arguments (def foo(bar=[]))
+                if re.search(r"def\s+[A-Za-z_][A-Za-z0-9_]*\s*\(.*=\s*(\[\]|\{\})", code):
                     findings.append({
-                        "title": "Mutable Default Argument in Function Definition",
-                        "category": self.name,
+                        "title": "Mutable Default Argument Bug",
+                        "category": self.category,
                         "severity": "MEDIUM",
                         "file": filename,
                         "line": idx,
-                        "description": "Default parameter values are evaluated once at function definition, causing shared state bugs.",
+                        "description": "Mutable default argument retains state across multiple function calls.",
                         "evidence": code,
-                        "suggested_fix": "Use 'arg=None' as default and initialize inside function: if arg is None: arg = []",
-                        "confidence": 0.95,
-                    })
-
-                # Check for missing return or NoneType dereference
-                if re.search(r"\.fetchone\(\)\[", code):
-                    findings.append({
-                        "title": "Unchecked Fetchone Subscripting",
-                        "category": self.name,
-                        "severity": "HIGH",
-                        "file": filename,
-                        "line": idx,
-                        "description": "Accessing subscript on .fetchone() directly will raise TypeError if query returns no rows.",
-                        "evidence": code,
-                        "suggested_fix": "Store row in a variable first: row = result.fetchone(); return row[0] if row else None",
+                        "suggested_fix": "Use None as the default value and initialize the mutable object inside the function body.",
                         "confidence": 0.90,
                     })
 
-        return findings
-
-
-class SecurityReviewAgent(BaseReviewAgent):
-    """Examines security vulnerabilities, injection flaws, hardcoded credentials, and auth."""
-
-    def __init__(self):
-        super().__init__(
-            name="Security Review Agent",
-            role="Identify vulnerabilities, CWE/OWASP risks, injection vectors, and hardcoded secrets",
-            focus_areas=[
-                "SQL Injection",
-                "Command Injection",
-                "Cross-Site Scripting (XSS)",
-                "Hardcoded credentials and API keys",
-                "Path Traversal",
-                "Authentication & Authorization bypass",
-                "Insecure Deserialization",
-            ],
-        )
-
-    def analyze_heuristically(
-        self,
-        diff_content: str,
-        filename: str,
-        static_findings: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
-        findings = []
-
-        # Incorporate static findings from Bandit / AST
-        for sf in static_findings:
-            if sf.get("severity") in ("CRITICAL", "HIGH", "MEDIUM"):
-                findings.append({
-                    "title": sf.get("title", "Security Finding"),
-                    "category": self.name,
-                    "severity": sf.get("severity", "HIGH"),
-                    "file": sf.get("file", filename),
-                    "line": sf.get("line", 1),
-                    "description": sf.get("description", ""),
-                    "evidence": sf.get("evidence", ""),
-                    "suggested_fix": sf.get("recommendation", "Remediate security issue."),
-                    "confidence": 0.95,
-                })
-
-        for idx, line in enumerate(diff_content.splitlines(), 1):
-            if line.startswith("+") and not line.startswith("+++"):
-                code = line[1:].strip()
-
-                # SQL Injection check
-                if re.search(r"\b(SELECT|INSERT|UPDATE|DELETE)\b", code, re.I) and ("+" in code or "f\"" in code or "f'" in code):
+                # Rule BUG-04: Subscripting fetchone() directly without None check
+                if re.search(r"\.fetchone\(\)\[", code):
                     findings.append({
-                        "title": "CWE-89: SQL Injection Vector",
-                        "category": self.name,
+                        "title": "Potential TypeError on fetchone() None result",
+                        "category": self.category,
                         "severity": "HIGH",
                         "file": filename,
                         "line": idx,
-                        "description": "Dynamic SQL construction using untrusted string interpolation or concatenation.",
+                        "description": "Subscripting cursor.fetchone() directly will raise TypeError if query returns no rows.",
                         "evidence": code,
-                        "suggested_fix": "Use parameterized queries: cursor.execute('SELECT * FROM users WHERE name = %s', (name,))",
-                        "confidence": 0.98,
-                    })
-
-                # Command Injection
-                if re.search(r"\b(os\.system|subprocess\.Popen|subprocess\.call)\s*\(", code) and ("+" in code or "shell=True" in code or "f\"" in code):
-                    findings.append({
-                        "title": "CWE-78: Command Injection Risk",
-                        "category": self.name,
-                        "severity": "CRITICAL",
-                        "file": filename,
-                        "line": idx,
-                        "description": "Shell command executed with dynamic concatenation or shell=True.",
-                        "evidence": code,
-                        "suggested_fix": "Pass command arguments as a list with shell=False: subprocess.run(['cmd', arg], check=True)",
-                        "confidence": 0.95,
+                        "suggested_fix": "Store fetchone() in a variable, verify it is not None, then access columns.",
+                        "confidence": 0.85,
                     })
 
         # Deduplicate
@@ -260,63 +205,169 @@ class SecurityReviewAgent(BaseReviewAgent):
         return deduped
 
 
-class PerformanceReviewAgent(BaseReviewAgent):
-    """Examines algorithmic complexity, unnecessary computations, and resource efficiency."""
+class SecurityReviewAgent(BaseReviewAgent):
+    """Detects security vulnerabilities, injection flaws, secrets, and auth bypasses."""
 
     def __init__(self):
         super().__init__(
-            name="Performance Review Agent",
-            role="Identify performance bottlenecks, redundant iterations, memory inefficiencies, and unindexed queries",
+            name="Security Review Agent",
+            role="Detect security vulnerabilities (OWASP Top 10, CWE), credential leaks, and injection vectors",
             focus_areas=[
-                "Quadratic time complexity (O(N^2))",
-                "Repeated database queries inside loops (N+1 query problem)",
-                "Unbounded data fetches (missing pagination/LIMIT)",
-                "Memory leaks and unclosed file/connection handles",
-                "Redundant object serialization",
+                "SQL Injection (CWE-89)",
+                "Command Injection (CWE-78)",
+                "Cross-Site Scripting XSS (CWE-79)",
+                "Hardcoded Credentials & API Keys (CWE-798)",
+                "Path Traversal (CWE-22)",
+                "Insecure Deserialization",
+                "Authentication and Authorization Bypass",
             ],
+            category=FindingCategory.SECURITY.value,
         )
 
     def analyze_heuristically(
         self,
         diff_content: str,
         filename: str,
-        static_findings: List[Dict[str, Any]]
+        static_findings: Optional[List[Dict[str, Any]]] = None
     ) -> List[Dict[str, Any]]:
+        """
+        Documented Agent Heuristic Rules:
+        - Ingests high-confidence static findings from Bandit / AST
+        - SEC-01: Raw SQL string concatenation
+        - SEC-02: Unsafe subprocess or os.system execution
+        """
+        static_findings = static_findings or []
         findings = []
 
-        # Check for unindexed / unbounded SELECT * without LIMIT
+        # Promote static findings into agent findings
+        for sf in static_findings:
+            if sf.get("severity") in ("CRITICAL", "HIGH", "MEDIUM"):
+                findings.append({
+                    "title": sf.get("title", "Static Security Finding"),
+                    "category": self.category,
+                    "severity": sf.get("severity", "HIGH"),
+                    "file": sf.get("file", filename),
+                    "line": sf.get("line", 1),
+                    "description": sf.get("description", ""),
+                    "evidence": sf.get("evidence", ""),
+                    "suggested_fix": sf.get("recommendation", "Apply security patch."),
+                    "confidence": 0.95,
+                })
+
         for idx, line in enumerate(diff_content.splitlines(), 1):
             if line.startswith("+") and not line.startswith("+++"):
                 code = line[1:].strip()
 
-                if re.search(r"SELECT\s+\*\s+FROM\s+\w+", code, re.I) and not re.search(r"LIMIT\s+\d+", code, re.I):
+                # Rule SEC-01: Direct SQL concatenation
+                if any(k in code.upper() for k in ("SELECT ", "INSERT ", "UPDATE ", "DELETE ")) and ("+" in code or "f\"" in code or "f'" in code):
                     findings.append({
-                        "title": "Unbounded Database Query Without LIMIT Clause",
-                        "category": self.name,
+                        "title": "SQL Injection Risk (Direct Concatenation)",
+                        "category": self.category,
+                        "severity": "HIGH",
+                        "file": filename,
+                        "line": idx,
+                        "description": "SQL statement dynamically built via string concatenation or f-string interpolation.",
+                        "evidence": code,
+                        "suggested_fix": "Use parameterized queries with placeholder syntax.",
+                        "confidence": 0.90,
+                    })
+
+                # Rule SEC-02: Command injection
+                if any(k in code for k in ("os.system(", "subprocess.Popen(", "subprocess.call(")):
+                    if "+" in code or "shell=True" in code or "f\"" in code or "f'" in code:
+                        findings.append({
+                            "title": "Command Injection Vulnerability",
+                            "category": self.category,
+                            "severity": "CRITICAL",
+                            "file": filename,
+                            "line": idx,
+                            "description": "System command execution with dynamic arguments or shell=True.",
+                            "evidence": code,
+                            "suggested_fix": "Pass command arguments as a list with shell=False.",
+                            "confidence": 0.95,
+                        })
+
+        seen = set()
+        deduped = []
+        for f in findings:
+            key = (f["title"], f["line"])
+            if key not in seen:
+                seen.add(key)
+                deduped.append(f)
+        return deduped
+
+
+class PerformanceReviewAgent(BaseReviewAgent):
+    """Identifies algorithmic inefficiencies, memory leaks, and redundant operations."""
+
+    def __init__(self):
+        super().__init__(
+            name="Performance Review Agent",
+            role="Identify performance bottlenecks, quadratic complexities, memory bloat, and redundant queries",
+            focus_areas=[
+                "Quadratic or exponential loops (O(N^2))",
+                "N+1 database query patterns",
+                "Unbounded data fetches (missing LIMIT/pagination)",
+                "Memory leaks and unclosed file/socket descriptors",
+                "Redundant object creation or serialization",
+            ],
+            category=FindingCategory.PERFORMANCE.value,
+        )
+
+    def analyze_heuristically(
+        self,
+        diff_content: str,
+        filename: str,
+        static_findings: Optional[List[Dict[str, Any]]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Documented Agent Heuristic Rules:
+        - PERF-01: Unbounded database query without LIMIT
+        - PERF-02: Database connection opened without context manager
+        """
+        static_findings = static_findings or []
+        findings = []
+
+        for idx, line in enumerate(diff_content.splitlines(), 1):
+            if line.startswith("+") and not line.startswith("+++"):
+                code = line[1:].strip()
+
+                # Rule PERF-01: Unbounded SELECT
+                if "SELECT " in code.upper() and "FROM " in code.upper() and "LIMIT " not in code.upper():
+                    findings.append({
+                        "title": "Unbounded Database Query (Missing LIMIT)",
+                        "category": self.category,
                         "severity": "LOW",
                         "file": filename,
                         "line": idx,
-                        "description": "Selecting all columns without pagination or LIMIT can degrade query latency on large datasets.",
+                        "description": "SQL query lacks pagination or LIMIT clause, risking memory exhaustion.",
                         "evidence": code,
-                        "suggested_fix": "Specify required columns explicitly and apply pagination using LIMIT and OFFSET.",
-                        "confidence": 0.80,
+                        "suggested_fix": "Add a LIMIT clause or implement cursor pagination.",
+                        "confidence": 0.70,
                     })
 
-                # Check for connection opened without context manager (with)
-                if re.search(r"connect\(", code) and not re.search(r"with\s+", code):
+                # Rule PERF-02: Connection leak
+                if "connect(" in code and "with " not in code:
                     findings.append({
-                        "title": "Resource Connection Without Context Manager",
-                        "category": self.name,
+                        "title": "Unmanaged Connection Resource",
+                        "category": self.category,
                         "severity": "LOW",
                         "file": filename,
                         "line": idx,
-                        "description": "Database or socket connections should use a context manager ('with') to prevent connection leaks.",
+                        "description": "Connection opened without context manager ('with' statement) may leak sockets/handles.",
                         "evidence": code,
-                        "suggested_fix": "Use context manager: with sqlite3.connect(...) as connection:",
-                        "confidence": 0.85,
+                        "suggested_fix": "Wrap database connection in a 'with' context manager.",
+                        "confidence": 0.75,
                     })
 
-        return findings
+        seen = set()
+        deduped = []
+        for f in findings:
+            key = (f["title"], f["line"])
+            if key not in seen:
+                seen.add(key)
+                deduped.append(f)
+        return deduped
 
 
 class CodeQualityAgent(BaseReviewAgent):
@@ -333,14 +384,21 @@ class CodeQualityAgent(BaseReviewAgent):
                 "Misleading or non-standard identifier naming",
                 "Missing docstrings and type hints",
             ],
+            category=FindingCategory.CODE_QUALITY.value,
         )
 
     def analyze_heuristically(
         self,
         diff_content: str,
         filename: str,
-        static_findings: List[Dict[str, Any]]
+        static_findings: Optional[List[Dict[str, Any]]] = None
     ) -> List[Dict[str, Any]]:
+        """
+        Documented Agent Heuristic Rules:
+        - Ingests Flake8 style violations
+        - QUAL-01: Single-letter identifier assignment
+        """
+        static_findings = static_findings or []
         findings = []
 
         # Check static analysis style findings (Flake8)
@@ -348,7 +406,7 @@ class CodeQualityAgent(BaseReviewAgent):
             if sf.get("source") == "Flake8" or "style" in sf.get("title", "").lower():
                 findings.append({
                     "title": sf.get("title", "Code Style Finding"),
-                    "category": self.name,
+                    "category": self.category,
                     "severity": sf.get("severity", "LOW"),
                     "file": sf.get("file", filename),
                     "line": sf.get("line", 1),
@@ -362,11 +420,11 @@ class CodeQualityAgent(BaseReviewAgent):
             if line.startswith("+") and not line.startswith("+++"):
                 code = line[1:].strip()
 
-                # Single letter variable names
-                if re.search(r"^\s*[a-z]\s*=\s*", code) and not re.search(r"^\s*[ijxye]\s*=\s*", code):
+                # Rule QUAL-01: Single letter variable names (except conventional i, j, x, y, e, k, v)
+                if re.search(r"^\s*[a-z]\s*=\s*", code) and not re.search(r"^\s*[ijxyekv_]\s*=\s*", code):
                     findings.append({
                         "title": "Non-Descriptive Identifier Name",
-                        "category": self.name,
+                        "category": self.category,
                         "severity": "INFORMATIONAL",
                         "file": filename,
                         "line": idx,
@@ -376,7 +434,20 @@ class CodeQualityAgent(BaseReviewAgent):
                         "confidence": 0.75,
                     })
 
-        # Deduplicate
+                # Rule QUAL-02: Bare except clause
+                if re.search(r"except\s*:", code):
+                    findings.append({
+                        "title": "Bare Exception Clause",
+                        "category": self.category,
+                        "severity": "MEDIUM",
+                        "file": filename,
+                        "line": idx,
+                        "description": "Bare 'except:' catches SystemExit and KeyboardInterrupt, concealing critical execution faults.",
+                        "evidence": code,
+                        "suggested_fix": "Catch specific exceptions such as 'except Exception:' or domain-specific exceptions.",
+                        "confidence": 0.90,
+                    })
+
         seen = set()
         deduped = []
         for f in findings:
@@ -390,7 +461,8 @@ class CodeQualityAgent(BaseReviewAgent):
 class MultiAgentOrchestrator:
     """
     Coordinates the four specialized review agents, dispatches analysis,
-    and aggregates agent-specific findings.
+    and aggregates agent-specific findings deterministically.
+    Supports monolithic review for E1 and E6-A4.
     """
 
     def __init__(
@@ -412,9 +484,8 @@ class MultiAgentOrchestrator:
         ]
 
     async def _check_ollama(self) -> bool:
-        """Check if Ollama server is responsive (cached for 30s)."""
-        import os
-        import time
+        """Check if Ollama server is responsive (cached for 30s) using fast non-blocking probe."""
+        import socket
 
         if os.environ.get("PR_SENTINEL_OFFLINE", "").lower() in ("1", "true", "yes"):
             return False
@@ -423,16 +494,64 @@ class MultiAgentOrchestrator:
         if self._ollama_reachable is not None and (now - self._last_checked_ollama) < 30.0:
             return self._ollama_reachable
 
+        # Fast socket probe directly to IPv4 to prevent Windows IPv6 SYN timeout hang
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.15)
         try:
-            probe_url = self.ollama_url.replace("/api/generate", "/api/tags")
-            async with httpx.AsyncClient(timeout=0.8) as client:
-                resp = await client.get(probe_url)
-                self._ollama_reachable = (resp.status_code == 200)
+            s.connect(("127.0.0.1", 11434))
+            s.close()
+            self._ollama_reachable = True
         except Exception:
             self._ollama_reachable = False
+        finally:
+            try:
+                s.close()
+            except Exception:
+                pass
 
         self._last_checked_ollama = now
         return self._ollama_reachable
+
+    def run_review_sync(
+        self,
+        diff_content: str,
+        filename: str = "modified_code.py",
+        repo_context: str = "",
+        static_findings: Optional[List[Dict[str, Any]]] = None,
+        pr_id: str = "pr_unknown",
+    ) -> Dict[str, Any]:
+        """
+        Synchronous deterministic execution of the four review agents.
+        Applies agent-specific heuristic rule analyzers and aggregates findings.
+        """
+        static_findings = static_findings or []
+        results: Dict[str, Any] = {
+            "agents_executed": [a.name for a in self.agents],
+            "agent_findings": {},
+            "agent_execution_status": {},
+            "total_raw_findings": 0,
+            "llm_used": False,
+        }
+
+        all_findings = []
+        for agent in self.agents:
+            heuristic_findings = agent.analyze_heuristically(diff_content, filename, static_findings)
+            deduped = self._deduplicate(heuristic_findings)
+            results["agent_execution_status"][agent.name] = {
+                "status": ExecutionStatus.FALLBACK_USED.value if os.environ.get("PR_SENTINEL_OFFLINE") else ExecutionStatus.SUCCESS.value,
+                "error": None
+            }
+            results["agent_findings"][agent.name] = {
+                "role": agent.role,
+                "focus_areas": agent.focus_areas,
+                "findings_count": len(deduped),
+                "findings": deduped,
+            }
+            all_findings.extend(deduped)
+
+        results["total_raw_findings"] = len(all_findings)
+        results["all_findings"] = all_findings
+        return results
 
     async def run_review(
         self,
@@ -440,34 +559,51 @@ class MultiAgentOrchestrator:
         filename: str = "modified_code.py",
         repo_context: str = "",
         static_findings: Optional[List[Dict[str, Any]]] = None,
+        pr_id: str = "pr_unknown",
     ) -> Dict[str, Any]:
         """
-        Run all 4 agents sequentially or in parallel, collecting their findings.
+        Run all 4 agents deterministically, collecting their findings.
         Attempts LLM generation with Qwen2.5-Coder and seamlessly merges with agent heuristics.
         """
+        if os.environ.get("PR_SENTINEL_OFFLINE", "").lower() in ("1", "true", "yes"):
+            return self.run_review_sync(diff_content, filename, repo_context, static_findings, pr_id)
         static_findings = static_findings or []
         ollama_online = await self._check_ollama()
         results: Dict[str, Any] = {
             "agents_executed": [a.name for a in self.agents],
             "agent_findings": {},
+            "agent_execution_status": {},
             "total_raw_findings": 0,
             "llm_used": False,
         }
 
         all_findings = []
 
+        # Single-threaded deterministic execution per Protocol refinement 7
         for agent in self.agents:
             agent_findings = []
-            # 1. Run agent-specific heuristic / static analysis
+            exec_status = ExecutionStatus.SUCCESS.value
+            err_msg = None
+
+            # 1. Run agent-specific heuristic analysis
             heuristic_findings = agent.analyze_heuristically(diff_content, filename, static_findings)
             agent_findings.extend(heuristic_findings)
 
             # 2. Attempt LLM call if Ollama is accessible
             if ollama_online:
-                llm_findings = await self._call_agent_llm(agent, diff_content, filename, repo_context, static_findings)
-                if llm_findings:
+                llm_res, status, err = await self._call_agent_llm(agent, diff_content, filename, repo_context, static_findings)
+                exec_status = status
+                err_msg = err
+                if llm_res:
                     results["llm_used"] = True
-                    agent_findings.extend(llm_findings)
+                    agent_findings.extend(llm_res)
+            else:
+                exec_status = ExecutionStatus.SKIPPED.value if not os.environ.get("PR_SENTINEL_OFFLINE") else ExecutionStatus.FALLBACK_USED.value
+
+            results["agent_execution_status"][agent.name] = {
+                "status": exec_status,
+                "error": err_msg
+            }
 
             # Deduplicate per agent
             deduped = self._deduplicate(agent_findings)
@@ -483,6 +619,112 @@ class MultiAgentOrchestrator:
         results["all_findings"] = all_findings
         return results
 
+    async def run_monolithic_review(
+        self,
+        diff_content: str,
+        filename: str = "modified_code.py",
+        repo_context: str = "",
+        pr_id: str = "pr_unknown",
+    ) -> List[ModelFinding]:
+        """
+        Single-prompt review for Configuration E1 (Standalone LLM) and E6-A4 (E6 w/o Multi-Agent).
+        """
+        ollama_online = await self._check_ollama()
+        if not ollama_online:
+            return [ModelFinding(
+                pr_id=pr_id,
+                source="llm_monolithic",
+                category=FindingCategory.BUG.value,
+                file_path=filename,
+                line_start=1,
+                evidence="",
+                description="Ollama server offline or unreachable.",
+                execution_status=ExecutionStatus.TOOL_ERROR.value,
+            )]
+
+        prompt = f"""You are an expert automated code reviewer.
+Review the following pull request code diff and report any bugs, security vulnerabilities, or critical flaws.
+Target File: {filename}
+
+Repository Context:
+{repo_context}
+
+Code Diff:
+```diff
+{diff_content}
+```
+
+Instructions:
+Respond ONLY with a JSON array of findings matching this exact schema:
+[
+  {{
+    "title": "Clear concise finding title",
+    "category": "BUG" | "SECURITY" | "PERFORMANCE" | "CODE_QUALITY",
+    "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFORMATIONAL",
+    "file": "{filename}",
+    "line": <line_number_or_1>,
+    "description": "Detailed explanation of the problem",
+    "evidence": "Exact code snippet",
+    "suggested_fix": "Concrete code correction",
+    "confidence": 0.85
+  }}
+]
+If no issues are found, return []."""
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.post(
+                    self.ollama_url,
+                    json={
+                        "model": self.model,
+                        "prompt": prompt,
+                        "stream": False,
+                        "format": "json",
+                    },
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    raw_text = data.get("response", "").strip()
+                    parsed_dicts = self._parse_json_findings(raw_text, "Monolithic LLM", filename)
+                    model_findings = []
+                    for d in parsed_dicts:
+                        model_findings.append(ModelFinding(
+                            pr_id=pr_id,
+                            source="llm_monolithic",
+                            category=d.get("category", FindingCategory.BUG.value),
+                            file_path=d.get("file", filename),
+                            line_start=int(d.get("line", 1)),
+                            evidence=d.get("evidence", ""),
+                            severity=d.get("severity", SeverityLevel.MEDIUM.value),
+                            confidence=float(d.get("confidence", 0.8)),
+                            description=d.get("description", ""),
+                            recommendation=d.get("suggested_fix", ""),
+                            execution_status=ExecutionStatus.SUCCESS.value
+                        ))
+                    return model_findings
+                else:
+                    return [ModelFinding(
+                        pr_id=pr_id,
+                        source="llm_monolithic",
+                        category=FindingCategory.BUG.value,
+                        file_path=filename,
+                        line_start=1,
+                        evidence="",
+                        description=f"Ollama returned HTTP status {resp.status_code}",
+                        execution_status=ExecutionStatus.LLM_ERROR.value,
+                    )]
+        except Exception as e:
+            return [ModelFinding(
+                pr_id=pr_id,
+                source="llm_monolithic",
+                category=FindingCategory.BUG.value,
+                file_path=filename,
+                line_start=1,
+                evidence="",
+                description=f"Ollama invocation failed: {str(e)}",
+                execution_status=ExecutionStatus.TIMEOUT.value if isinstance(e, httpx.TimeoutException) else ExecutionStatus.LLM_ERROR.value,
+            )]
+
     async def _call_agent_llm(
         self,
         agent: BaseReviewAgent,
@@ -490,8 +732,8 @@ class MultiAgentOrchestrator:
         filename: str,
         repo_context: str,
         static_findings: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
-        """Call Ollama for agent-specific reasoning."""
+    ) -> Tuple[List[Dict[str, Any]], str, Optional[str]]:
+        """Call Ollama for agent-specific reasoning, capturing errors explicitly."""
         prompt = agent.build_agent_prompt(diff_content, filename, repo_context, static_findings)
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -507,18 +749,26 @@ class MultiAgentOrchestrator:
                 if resp.status_code == 200:
                     data = resp.json()
                     raw_text = data.get("response", "").strip()
-                    return self._parse_json_findings(raw_text, agent.name, filename)
-        except Exception:
-            pass
-        return []
+                    findings = self._parse_json_findings(raw_text, agent.name, filename)
+                    return findings, ExecutionStatus.SUCCESS.value, None
+                else:
+                    return [], ExecutionStatus.LLM_ERROR.value, f"HTTP {resp.status_code}"
+        except httpx.TimeoutException:
+            return [], ExecutionStatus.TIMEOUT.value, f"Timed out after {self.timeout}s"
+        except Exception as exc:
+            return [], ExecutionStatus.LLM_ERROR.value, str(exc)
 
     def _parse_json_findings(self, text: str, agent_name: str, default_file: str) -> List[Dict[str, Any]]:
-        """Safely extract JSON array of findings from LLM output."""
+        """Safely extract JSON array of findings from LLM output without greedy blowout."""
         if not text:
             return []
+        
+        # Clean markdown code blocks if any
+        cleaned = re.sub(r"^```(?:json)?\s*", "", text.strip(), flags=re.MULTILINE)
+        cleaned = re.sub(r"\s*```$", "", cleaned.strip(), flags=re.MULTILINE)
+
         try:
-            # Direct parse
-            parsed = json.loads(text)
+            parsed = json.loads(cleaned)
             if isinstance(parsed, list):
                 return self._normalize_findings(parsed, agent_name, default_file)
             elif isinstance(parsed, dict) and "findings" in parsed:
@@ -526,8 +776,8 @@ class MultiAgentOrchestrator:
         except Exception:
             pass
 
-        # Regex search for JSON array block
-        match = re.search(r"\[\s*\{.*\}\s*\]", text, re.DOTALL)
+        # Non-greedy search for JSON array block
+        match = re.search(r"\[\s*\{.*?\}\s*\]", text, re.DOTALL)
         if match:
             try:
                 parsed = json.loads(match.group(0))
@@ -548,7 +798,7 @@ class MultiAgentOrchestrator:
                 "category": item.get("category", agent_name),
                 "severity": item.get("severity", "MEDIUM").upper(),
                 "file": item.get("file", default_file),
-                "line": item.get("line", 1),
+                "line": max(1, int(item.get("line", 1))),
                 "description": item.get("description", ""),
                 "evidence": item.get("evidence", ""),
                 "suggested_fix": item.get("suggested_fix", ""),

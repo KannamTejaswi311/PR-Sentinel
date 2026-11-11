@@ -1,0 +1,732 @@
+diff --git a/src/Components/Web/src/Forms/DisplayName.cs b/src/Components/Web/src/Forms/DisplayName.cs
+new file mode 100644
+index 000000000000..e2e5264c4cbf
+--- /dev/null
++++ b/src/Components/Web/src/Forms/DisplayName.cs
+@@ -0,0 +1,64 @@
++// Licensed to the .NET Foundation under one or more agreements.
++// The .NET Foundation licenses this file to you under the MIT license.
++
++using System.ComponentModel;
++using System.ComponentModel.DataAnnotations;
++using System.Linq.Expressions;
++using Microsoft.AspNetCore.Components.Rendering;
++
++namespace Microsoft.AspNetCore.Components.Forms
++{
++    /// <summary>
++    /// Displays the display name for a specified field, reading from <see cref="DisplayAttribute"/>
++    /// or <see cref="DisplayNameAttribute"/> if present, or falling back to the property name.
++    /// </summary>
++    /// <typeparam name="TValue">The type of the field.</typeparam>
++    public class DisplayName<TValue> : IComponent
++    {
++
++        private RenderHandle _renderHandle;
++        private Expression<Func<TValue>>? _previousFieldAccessor;
++        private string? _displayName;
++
++        /// <summary>
++        /// Specifies the field for which the display name should be shown.
++        /// </summary>
++        [Parameter, EditorRequired]
++        public Expression<Func<TValue>>? For { get; set; }
++        /// <inheritdoc />
++        void IComponent.Attach(RenderHandle renderHandle)
++        {
++            _renderHandle = renderHandle;
++        }
++
++        /// <inheritdoc />
++        Task IComponent.SetParametersAsync(ParameterView parameters)
++        {
++            parameters.SetParameterProperties(this);
++
++            if (For is null)
++            {
++                throw new InvalidOperationException($"{GetType()} requires a value for the " +
++                    $"{nameof(For)} parameter.");
++            }
++
++            // Only recalculate if the expression changed
++            if (For != _previousFieldAccessor)
++            {
++                var newDisplayName = ExpressionMemberAccessor.GetDisplayName(For);
++
++                _displayName = newDisplayName;
++                _renderHandle.Render(BuildRenderTree);
++
++                _previousFieldAccessor = For;
++            }
++
++            return Task.CompletedTask;
++        }
++
++        private void BuildRenderTree(RenderTreeBuilder builder)
++        {
++            builder.AddContent(0, _displayName);
++        }
++    }
++}
+diff --git a/src/Components/Web/src/Forms/ExpressionMemberAccessor.cs b/src/Components/Web/src/Forms/ExpressionMemberAccessor.cs
+new file mode 100644
+index 000000000000..0c895773b98c
+--- /dev/null
++++ b/src/Components/Web/src/Forms/ExpressionMemberAccessor.cs
+@@ -0,0 +1,87 @@
++// Licensed to the .NET Foundation under one or more agreements.
++// The .NET Foundation licenses this file to you under the MIT license.
++
++using System.Collections.Concurrent;
++using System.ComponentModel;
++using System.ComponentModel.DataAnnotations;
++using System.Linq.Expressions;
++using System.Reflection;
++using Microsoft.AspNetCore.Components.HotReload;
++
++namespace Microsoft.AspNetCore.Components.Forms;
++
++internal static class ExpressionMemberAccessor
++{
++    private static readonly ConcurrentDictionary<Expression, MemberInfo> _memberInfoCache = new();
++    private static readonly ConcurrentDictionary<MemberInfo, string> _displayNameCache = new();
++
++    static ExpressionMemberAccessor()
++    {
++        if (HotReloadManager.Default.MetadataUpdateSupported)
++        {
++            HotReloadManager.Default.OnDeltaApplied += ClearCache;
++        }
++    }
++
++    private static MemberInfo GetMemberInfo<TValue>(Expression<Func<TValue>> accessor)
++    {
++        ArgumentNullException.ThrowIfNull(accessor);
++
++        return _memberInfoCache.GetOrAdd(accessor, static expr =>
++        {
++            var lambdaExpression = (LambdaExpression)expr;
++            var accessorBody = lambdaExpression.Body;
++
++            if (accessorBody is UnaryExpression unaryExpression
++                && unaryExpression.NodeType == ExpressionType.Convert
++                && unaryExpression.Type == typeof(object))
++            {
++                accessorBody = unaryExpression.Operand;
++            }
++
++            if (accessorBody is not MemberExpression memberExpression)
++            {
++                throw new ArgumentException(
++                    $"The provided expression contains a {accessorBody.GetType().Name} which is not supported. " +
++                    $"Only simple member accessors (fields, properties) of an object are supported.");
++            }
++
++            return memberExpression.Member;
++        });
++    }
++
++    public static string GetDisplayName(MemberInfo member)
++    {
++        ArgumentNullException.ThrowIfNull(member);
++
++        var displayAttribute = member.GetCustomAttribute<DisplayAttribute>();
++        if (displayAttribute is not null)
++        {
++            var name = displayAttribute.GetName();
++            if (name is not null)
++            {
++                return name;
++            }
++        }
++
++        var displayNameAttribute = member.GetCustomAttribute<DisplayNameAttribute>();
++        if (displayNameAttribute?.DisplayName is not null)
++        {
++            return displayNameAttribute.DisplayName;
++        }
++
++        return member.Name;
++    }
++
++    public static string GetDisplayName<TValue>(Expression<Func<TValue>> accessor)
++    {
++        ArgumentNullException.ThrowIfNull(accessor);
++        var member = GetMemberInfo(accessor);
++        return GetDisplayName(member);
++    }
++
++    private static void ClearCache()
++    {
++        _memberInfoCache.Clear();
++    }
++}
+diff --git a/src/Components/Web/src/PublicAPI.Unshipped.txt b/src/Components/Web/src/PublicAPI.Unshipped.txt
+index 369f33715778..9d7bb1b72c24 100644
+--- a/src/Components/Web/src/PublicAPI.Unshipped.txt
++++ b/src/Components/Web/src/PublicAPI.Unshipped.txt
+@@ -40,3 +40,7 @@ Microsoft.AspNetCore.Components.Web.Media.MediaSource.MediaSource(byte[]! data,
+ Microsoft.AspNetCore.Components.Web.Media.MediaSource.MediaSource(System.IO.Stream! stream, string! mimeType, string! cacheKey) -> void
+ Microsoft.AspNetCore.Components.Web.Media.MediaSource.MimeType.get -> string!
+ Microsoft.AspNetCore.Components.Web.Media.MediaSource.Stream.get -> System.IO.Stream!
++Microsoft.AspNetCore.Components.Forms.DisplayName<TValue>
++Microsoft.AspNetCore.Components.Forms.DisplayName<TValue>.DisplayName() -> void
++Microsoft.AspNetCore.Components.Forms.DisplayName<TValue>.For.get -> System.Linq.Expressions.Expression<System.Func<TValue>!>?
++Microsoft.AspNetCore.Components.Forms.DisplayName<TValue>.For.set -> void
+diff --git a/src/Components/Web/test/Forms/DisplayNameTest.cs b/src/Components/Web/test/Forms/DisplayNameTest.cs
+new file mode 100644
+index 000000000000..f7835c540827
+--- /dev/null
++++ b/src/Components/Web/test/Forms/DisplayNameTest.cs
+@@ -0,0 +1,232 @@
++// Licensed to the .NET Foundation under one or more agreements.
++// The .NET Foundation licenses this file to you under the MIT license.
++
++using System.ComponentModel;
++using System.ComponentModel.DataAnnotations;
++using Microsoft.AspNetCore.Components.Rendering;
++using Microsoft.AspNetCore.Components.Test.Helpers;
++
++namespace Microsoft.AspNetCore.Components.Forms;
++
++public class DisplayNameTest
++{
++    [Fact]
++    public async Task ThrowsIfNoForParameterProvided()
++    {
++        // Arrange
++        var rootComponent = new TestHostComponent
++        {
++            InnerContent = builder =>
++            {
++                builder.OpenComponent<DisplayName<string>>(0);
++                builder.CloseComponent();
++            }
++        };
++
++        var testRenderer = new TestRenderer();
++        var componentId = testRenderer.AssignRootComponentId(rootComponent);
++
++        // Act & Assert
++        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
++            async () => await testRenderer.RenderRootComponentAsync(componentId));
++        Assert.Contains("For", ex.Message);
++        Assert.Contains("parameter", ex.Message);
++    }
++
++    [Fact]
++    public async Task DisplaysPropertyNameWhenNoAttributePresent()
++    {
++        // Arrange
++        var model = new TestModel();
++        var rootComponent = new TestHostComponent
++        {
++            InnerContent = builder =>
++            {
++                builder.OpenComponent<DisplayName<string>>(0);
++                builder.AddComponentParameter(1, "For", (System.Linq.Expressions.Expression<Func<string>>)(() => model.PlainProperty));
++                builder.CloseComponent();
++            }
++        };
++
++        // Act
++        var output = await RenderAndGetOutput(rootComponent);
++
++        // Assert
++        Assert.Equal("PlainProperty", output);
++    }
++
++    [Fact]
++    public async Task DisplaysDisplayAttributeName()
++    {
++        // Arrange
++        var model = new TestModel();
++        var rootComponent = new TestHostComponent
++        {
++            InnerContent = builder =>
++            {
++                builder.OpenComponent<DisplayName<string>>(0);
++                builder.AddComponentParameter(1, "For", (System.Linq.Expressions.Expression<Func<string>>)(() => model.PropertyWithDisplayAttribute));
++                builder.CloseComponent();
++            }
++        };
++
++        // Act
++        var output = await RenderAndGetOutput(rootComponent);
++
++        // Assert
++        Assert.Equal("Custom Display Name", output);
++    }
++
++    [Fact]
++    public async Task DisplaysDisplayNameAttributeName()
++    {
++        // Arrange
++        var model = new TestModel();
++        var rootComponent = new TestHostComponent
++        {
++            InnerContent = builder =>
++            {
++                builder.OpenComponent<DisplayName<string>>(0);
++                builder.AddComponentParameter(1, "For", (System.Linq.Expressions.Expression<Func<string>>)(() => model.PropertyWithDisplayNameAttribute));
++                builder.CloseComponent();
++            }
++        };
++
++        // Act
++        var output = await RenderAndGetOutput(rootComponent);
++
++        // Assert
++        Assert.Equal("Custom DisplayName", output);
++    }
++
++    [Fact]
++    public async Task DisplayAttributeTakesPrecedenceOverDisplayNameAttribute()
++    {
++        // Arrange
++        var model = new TestModel();
++        var rootComponent = new TestHostComponent
++        {
++            InnerContent = builder =>
++            {
++                builder.OpenComponent<DisplayName<string>>(0);
++                builder.AddComponentParameter(1, "For", (System.Linq.Expressions.Expression<Func<string>>)(() => model.PropertyWithBothAttributes));
++                builder.CloseComponent();
++            }
++        };
++
++        // Act
++        var output = await RenderAndGetOutput(rootComponent);
++
++        // Assert
++        // DisplayAttribute should take precedence per MVC conventions
++        Assert.Equal("Display Takes Precedence", output);
++    }
++
++    [Fact]
++    public async Task WorksWithDifferentPropertyTypes()
++    {
++        // Arrange
++        var model = new TestModel();
++        var intComponent = new TestHostComponent
++        {
++            InnerContent = builder =>
++            {
++                builder.OpenComponent<DisplayName<int>>(0);
++                builder.AddComponentParameter(1, "For", (System.Linq.Expressions.Expression<Func<int>>)(() => model.IntProperty));
++                builder.CloseComponent();
++            }
++        };
++        var dateComponent = new TestHostComponent
++        {
++            InnerContent = builder =>
++            {
++                builder.OpenComponent<DisplayName<DateTime>>(0);
++                builder.AddComponentParameter(1, "For", (System.Linq.Expressions.Expression<Func<DateTime>>)(() => model.DateProperty));
++                builder.CloseComponent();
++            }
++        };
++
++        // Act
++        var intOutput = await RenderAndGetOutput(intComponent);
++        var dateOutput = await RenderAndGetOutput(dateComponent);
++
++        // Assert
++        Assert.Equal("Integer Value", intOutput);
++        Assert.Equal("Date Value", dateOutput);
++    }
++
++    [Fact]
++    public async Task SupportsLocalizationWithResourceType()
++    {
++        var model = new TestModel();
++        var rootComponent = new TestHostComponent
++        {
++            InnerContent = builder =>
++            {
++                builder.OpenComponent<DisplayName<string>>(0);
++                builder.AddComponentParameter(1, "For", (System.Linq.Expressions.Expression<Func<string>>)(() => model.PropertyWithResourceBasedDisplay));
++                builder.CloseComponent();
++            }
++        };
++
++        var output = await RenderAndGetOutput(rootComponent);
++        Assert.Equal("Localized Display Name", output);
++    }
++
++    private static async Task<string> RenderAndGetOutput(TestHostComponent rootComponent)
++    {
++        var testRenderer = new TestRenderer();
++        var componentId = testRenderer.AssignRootComponentId(rootComponent);
++        await testRenderer.RenderRootComponentAsync(componentId);
++
++        var batch = testRenderer.Batches.Single();
++        var displayLabelComponentFrame = batch.ReferenceFrames
++            .First(f => f.FrameType == RenderTree.RenderTreeFrameType.Component &&
++                       f.Component is DisplayName<string> or DisplayName<int> or DisplayName<DateTime>);
++
++        // Find the text content frame within the component
++        var textFrame = batch.ReferenceFrames
++            .First(f => f.FrameType == RenderTree.RenderTreeFrameType.Text);
++
++        return textFrame.TextContent;
++    }
++
++    private class TestHostComponent : ComponentBase
++    {
++        public RenderFragment InnerContent { get; set; }
++
++        protected override void BuildRenderTree(RenderTreeBuilder builder)
++        {
++            InnerContent(builder);
++        }
++    }
++
++    private class TestModel
++    {
++        public string PlainProperty { get; set; } = string.Empty;
++
++        [Display(Name = "Custom Display Name")]
++        public string PropertyWithDisplayAttribute { get; set; } = string.Empty;
++
++        [DisplayName("Custom DisplayName")]
++        public string PropertyWithDisplayNameAttribute { get; set; } = string.Empty;
++
++        [Display(Name = "Display Takes Precedence")]
++        [DisplayName("This Should Not Be Used")]
++        public string PropertyWithBothAttributes { get; set; } = string.Empty;
++
++        [Display(Name = "Integer Value")]
++        public int IntProperty { get; set; }
++
++        [Display(Name = "Date Value")]
++        public DateTime DateProperty { get; set; }
++
++        [Display(Name = nameof(TestResources.LocalizedDisplayName), ResourceType = typeof(TestResources))]
++        public string PropertyWithResourceBasedDisplay { get; set; } = string.Empty;
++    }
++
++    public static class TestResources
++    {
++        public static string LocalizedDisplayName => "Localized Display Name";
++    }
++}
+diff --git a/src/Components/test/E2ETest/Tests/FormsTest.cs b/src/Components/test/E2ETest/Tests/FormsTest.cs
+index b58dee62cf0b..304ea1721abc 100644
+--- a/src/Components/test/E2ETest/Tests/FormsTest.cs
++++ b/src/Components/test/E2ETest/Tests/FormsTest.cs
+@@ -555,6 +555,32 @@ public void ErrorsFromCompareAttribute()
+         Browser.Empty(confirmEmailValidationMessage);
+     }
+ 
++    [Fact]
++    public void DisplayNameReadsAttributesCorrectly()
++    {
++        var appElement = Browser.MountTestComponent<DisplayNameComponent>();
++
++        // Check that DisplayAttribute.Name is displayed
++        var displayNameLabel = appElement.FindElement(By.Id("product-name-label"));
++        Browser.Equal("Product Name", () => displayNameLabel.Text);
++
++        // Check that DisplayNameAttribute is displayed
++        var priceLabel = appElement.FindElement(By.Id("price-label"));
++        Browser.Equal("Unit Price", () => priceLabel.Text);
++
++        // Check that DisplayAttribute takes precedence over DisplayNameAttribute
++        var stockLabel = appElement.FindElement(By.Id("stock-label"));
++        Browser.Equal("Stock Quantity", () => stockLabel.Text);
++
++        // Check fallback to property name when no attributes present
++        var descriptionLabel = appElement.FindElement(By.Id("description-label"));
++        Browser.Equal("Description", () => descriptionLabel.Text);
++
++        // Check that ResourceType localization works with English resources
++        var localizedLabel = appElement.FindElement(By.Id("localized-label"));
++        Browser.Equal("Product Name", () => localizedLabel.Text);
++    }
++
+     [Fact]
+     public void InputComponentsCauseContainerToRerenderOnChange()
+     {
+diff --git a/src/Components/test/testassets/BasicTestApp/FormsTest/DisplayNameComponent.razor b/src/Components/test/testassets/BasicTestApp/FormsTest/DisplayNameComponent.razor
+new file mode 100644
+index 000000000000..fda324c7c8a9
+--- /dev/null
++++ b/src/Components/test/testassets/BasicTestApp/FormsTest/DisplayNameComponent.razor
+@@ -0,0 +1,35 @@
++@using System.ComponentModel
++@using System.ComponentModel.DataAnnotations
++@using Microsoft.AspNetCore.Components.Forms
++
++<div>
++    <p id="product-name-label"><DisplayName For="@(() => _product.Name)" /></p>
++    <p id="price-label"><DisplayName For="@(() => _product.Price)" /></p>
++    <p id="stock-label"><DisplayName For="@(() => _product.StockQuantity)" /></p>
++    <p id="description-label"><DisplayName For="@(() => _product.Description)" /></p>
++    <p id="localized-label"><DisplayName For="@(() => _product.LocalizedName)" /></p>
++</div>
++
++@code {
++    private Product _product = new Product();
++
++    class Product
++    {
++        [Display(Name = "Product Name")]
++        public string Name { get; set; } = "Sample";
++
++        [DisplayName("Unit Price")]
++        public decimal Price { get; set; } = 99.99m;
++
++        [Display(Name = "Stock Quantity")]
++        [DisplayName("Stock Amount")] // This should be ignored, Display takes precedence
++        public int StockQuantity { get; set; } = 100;
++
++        // No attributes - should fall back to property name
++        public string Description { get; set; } = "Test";
++
++        // Uses resource file for localization - will show "Product Name" in en-US, "Nom du produit" in fr-FR
++        [Display(Name = nameof(TestResources.ProductName), ResourceType = typeof(TestResources))]
++        public string LocalizedName { get; set; } = "Localized";
++    }
++}
+diff --git a/src/Components/test/testassets/BasicTestApp/Index.razor b/src/Components/test/testassets/BasicTestApp/Index.razor
+index f9cc718f7ca1..ec6bb63c489d 100644
+--- a/src/Components/test/testassets/BasicTestApp/Index.razor
++++ b/src/Components/test/testassets/BasicTestApp/Index.razor
+@@ -27,6 +27,7 @@
+         <option value="BasicTestApp.CustomElementsComponent">Custom elements</option>
+         <option value="BasicTestApp.DataDashComponent">data-* attribute rendering</option>
+         <option value="BasicTestApp.DispatchingComponent">Dispatching to sync context</option>
++        <option value="BasicTestApp.FormsTest.DisplayNameComponent">DisplayName component</option>
+         <option value="BasicTestApp.DuplicateAttributesComponent">Duplicate attributes</option>
+         <option value="BasicTestApp.DynamicComponentRendering">DynamicComponent rendering</option>
+         <option value="BasicTestApp.ElementFocusComponent">Element focus component</option>
+diff --git a/src/Components/test/testassets/BasicTestApp/Resources.fr.resx b/src/Components/test/testassets/BasicTestApp/Resources.fr.resx
+index 1371dedf99d7..5cffee6d040d 100644
+--- a/src/Components/test/testassets/BasicTestApp/Resources.fr.resx
++++ b/src/Components/test/testassets/BasicTestApp/Resources.fr.resx
+@@ -120,4 +120,7 @@
+   <data name="Message" xml:space="preserve">
+     <value> Bonjour!</value>
+   </data>
++  <data name="ProductName" xml:space="preserve">
++    <value>Nom du produit</value>
++  </data>
+ </root>
+\ No newline at end of file
+diff --git a/src/Components/test/testassets/BasicTestApp/Resources.resx b/src/Components/test/testassets/BasicTestApp/Resources.resx
+index f160f449685f..4233071d8a4b 100644
+--- a/src/Components/test/testassets/BasicTestApp/Resources.resx
++++ b/src/Components/test/testassets/BasicTestApp/Resources.resx
+@@ -120,4 +120,7 @@
+   <data name="Message" xml:space="preserve">
+     <value>Hello!</value>
+   </data>
++  <data name="ProductName" xml:space="preserve">
++    <value>Product Name</value>
++  </data>
+ </root>
+\ No newline at end of file
+diff --git a/src/Components/test/testassets/BasicTestApp/TestResources.cs b/src/Components/test/testassets/BasicTestApp/TestResources.cs
+new file mode 100644
+index 000000000000..70f1bb537aaf
+--- /dev/null
++++ b/src/Components/test/testassets/BasicTestApp/TestResources.cs
+@@ -0,0 +1,11 @@
++// Licensed to the .NET Foundation under one or more agreements.
++// The .NET Foundation licenses this file to you under the MIT license.
++
++namespace BasicTestApp;
++
++// Wrap resources to make them available as public properties for [Display]. That attribute does not support
++// internal properties.
++public static class TestResources
++{
++    public static string ProductName => Resources.ProductName;
++}
+diff --git a/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/ForgotPassword.razor b/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/ForgotPassword.razor
+index ae82692ab7e9..5176ea466380 100644
+--- a/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/ForgotPassword.razor
++++ b/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/ForgotPassword.razor
+@@ -25,7 +25,9 @@
+ 
+             <div class="form-floating mb-3">
+                 <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+-                <label for="Input.Email" class="form-label">Email</label>
++                <label for="Input.Email" class="form-label">
++                    <DisplayName For="() => Input.Email" />
++                </label>
+                 <ValidationMessage For="() => Input.Email" class="text-danger" />
+             </div>
+             <button type="submit" class="w-100 btn btn-lg btn-primary">Reset password</button>
+@@ -69,6 +71,7 @@
+     {
+         [Required]
+         [EmailAddress]
++        [Display(Name = "Email")]
+         public string Email { get; set; } = "";
+     }
+ }
+diff --git a/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Login.razor b/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Login.razor
+index 65347e0afdb6..65157408b009 100644
+--- a/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Login.razor
++++ b/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Login.razor
+@@ -25,13 +25,17 @@
+                 <ValidationSummary class="text-danger" role="alert" />
+                 <div class="form-floating mb-3">
+                     <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username webauthn" aria-required="true" placeholder="name@example.com" />
+-                    <label for="Input.Email" class="form-label">Email</label>
++                    <label for="Input.Email" class="form-label">
++                        <DisplayName For="() => Input.Email" />
++                    </label>
+                     <ValidationMessage For="() => Input.Email" class="text-danger" />
+                 </div>
+                 <div class="form-floating mb-3">
+-                    <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
+-                    <label for="Input.Password" class="form-label">Password</label>
+-                    <ValidationMessage For="() => Input.Password" class="text-danger" />
++                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
++                <label for="Input.Password" class="form-label">
++                    <DisplayName For="() => Input.Password" />
++                </label>
++                <ValidationMessage For="() => Input.Password" class="text-danger" />
+                 </div>
+                 <div class="checkbox mb-3">
+                     <label class="form-label">
+@@ -150,10 +154,12 @@
+     {
+         [Required]
+         [EmailAddress]
++        [Display(Name = "Email")]
+         public string Email { get; set; } = "";
+ 
+         [Required]
+         [DataType(DataType.Password)]
++        [Display(Name = "Password")]
+         public string Password { get; set; } = "";
+ 
+         [Display(Name = "Remember me?")]
+diff --git a/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Manage/ChangePassword.razor b/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Manage/ChangePassword.razor
+index 290ea53d8fe1..0a47876de2ba 100644
+--- a/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Manage/ChangePassword.razor
++++ b/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Manage/ChangePassword.razor
+@@ -20,17 +20,23 @@
+             <ValidationSummary class="text-danger" role="alert" />
+             <div class="form-floating mb-3">
+                 <InputText type="password" @bind-Value="Input.OldPassword" id="Input.OldPassword" class="form-control" autocomplete="current-password" aria-required="true" placeholder="Enter the old password" />
+-                <label for="Input.OldPassword" class="form-label">Old password</label>
++                <label for="Input.OldPassword" class="form-label">
++                    <DisplayName For="() => Input.OldPassword" />
++                </label>
+                 <ValidationMessage For="() => Input.OldPassword" class="text-danger" />
+             </div>
+             <div class="form-floating mb-3">
+                 <InputText type="password" @bind-Value="Input.NewPassword" id="Input.NewPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="Enter the new password" />
+-                <label for="Input.NewPassword" class="form-label">New password</label>
++                <label for="Input.NewPassword" class="form-label">
++                    <DisplayName For="() => Input.NewPassword" />
++                </label>
+                 <ValidationMessage For="() => Input.NewPassword" class="text-danger" />
+             </div>
+             <div class="form-floating mb-3">
+                 <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="Enter the new password" />
+-                <label for="Input.ConfirmPassword" class="form-label">Confirm password</label>
++                <label for="Input.ConfirmPassword" class="form-label">
++                    <DisplayName For="() => Input.ConfirmPassword" />
++                </label>
+                 <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
+             </div>
+             <button type="submit" class="w-100 btn btn-lg btn-primary">Update password</button>
+diff --git a/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Manage/Email.razor b/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Manage/Email.razor
+index 94f6b6a473ca..a2ca61841b0b 100644
+--- a/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Manage/Email.razor
++++ b/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Manage/Email.razor
+@@ -45,7 +45,9 @@
+             }
+             <div class="form-floating mb-3">
+                 <InputText @bind-Value="Input.NewEmail" id="Input.NewEmail" class="form-control" autocomplete="email" aria-required="true" placeholder="Enter a new email" />
+-                <label for="Input.NewEmail" class="form-label">New email</label>
++                <label for="Input.NewEmail" class="form-label">
++                    <DisplayName For="() => Input.NewEmail" />
++                </label>
+                 <ValidationMessage For="() => Input.NewEmail" class="text-danger" />
+             </div>
+             <button type="submit" class="w-100 btn btn-lg btn-primary">Change email</button>
+diff --git a/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Register.razor b/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Register.razor
+index bee8e0530a88..fe9296f4a474 100644
+--- a/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Register.razor
++++ b/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/Register.razor
+@@ -29,17 +29,23 @@
+             <ValidationSummary class="text-danger" role="alert" />
+             <div class="form-floating mb-3">
+                 <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+-                <label for="Input.Email">Email</label>
++                <label for="Input.Email">
++                    <DisplayName For="() => Input.Email" />
++                </label>
+                 <ValidationMessage For="() => Input.Email" class="text-danger" />
+             </div>
+             <div class="form-floating mb-3">
+                 <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+-                <label for="Input.Password">Password</label>
++                <label for="Input.Password">
++                    <DisplayName For="() => Input.Password" />
++                </label>
+                 <ValidationMessage For="() => Input.Password" class="text-danger" />
+             </div>
+             <div class="form-floating mb-3">
+                 <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+-                <label for="Input.ConfirmPassword">Confirm Password</label>
++                <label for="Input.ConfirmPassword" class="form-label">
++                    <DisplayName For="() => Input.ConfirmPassword" />
++                </label>
+                 <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
+             </div>
+             <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
+diff --git a/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/ResetPassword.razor b/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/ResetPassword.razor
+index 74f258a1c518..243d0f9d2177 100644
+--- a/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/ResetPassword.razor
++++ b/src/ProjectTemplates/Web.ProjectTemplates/content/BlazorWeb-CSharp/BlazorWebCSharp.1/Components/Account/Pages/ResetPassword.razor
+@@ -24,17 +24,23 @@
+             <input type="hidden" name="Input.Code" value="@Input.Code" />
+             <div class="form-floating mb-3">
+                 <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+-                <label for="Input.Email" class="form-label">Email</label>
++                <label for="Input.Email" class="form-label">
++                    <DisplayName For="() => Input.Email" />
++                </label>
+                 <ValidationMessage For="() => Input.Email" class="text-danger" />
+             </div>
+             <div class="form-floating mb-3">
+-                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="Please enter your password." />
+-                <label for="Input.Password" class="form-label">Password</label>
++                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
++                <label for="Input.Password" class="form-label">
++                    <DisplayName For="() => Input.Password" />
++                </label>
+                 <ValidationMessage For="() => Input.Password" class="text-danger" />
+             </div>
+             <div class="form-floating mb-3">
+-                <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="Please confirm your password." />
+-                <label for="Input.ConfirmPassword" class="form-label">Confirm password</label>
++                <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
++                <label for="Input.ConfirmPassword" class="form-label">
++                    <DisplayName For="() => Input.ConfirmPassword" />
++                </label>
+                 <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
+             </div>
+             <button type="submit" class="w-100 btn btn-lg btn-primary">Reset</button>
+@@ -90,11 +96,13 @@
+     {
+         [Required]
+         [EmailAddress]
++        [Display(Name = "Email")]
+         public string Email { get; set; } = "";
+ 
+         [Required]
+         [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+         [DataType(DataType.Password)]
++        [Display(Name = "Password")]
+         public string Password { get; set; } = "";
+ 
+         [DataType(DataType.Password)]

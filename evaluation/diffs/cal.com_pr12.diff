@@ -1,0 +1,253 @@
+diff --git a/apps/web/modules/event-types/components/EditWeightsForAllTeamMembers.tsx b/apps/web/modules/event-types/components/EditWeightsForAllTeamMembers.tsx
+index 89f9db882e12..3d138fa8a4a9 100644
+--- a/apps/web/modules/event-types/components/EditWeightsForAllTeamMembers.tsx
++++ b/apps/web/modules/event-types/components/EditWeightsForAllTeamMembers.tsx
+@@ -26,9 +26,9 @@ import {
+ import { showToast } from "@calcom/ui/components/toast";
+ 
+ import {
+-  useTeamMembersWithSegment,
+   useTeamMembersWithSegmentPlatform,
+-} from "../../../../../packages/platform/atoms/event-types/hooks/useTeamMembersWithSegment";
++} from "@calcom/atoms/event-types/hooks/useTeamMembersWithSegmentPlatform";
++import { useTeamMembersWithSegment } from "@calcom/web/modules/event-types/hooks/useTeamMembersWithSegment";
+ 
+ type TeamMemberItemProps = {
+   member: Omit<TeamMember, "defaultScheduleId"> & { weight?: number };
+@@ -125,7 +125,7 @@ export const EditWeightsForAllTeamMembers = ({
+ 
+   const useTeamMembersHook = isPlatform ? useTeamMembersWithSegmentPlatform : useTeamMembersWithSegment;
+ 
+-  const { teamMembers, localWeightsInitialValues } = useTeamMembersHook({
++  const { teamMembers, localWeightsInitialValues, isPending } = useTeamMembersHook({
+     initialTeamMembers,
+     assignRRMembersUsingSegment,
+     teamId,
+@@ -301,10 +301,10 @@ export const EditWeightsForAllTeamMembers = ({
+               />
+ 
+               <div className="flex max-h-[80dvh] flex-col overflow-y-auto rounded-md border">
+-                {filteredMembers.map((member) => (
++                {teamMembers.map((member) => (
+                   <TeamMemberItem key={member.value} member={member} onWeightChange={handleWeightChange} />
+                 ))}
+-                {filteredMembers.length === 0 && (
++                {teamMembers.length === 0 && (
+                   <div className="text-subtle py-4 text-center text-sm">{t("no_members_found")}</div>
+                 )}
+               </div>
+diff --git a/apps/web/modules/event-types/hooks/useTeamMembersWithSegment.tsx b/apps/web/modules/event-types/hooks/useTeamMembersWithSegment.tsx
+new file mode 100644
+index 000000000000..902f89c3f560
+--- /dev/null
++++ b/apps/web/modules/event-types/hooks/useTeamMembersWithSegment.tsx
+@@ -0,0 +1,37 @@
++import { useQuery } from "@tanstack/react-query";
++import type { AttributesQueryValue } from "@calcom/lib/raqb/types";
++import { trpc } from "@calcom/trpc/react";
++import { type UseTeamMembersWithSegmentProps, useProcessTeamMembersData } from "@calcom/atoms/event-types/hooks/useTeamMembersWithSegmentPlatform";
++
++export const useTeamMembersWithSegment = ({
++  initialTeamMembers,
++  assignRRMembersUsingSegment,
++  teamId,
++  queryValue,
++  value,
++}: UseTeamMembersWithSegmentProps) => {
++  const { data: matchingTeamMembersWithResult, isPending } =
++    trpc.viewer.attributes.findTeamMembersMatchingAttributeLogic.useQuery(
++      {
++        teamId: teamId || 0,
++        attributesQueryValue: queryValue as AttributesQueryValue,
++        _enablePerf: true,
++      },
++      {
++        enabled: assignRRMembersUsingSegment && !!queryValue && !!teamId,
++      }
++    );
++
++  const { teamMembers, localWeightsInitialValues } = useProcessTeamMembersData({
++    initialTeamMembers,
++    assignRRMembersUsingSegment,
++    matchingTeamMembersWithResult: matchingTeamMembersWithResult?.result ? { result: matchingTeamMembersWithResult.result } : matchingTeamMembersWithResult,
++    value,
++  });
++
++  return {
++    teamMembers,
++    localWeightsInitialValues,
++    isPending,
++  };
++};
+diff --git a/biome.json b/biome.json
+index d0993a5be4ec..4d0682229da2 100644
+--- a/biome.json
++++ b/biome.json
+@@ -323,6 +323,38 @@
+           }
+         }
+       }
++    },
++    {
++      "includes": [
++        "packages/platform/atoms/**/*.{ts,tsx,js,jsx,mts,mjs,cjs,cts}"
++      ],
++      "linter": {
++        "rules": {
++          "style": {
++            "noRestrictedImports": {
++              "level": "error",
++              "options": {
++                "patterns": [
++                  {
++                    "group": [
++                      "@calcom/trpc/react",
++                      "@calcom/trpc/react/**"
++                    ],
++                    "message": "atoms package should not import from @calcom/trpc/react."
++                  },
++                  {
++                    "group": [
++                      "../../trpc/react",
++                      "../../trpc/react/**"
++                    ],
++                    "message": "atoms package should not import from trpc/react."
++                  }
++                ]
++              }
++            }
++          }
++        }
++      }
+     }
+   ]
+ }
+diff --git a/packages/platform/atoms/availability/AvailabilitySettings.tsx b/packages/platform/atoms/availability/AvailabilitySettings.tsx
+index d3b6abc0f11a..44a92ae0716f 100644
+--- a/packages/platform/atoms/availability/AvailabilitySettings.tsx
++++ b/packages/platform/atoms/availability/AvailabilitySettings.tsx
+@@ -29,7 +29,7 @@ import WebSchedule, {
+ import { availabilityAsString } from "@calcom/lib/availability";
+ import { useLocale } from "@calcom/lib/hooks/useLocale";
+ import { sortAvailabilityStrings } from "@calcom/lib/weekstart";
+-import type { RouterOutputs } from "@calcom/trpc/react";
++import type { TravelScheduleRepository } from "@calcom/features/travelSchedule/repositories/TravelScheduleRepository";
+ import type { TimeRange, WorkingHours } from "@calcom/types/schedule";
+ import classNames from "@calcom/ui/classNames";
+ import { Button } from "@calcom/ui/components/button";
+@@ -99,7 +99,7 @@ export type AvailabilitySettingsScheduleType = {
+ type AvailabilitySettingsProps = {
+   skeletonLabel?: string;
+   schedule: AvailabilitySettingsScheduleType;
+-  travelSchedules?: RouterOutputs["viewer"]["travelSchedules"]["get"];
++  travelSchedules?: Awaited<ReturnType<typeof TravelScheduleRepository.findTravelSchedulesByUserId>>;
+   handleDelete: () => void;
+   allowDelete?: boolean;
+   allowSetToDefault?: boolean;
+@@ -195,7 +195,7 @@ const DateOverride = ({
+ }: {
+   workingHours: WorkingHours[];
+   userTimeFormat: number | null;
+-  travelSchedules?: RouterOutputs["viewer"]["travelSchedules"]["get"];
++  travelSchedules?: Awaited<ReturnType<typeof TravelScheduleRepository.findTravelSchedulesByUserId>>;
+   weekStart: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+   overridesModalClassNames?: string;
+   classNames?: {
+@@ -642,7 +642,7 @@ export const AvailabilitySettings = forwardRef<AvailabilitySettingsFormRef, Avai
+               form="availability-form"
+               loading={isSaving}
+               disabled={isLoading || !formHasChanges}
+-              >
++            >
+               {t("save")}
+             </Button>
+             <Button
+diff --git a/packages/platform/atoms/event-types/hooks/useTeamMembersWithSegment.tsx b/packages/platform/atoms/event-types/hooks/useTeamMembersWithSegmentPlatform.tsx
+similarity index 77%
+rename from packages/platform/atoms/event-types/hooks/useTeamMembersWithSegment.tsx
+rename to packages/platform/atoms/event-types/hooks/useTeamMembersWithSegmentPlatform.tsx
+index da3a36b122ee..cb0529d4e8eb 100644
+--- a/packages/platform/atoms/event-types/hooks/useTeamMembersWithSegment.tsx
++++ b/packages/platform/atoms/event-types/hooks/useTeamMembersWithSegmentPlatform.tsx
+@@ -15,7 +15,7 @@ import { trpc } from "@calcom/trpc/react";
+ import { useAtomsContext } from "../../hooks/useAtomsContext";
+ import http from "../../lib/http";
+ 
+-interface UseTeamMembersWithSegmentProps {
++export interface UseTeamMembersWithSegmentProps {
+   initialTeamMembers: TeamMember[];
+   assignRRMembersUsingSegment: boolean;
+   teamId?: number;
+@@ -24,7 +24,7 @@ interface UseTeamMembersWithSegmentProps {
+   value: Host[];
+ }
+ 
+-const useProcessTeamMembersData = ({
++export const useProcessTeamMembersData = ({
+   initialTeamMembers,
+   assignRRMembersUsingSegment,
+   matchingTeamMembersWithResult,
+@@ -105,37 +105,4 @@ export const useTeamMembersWithSegmentPlatform = ({
+     localWeightsInitialValues,
+     isPending,
+   };
+-};
+-
+-export const useTeamMembersWithSegment = ({
+-  initialTeamMembers,
+-  assignRRMembersUsingSegment,
+-  teamId,
+-  queryValue,
+-  value,
+-}: UseTeamMembersWithSegmentProps) => {
+-  const { data: matchingTeamMembersWithResult, isPending } =
+-    trpc.viewer.attributes.findTeamMembersMatchingAttributeLogic.useQuery(
+-      {
+-        teamId: teamId || 0,
+-        attributesQueryValue: queryValue as AttributesQueryValue,
+-        _enablePerf: true,
+-      },
+-      {
+-        enabled: assignRRMembersUsingSegment && !!queryValue && !!teamId,
+-      }
+-    );
+-
+-  const { teamMembers, localWeightsInitialValues } = useProcessTeamMembersData({
+-    initialTeamMembers,
+-    assignRRMembersUsingSegment,
+-    matchingTeamMembersWithResult,
+-    value,
+-  });
+-
+-  return {
+-    teamMembers,
+-    localWeightsInitialValues,
+-    isPending,
+-  };
+-};
++};
+\ No newline at end of file
+diff --git a/packages/platform/atoms/package.json b/packages/platform/atoms/package.json
+index 30afb007a34a..48fe012df14d 100644
+--- a/packages/platform/atoms/package.json
++++ b/packages/platform/atoms/package.json
+@@ -72,6 +72,7 @@
+     "./event-types/hooks/useEventTypeForm": "./event-types/hooks/useEventTypeForm.ts",
+     "./event-types/hooks/useHandleRouteChange": "./event-types/hooks/useHandleRouteChange.ts",
+     "./event-types/hooks/useTabsNavigations": "./event-types/hooks/useTabsNavigations.tsx",
++    "./event-types/hooks/useTeamMembersWithSegmentPlatform": "./event-types/hooks/useTeamMembersWithSegmentPlatform.tsx",
+     "./timezone": "./timezone/index.tsx"
+   },
+   "types": "./dist/index.d.ts",
+diff --git a/packages/platform/atoms/tsconfig.json b/packages/platform/atoms/tsconfig.json
+index 2f5bd6c8c0b3..c53c46f20699 100644
+--- a/packages/platform/atoms/tsconfig.json
++++ b/packages/platform/atoms/tsconfig.json
+@@ -38,7 +38,6 @@
+     "../../dayjs",
+     "../../prisma/zod-utils.ts",
+     "../../prisma/zod",
+-    "../../trpc/react",
+     "../../trpc/server/routers/viewer/slots",
+     "../../trpc/server/types",
+     "../../features/eventtypes",

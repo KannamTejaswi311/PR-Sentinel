@@ -1,0 +1,581 @@
+pr_url,issue_title,file_path,status
+https://github.com/agentic-review-benchmarks/Ghost/pull/1,NPM referenced instead of Yarn,ghost/core/core/boot.js,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/1,Slack notifications not functioning - event listeners never registered,ghost/core/core/boot.js,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/1,Post scheduling will fail on boot - missing required apiUrl parameter,ghost/core/core/boot.js,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/1,Race condition in email service initialization - dependency order violated,ghost/core/core/boot.js,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/2,Tailwind classes in incorrect order,apps/comments-ui/src/components/content/forms/reply-form.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/2,Missing optional chaining causes runtime error when openForm is undefined,apps/comments-ui/src/components/content/forms/form.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/2,Editor editability incorrectly depends on member expertise instead of name,apps/comments-ui/src/components/content/forms/form.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/2,Reply threading broken for nested comments due to incorrect in_reply_to_id,apps/comments-ui/src/components/content/forms/reply-form.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/3,Non-strict inequality operator used,ghost/core/core/server/services/email-service/DomainWarmingService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/3,Date filter includes today's emails instead of excluding them,ghost/core/core/server/services/email-service/DomainWarmingService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/3,High-volume threshold boundary applies wrong scaling factor at 400k,ghost/core/core/server/services/email-service/DomainWarmingService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/3,Threshold boundary values skip their designated scaling tier,ghost/core/core/server/services/email-service/DomainWarmingService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/4,Missing semicolons in variable declarations,apps/posts/src/views/comments/components/comments-list.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/4,Missing dependency in useEffect causes stale clamp detection,apps/posts/src/views/comments/components/comments-list.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/4,Filter button becomes non-functional when onAddFilter is undefined,apps/posts/src/views/comments/components/comments-list.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/4,Inconsistent conditional rendering pattern for feature image,apps/posts/src/views/comments/components/comments-list.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/4,Delete comment functionality completely removed from UI,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/Ghost/pull/4,Missing semicolons in CommentContent hook declarations,apps/posts/src/views/comments/components/comments-list.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/5,Double quotes used for string literal,apps/signup-form/src/utils/helpers.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/5,Potential undefined return value breaks type contract,apps/signup-form/src/utils/helpers.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/5,Loading state not reset in minimal mode success case,apps/signup-form/src/components/pages/form-page.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/5,Email trimming creates validation and display inconsistency,apps/signup-form/src/components/pages/form-view.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/5,Double quotes used in import specifier,apps/signup-form/.storybook/preview.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/6,Variable declared using var keyword,ghost/core/core/server/services/members/members-api/repositories/MemberRepository.js,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/6,Job scheduler will never schedule on first invocation,ghost/core/core/server/services/member-welcome-emails/jobs/index.js,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/6,Incorrect logical operator allows unwanted welcome email triggers,ghost/core/core/server/services/members/members-api/repositories/MemberRepository.js,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/7,Missing semicolons in require statements,ghost/core/core/server/services/members/members-api/members-api.js,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/7,Incorrect require path for MagicLink module after file rename,ghost/core/core/server/services/members/members-api/members-api.js,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/7,Incorrect require path for DonationBookshelfRepository after file rename,ghost/core/core/server/services/donations/donation-service-wrapper.js,FILE_NOT_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/7,Incorrect require paths for email service dependencies causing initialization failure,ghost/core/core/server/services/email-analytics/email-analytics-service-wrapper.js,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/8,i18n file uses camelCase naming,ghost/i18n/locales/zh/commentsFile.json,FILE_NOT_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/8,Inconsistent Chinese translation for 'Name' field across namespaces,ghost/i18n/locales/zh/portal.json,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/8,Missing interpolation variable in newsletter unsubscribe message,ghost/i18n/locales/zh/portal.json,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/8,Translation inconsistency for 'Enter your name' field across UI contexts,ghost/i18n/locales/zh/portal.json,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/8,Deletion of comments.json breaks comments-ui build for Chinese locale,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/Ghost/pull/8,JSON file uses 4-space indentation (should be 2 spaces),ghost/i18n/locales/zh/ghost.json,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/8,JSON file uses 4-space indentation (should be 2 spaces),ghost/i18n/locales/zh/portal.json,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/9,Missing semicolons in getWarmupLimit method,ghost/core/core/server/services/email-service/DomainWarmingService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/9,Incorrect rounding in day calculation causes off-by-one error in warmup schedule,ghost/core/core/server/services/email-service/DomainWarmingService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/9,Off-by-one error in warmup completion check extends warmup period,ghost/core/core/server/services/email-service/DomainWarmingService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/9,Using Math.floor instead of Math.round produces consistently lower warmup limits,ghost/core/core/server/services/email-service/DomainWarmingService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/9,Test-to-implementation mismatch: integration test helper uses Math.round while implementation uses Math.floor,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/Ghost/pull/10,Strict mode disabled in TypeScript config,apps/activitypub/tsconfig.json,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/10,Missing error handling in Bluesky enable function leaves UI in perpetual loading state,apps/activitypub/src/views/Preferences/components/BlueskySharing.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/10,Polling logic performs one extra retry attempt beyond configured maximum,apps/activitypub/src/views/Preferences/components/BlueskySharing.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/10,Missing query invalidation after Bluesky handle confirmation causes stale following list,apps/activitypub/src/hooks/use-activity-pub-queries.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/10,Missing semicolon after type alias declaration,apps/activitypub/src/hooks/use-activity-pub-queries.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/10,JSX attribute uses double-quoted string literals,apps/activitypub/src/views/Preferences/components/BlueskySharing.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/11,var used instead of const,apps/shade/src/components/ui/filters.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/11,Race condition: search input cleared synchronously causes visual glitch,apps/shade/src/components/ui/filters.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/11,Missing handleClose call in single-select mode prevents search input cleanup,apps/shade/src/components/ui/filters.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/11,Memory leak: temporary selected values not cleared on filter popover close,apps/shade/src/components/ui/filters.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/11,autoCloseOnSelect fails to close popover in non-inline multiselect mode,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/Ghost/pull/11,Double-quoted string literal used in JSX attribute,apps/shade/src/components/ui/filters.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/12,Documentation references npm instead of yarn,ghost/core/core/server/services/tinybird/TinybirdService.js,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/12,Token caching stores entire object instead of token string,ghost/core/core/server/services/tinybird/TinybirdService.js,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/12,JWT signature validation bypassed in token expiration check,ghost/core/core/server/services/tinybird/TinybirdService.js,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/12,JWT token structure changed by removing noTimestamp option,ghost/core/core/server/services/tinybird/TinybirdService.js,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/12,Type mismatch in _isJWTExpired call after token caching change,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/Ghost/pull/13,JSX props ordered incorrectly,apps/admin-x-framework/src/providers/framework-provider.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/13,Incorrect version suffix order in endpoint URL construction,apps/admin-x-framework/src/utils/stats-config.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/13,Missing source parameter in Tinybird API request,ghost/core/core/server/services/stats/ContentStatsService.js,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/Ghost/pull/13,"Version suffix applied in local development mode, breaking local Tinybird instances",,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/1,MSTest attribute in xUnit project,src/Components/test/E2ETest/ServerRenderingTests/RedirectionTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/1,Stale element reference captured before navigation in test initialization,src/Components/test/E2ETest/ServerRenderingTests/RedirectionTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/1,Browser navigation uses Forward() instead of Back() breaking test flow,src/Components/test/E2ETest/ServerRenderingTests/RedirectionTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/1,Navigation exception test disables the exception mechanism it's meant to test,src/Components/test/E2ETest/ServerRenderingTests/RedirectionTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/1,Test methods missing required Arrange-Act-Assert pattern comments,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/1,MSTest dependency imported in xUnit test project,src/Components/test/E2ETest/ServerRenderingTests/RedirectionTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/1,Non-xUnit test attribute added,src/Components/test/E2ETest/ServerRenderingTests/RedirectionTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/2,Internal class missing sealed keyword,src/SignalR/server/StackExchangeRedis/test/RedisEndToEnd.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/2,Incorrect boolean operator in regex validation,src/Components/test/E2ETest/ServerExecutionTests/WebSocketCompressionTests.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/2,Disposal order causing potential race condition,src/SignalR/server/StackExchangeRedis/test/RedisEndToEnd.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/2,Race condition from premature TaskCompletionSource recreation,src/SignalR/server/StackExchangeRedis/test/RedisEndToEnd.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/2,Test method missing Arrange/Act/Assert comments,src/Components/test/E2ETest/ServerExecutionTests/WebSocketCompressionTests.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/2,Async test method name missing Async suffix,src/SignalR/server/StackExchangeRedis/test/RedisEndToEnd.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/2,Test method missing Arrange/Act/Assert comments,src/SignalR/server/StackExchangeRedis/test/RedisEndToEnd.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/2,Async test method name missing Async suffix,src/SignalR/server/StackExchangeRedis/test/RedisEndToEnd.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/2,Test method missing Arrange/Act/Assert comments,src/SignalR/server/StackExchangeRedis/test/RedisEndToEnd.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/3,Traditional constructor instead of primary,src/Shared/CertificateGeneration/UnixCertificateManager.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/3,Case-insensitive path comparison on Unix breaks certificate directory detection,src/Shared/CertificateGeneration/UnixCertificateManager.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/3,Using display path instead of actual path breaks certificate directory validation,src/Shared/CertificateGeneration/UnixCertificateManager.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/3,Incorrect event level causes important certificate warnings to be suppressed in non-verbose mode,src/Tools/dotnet-dev-certs/src/Program.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/3,Lambda block uses K&R-style opening brace,src/Shared/CertificateGeneration/UnixCertificateManager.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,Traditional namespace declaration used,src/Components/Web/src/Forms/DisplayName.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,Unnecessary re-rendering on every parameter update with same display name,src/Components/Web/src/Forms/DisplayName.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,Missing display name caching causes performance degradation,src/Components/Web/src/Forms/ExpressionMemberAccessor.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,Incomplete cache clearing during hot reload causes stale display names,src/Components/Web/src/Forms/ExpressionMemberAccessor.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,Test method missing required AAA pattern comments,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,Test method missing Arrange/Act/Assert comments,src/Components/Web/test/Forms/DisplayNameTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,Async test method name missing Async suffix,src/Components/Web/test/Forms/DisplayNameTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,Async test method name missing Async suffix,src/Components/Web/test/Forms/DisplayNameTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,Async test method name missing Async suffix,src/Components/Web/test/Forms/DisplayNameTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,Async test method name missing Async suffix,src/Components/Web/test/Forms/DisplayNameTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,Async test method name missing Async suffix,src/Components/Web/test/Forms/DisplayNameTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,Async test method name missing Async suffix,src/Components/Web/test/Forms/DisplayNameTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,Async test method name missing Async suffix,src/Components/Web/test/Forms/DisplayNameTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,Async helper method name missing Async suffix,src/Components/Web/test/Forms/DisplayNameTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/4,E2E test method missing Arrange/Act/Assert comments,src/Components/test/E2ETest/Tests/FormsTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/5,Traditional namespace declaration with braces,src/Components/Server/test/Circuits/ServerComponentDeserializerTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/5,Incorrect type conversion in generic component parameter assertion,src/Components/Server/test/Circuits/ServerComponentDeserializerTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/5,Incorrect sequence validation for multiple generic components,src/Components/Server/test/Circuits/ServerComponentDeserializerTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/5,Generic type parameter mismatch in component marker validation,src/Components/Endpoints/test/EndpointHtmlRendererTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/5,Async test method missing Async suffix,src/Components/Endpoints/test/EndpointHtmlRendererTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/5,Async test method missing Async suffix,src/Components/Endpoints/test/EndpointHtmlRendererTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/5,Async test method missing Async suffix,src/Components/Endpoints/test/EndpointHtmlRendererTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/5,Async test method missing Async suffix,src/Components/Endpoints/test/EndpointHtmlRendererTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/6,Missing ConfigureAwait(false) on Task.Yield,src/Components/WebAssembly/WebAssembly.Authentication/src/RemoteAuthenticatorViewCore.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/6,Logout validation incorrectly rejects valid logout requests when HistoryEntryState is null,src/Components/WebAssembly/WebAssembly.Authentication/src/RemoteAuthenticatorViewCore.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/6,Missing null check for InteractiveRequestUrl causes potential null reference in navigation,src/Components/WebAssembly/WebAssembly.Authentication/src/Services/AccessTokenNotAvailableException.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/7,Missing braces in for loop,src/Components/Web.JS/src/Rendering/JSRootComponents.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/7,Inverted renderer type check prevents circuit restart,src/Components/Web.JS/src/Rendering/JSRootComponents.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/7,Missing parameter update causes stale data on circuit restart,src/Components/Web.JS/src/Rendering/JSRootComponents.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/7,Test method missing Arrange/Act/Assert comments,src/Components/test/E2ETest/Tests/StatePersistenceTest.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/8,Missing MIT license header,src/OpenApi/gen/XmlCommentGenerator.Emitter.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/8,Remarks overwrite Summary instead of Description in XML comment transformation,src/OpenApi/gen/XmlCommentGenerator.Emitter.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/8,Parameter lookup uses wrong identifier causing documentation mismatch,src/OpenApi/gen/XmlCommentGenerator.Emitter.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/8,RequestBody description set after iteration may use stale or modified description value,src/OpenApi/gen/XmlCommentGenerator.Emitter.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/8,Test method missing Arrange/Act/Assert comments,src/OpenApi/test/Microsoft.AspNetCore.OpenApi.SourceGenerators.Tests/OperationTests.Controllers.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/8,Async test method missing Async suffix,src/OpenApi/test/Microsoft.AspNetCore.OpenApi.SourceGenerators.Tests/OperationTests.Controllers.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/8,New snapshot C# file missing MIT license header,src/OpenApi/test/Microsoft.AspNetCore.OpenApi.SourceGenerators.Tests/snapshots/OperationTests.SupportsRouteParametersFromControllers#OpenApiXmlCommentSupport.generated.verified.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/8,New snapshot uses block-scoped namespaces instead of file-scoped,src/OpenApi/test/Microsoft.AspNetCore.OpenApi.SourceGenerators.Tests/snapshots/OperationTests.SupportsRouteParametersFromControllers#OpenApiXmlCommentSupport.generated.verified.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/8,Manual null-check throws instead of using throw helper,src/OpenApi/test/Microsoft.AspNetCore.OpenApi.SourceGenerators.Tests/snapshots/OperationTests.SupportsRouteParametersFromControllers#OpenApiXmlCommentSupport.generated.verified.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/9,Traditional namespace declaration used,src/Components/test/E2ETest/ServerExecutionTests/WebSocketCompressionTests.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/9,XCode version mismatch with macOS image,.azure/pipelines/jobs/default-build.yml,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/9,Missing PreReleaseBrandingLabel for servicing builds,eng/Versions.props,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/9,Inverted logic in servicing build validation,eng/targets/ResolveReferences.targets,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/9,Invalid C# extension syntax causing compilation error,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/9,Nginx installation script incompatible with macOS,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/10,Method brace on same line,src/Validation/src/ValidationOptions.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/10,BackgroundQueueSize incorrectly rejects zero value despite 'non-negative' contract,src/Logging.AzureAppServices/src/BatchingLoggerOptions.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/10,RetainedFileCountLimit allows zero value violating positive-only constraint,src/Logging.AzureAppServices/src/AzureFileLoggerOptions.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/10,Premature null assignment in TryGetValidatableTypeInfo violates out parameter semantics,src/Validation/src/ValidationOptions.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/aspnetcore/pull/10,Empty <returns> XML documentation on public method,src/Logging.AzureAppServices/src/AzureAppServicesLoggerFactoryExtensions.cs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/1,Features package imports from trpc,packages/features/pbac/services/permission-check.service.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/1,orgId parameter not propagated in getTeamIdsWithPermission,packages/features/pbac/infrastructure/repositories/PermissionRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/1,Incomplete orgId filtering in PBAC child team query,packages/features/pbac/infrastructure/repositories/PermissionRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/1,Authorization bypass when filtering multiple userIds including current user,packages/trpc/server/routers/viewer/bookings/get.handler.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/1,Service file uses forbidden `.service.ts` suffix,packages/features/pbac/services/permission-check.service.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/1,Repository does not follow `Prisma<Entity>Repository` naming convention,packages/features/pbac/infrastructure/repositories/PermissionRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/1,Line exceeds configured 110-character width,packages/features/pbac/infrastructure/repositories/__tests__/PermissionRepository.integration-test.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/1,Import line exceeds configured 110-character width,packages/trpc/server/routers/viewer/bookings/get.handler.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/2,Single quotes instead of double quotes,apps/web/app/(use-page-wrapper)/onboarding/getting-started/page.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/2,Logic inversion in hasPendingInviteByUserId method,packages/features/membership/repositories/MembershipRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/2,Incorrect conditional operator in onboarding redirect logic,packages/features/auth/lib/onboardingUtils.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/2,Line exceeds 110 character width,apps/web/app/(use-page-wrapper)/onboarding/getting-started/page.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/2,Line exceeds 110 character width,packages/features/membership/repositories/MembershipRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/3,Missing semicolons and single quotes used,packages/features/bookings/repositories/PrismaBookingAttendeeRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/3,Inconsistent date filter causes missing bookings in recurring event cancellation,packages/features/bookings/lib/handleCancelBooking.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/3,Missing return value breaks caller's count tracking,packages/features/bookings/repositories/BookingRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/3,Missing locale field causes translation failure in cancellation flow,packages/features/users/repositories/UserRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/3,Repository files violate naming convention using dot-suffix pattern,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/cal.com/pull/3,Service file uses disallowed dot-suffix and does not match required <Entity>Service.ts naming,apps/api/v2/src/lib/services/booking-cancel.service.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/3,Repository file uses disallowed .repository.ts suffix and is not PascalCase,apps/api/v2/src/lib/repositories/prisma-booking-attendee.repository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/3,Repository file uses disallowed .repository.ts suffix and is not PascalCase,apps/api/v2/src/lib/repositories/prisma-booking-reference.repository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/3,Repository file uses disallowed .repository.ts suffix and is not PascalCase,apps/api/v2/src/lib/repositories/prisma-profile.repository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/3,Repository class/file does not follow required Prisma<Entity>Repository naming,packages/features/bookingReference/repositories/BookingReferenceRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/3,Repository class/file does not follow required Prisma<Entity>Repository naming,packages/features/bookings/repositories/BookingRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/3,Repository class/file does not follow required Prisma<Entity>Repository naming,packages/features/profile/repositories/ProfileRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/4,Handler logic mixed in schema file,packages/platform/types/bookings/2024-08-13/outputs/booking.output.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/4,Lost `this` context in displayGuests mapping causes runtime error,apps/api/v2/src/ee/bookings/2024-08-13/services/output.service.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/4,Recurring seated bookings returned in wrong order,apps/api/v2/src/ee/bookings/2024-08-13/services/output.service.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/4,"Unnecessary regex processing on literal ""unknown"" string",apps/api/v2/src/ee/bookings/2024-08-13/services/output.service.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/4,Service file uses disallowed '.service.ts' suffix / naming convention violation,apps/api/v2/src/ee/bookings/2024-08-13/services/output.service.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/4,Line(s) exceed the 110 character line width requirement,apps/api/v2/src/ee/bookings/2024-08-13/services/output.service.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/4,JSON formatting deviates from expected formatter output (indentation removed),docs/api-reference/v2/openapi.json,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/5,Generic Error without typed codes,companion/services/calcom.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/5,Missing bookingUrl initialization breaks Preview and Copy Link functionality,companion/app/(tabs)/(event-types)/event-type-detail.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/5,URL prefix displays protocol in read-only text field causing visual corruption,companion/components/event-type-detail/tabs/BasicsTab.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/5,Extension ignores bookingUrl and constructs incorrect fallback URLs,companion/extension/entrypoints/content.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/5,Line exceeds 110-character limit (Biome formatting rule),companion/app/(tabs)/(bookings)/index.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/6,Direct import from features package,apps/api/v2/src/modules/teams/invite/controllers/teams-invite.controller.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/6,Insufficient authorization - regular members can create invite links,apps/api/v2/src/modules/teams/invite/controllers/teams-invite.controller.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/6,Inverted logic causes wrong invite URLs for organizations vs teams,packages/features/ee/teams/services/teamService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/6,Wrong token value returned breaks invite link functionality,packages/features/ee/teams/services/teamService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/6,Service filename does not match PascalCase class name,packages/features/ee/teams/services/teamService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/6,Missing newline at end of file,packages/features/ee/teams/services/teamService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/6,Line exceeds Biome configured line width,apps/api/v2/src/modules/teams/invite/controllers/teams-invite.controller.e2e-spec.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/6,Line exceeds Biome configured line width,apps/api/v2/src/modules/teams/invite/outputs/invite.output.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/7,Repository filename and class name mismatch,packages/features/selectedCalendar/repositories/SelectedCalendarRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/7,Generic calendar suffix filtering includes disabled providers,packages/features/calendar-subscription/adapters/AdaptersFactory.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/7,Empty suffix array incorrectly bypasses generic calendar filtering,packages/features/selectedCalendar/repositories/SelectedCalendarRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/7,Incomplete class rename breaks all imports and causes runtime failures,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/cal.com/pull/8,Unused import in new component,apps/web/components/ui/LimitedBadges.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/8,onClick handler lost for hidden items in popover,apps/web/components/ui/LimitedBadges.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/8,Unconditional weight concatenation adds empty space to attribute labels,apps/web/modules/users/components/UserTable/UserListTable.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/8,Unused parameter `index` in map callback,apps/web/components/ui/LimitedBadges.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/8,Unused parameter `index` in map callback,apps/web/components/ui/LimitedBadges.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/9,Incorrect indentation width in JSX,apps/web/modules/event-types/components/EventTypeWebWrapper.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/9,Missing router import causes undefined variable error in BookerWebWrapper,apps/web/modules/bookings/components/BookerWebWrapper.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/9,Incorrect priority sorting in sortHosts breaks round-robin host assignment,packages/lib/bookings/hostGroupUtils.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/9,Missing module resolution in dynamic import causes team assignment tab to fail,apps/web/modules/event-types/components/EventTypeWebWrapper.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/9,Default export used in non-page/layout component file,apps/web/modules/event-types/components/tabs/limits/EventLimitsTabWebWrapper.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/9,Missing trailing newline at end of file,apps/web/modules/event-types/components/tabs/limits/EventLimitsTabWebWrapper.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/9,Default export used in non-page/layout component file,apps/web/modules/event-types/components/tabs/recurring/EventRecurringWebWrapper.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/9,Missing trailing newline at end of file,apps/web/modules/event-types/components/tabs/recurring/EventRecurringWebWrapper.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/10,Line exceeds 110 character width,packages/features/booking-audit/lib/actions/RejectedAuditActionService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/10,Incorrect booking status in audit trail for single booking acceptance,packages/features/bookings/lib/handleConfirmation.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/10,Audit trail captures wrong previous status for rejected recurring bookings,packages/trpc/server/routers/viewer/bookings/confirm.handler.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/10,Race condition in recurring booking acceptance audit logging,packages/features/bookings/lib/handleConfirmation.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/10,app-store imports from features package,packages/app-store/_utils/getAppActor.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/10,Indentation uses 4 spaces instead of 2,packages/features/booking-audit/lib/service/BookingAuditTaskerProducerService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/11,Direct process.env access in handler,packages/features/bookings/lib/handleCancelBooking.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/11,Incorrect requestReschedule flag for seat cancellation webhooks,packages/features/bookings/lib/handleSeats/cancel/cancelAttendeeSeat.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/11,Missing id field in Person object for reschedule webhooks,packages/trpc/server/routers/viewer/bookings/requestReschedule.handler.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/11,Incorrect default value for requestReschedule in webhook payload builder,packages/features/webhooks/lib/factory/versioned/v2021-10-20/BookingPayloadBuilder.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/11,Incorrect indentation in conditional object spread,packages/features/bookings/lib/handleCancelBooking.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/11,Inconsistent indentation in ternary object literal,packages/features/bookings/repositories/BookingRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/11,Misformatted nested ternary indentation,packages/features/bookings/repositories/BookingRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/12,Atoms imports from trpc/react package,packages/platform/atoms/event-types/hooks/useTeamMembersWithSegmentPlatform.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/12,Double-wrapping data structure causes matching members to be ignored,apps/web/modules/event-types/hooks/useTeamMembersWithSegment.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/12,Search filter ignored causing all members to be displayed,apps/web/modules/event-types/components/EditWeightsForAllTeamMembers.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/12,Unused isPending variable causes no loading state during data fetch,apps/web/modules/event-types/components/EditWeightsForAllTeamMembers.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/12,Line exceeds 110 character limit (Biome formatting rule),apps/web/modules/event-types/hooks/useTeamMembersWithSegment.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/12,Missing trailing newline at end of file,packages/platform/atoms/event-types/hooks/useTeamMembersWithSegmentPlatform.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/13,Trailing whitespace on line 11,packages/features/feature-opt-in/services/IFeatureOptInService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/13,Container created on every function call breaks singleton pattern,packages/features/di/containers/FeaturesRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/13,Incorrect token in moduleLoader breaks DI resolution,packages/features/di/modules/FeaturesRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/13,FeatureOptInService creates isolated containers breaking dependency sharing,packages/features/di/containers/FeatureOptInService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/13,Line exceeds 110 character limit (Biome),packages/features/di/containers/FeatureOptInService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/13,Line exceeds 110 character limit (Biome),packages/features/di/containers/FeaturesRepository.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/14,Unused constant fails linting check,packages/features/feature-opt-in/config.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/14,Inverted conditional logic in setUserFeatureState causes wrong branch execution,packages/features/feature-opt-in/services/FeatureOptInService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/14,Missing await in setUserState mutation causes race condition,packages/trpc/server/routers/viewer/featureOptIn/_router.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/14,Inverted filter logic in listFeaturesForUser returns disabled features instead of enabled,packages/features/feature-opt-in/services/FeatureOptInService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/14,Line exceeds 110-character limit,packages/trpc/server/routers/viewer/featureOptIn/_router.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/14,Line exceeds 110-character limit,packages/features/feature-opt-in/services/IFeatureOptInService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/14,Line exceeds 110-character limit,packages/features/feature-opt-in/services/FeatureOptInService.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/14,Line exceeds 110-character limit,packages/features/feature-opt-in/services/FeatureOptInService.test.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/15,Validation logic mixed with schema types,packages/platform/atoms/hooks/schedules/types.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/15,Type mismatch in Slot.userIds changes number[] to string[],packages/platform/atoms/booker/types.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/15,Type inconsistency in SlotInfo.fromUser.id changes number to string,packages/platform/atoms/booker/types.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/15,Type mismatch in availability.days changes number[] to string[],packages/platform/atoms/hooks/schedules/types.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/15,Zod schema validation replaced with unsafe manual validation,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/cal.com/pull/15,Test imports Jest-specific library (jest-diff),apps/web/test/lib/getSchedule/expects.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/15,Uses single quotes instead of double quotes,packages/platform/atoms/hooks/schedules/types.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/15,Throws generic Error instead of typed/custom error,packages/platform/atoms/hooks/schedules/types.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/16,Types package imports from features,packages/platform/types/bookings/2024-08-13/outputs/get-booking-recordings.output.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/16,Incorrect permission level on recordings endpoint,apps/api/v2/src/ee/bookings/2024-08-13/controllers/bookings.controller.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/16,Missing await on async service call returns Promise instead of data,apps/api/v2/src/ee/bookings/2024-08-13/controllers/bookings.controller.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/16,Incorrect guard execution order breaks authorization,apps/api/v2/src/ee/bookings/2024-08-13/controllers/bookings.controller.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/cal.com/pull/16,E2E tests use Jest APIs (jest.spyOn) instead of Vitest,apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/booking-access-auth.e2e-spec.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/1,Legacy typing imports instead modern syntax,api/core/workflow/nodes/variable_assigner/v1/node.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/1,Type mismatch in blocks_variable_output prevents variable blocking,api/core/workflow/nodes/variable_assigner/v1/node.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/1,Incorrect input value used in NodeRunResult for CLEAR mode,api/core/workflow/nodes/variable_assigner/v1/node.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/1,Test uses list equality instead of tuple conversion for event selector,api/tests/unit_tests/core/workflow/graph_engine/test_streaming_conversation_variables.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/1,Test function missing return type annotation,api/tests/unit_tests/core/workflow/graph_engine/test_streaming_conversation_variables.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/2,Undefined identifier True used instead,web/app/components/app/configuration/config-var/config-modal/index.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/2,JSON schema not normalized before storage,web/app/components/app/configuration/config-var/config-modal/index.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/2,"JSON schema cleared for all variable types, not just jsonObject",web/app/components/app/configuration/config-var/config-modal/index.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/2,JSON schema validation uses non-normalized value,web/app/components/app/configuration/config-var/config-modal/index.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/2,Dead store / unused variable `normalizedJsonSchema`,web/app/components/app/configuration/config-var/config-modal/index.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/3,Test file exceeds 800 lines,api/tests/unit_tests/core/workflow/nodes/template_transform/template_transform_node_spec.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/3,Missing None-check allows invalid template render result to propagate,api/core/workflow/nodes/template_transform/template_renderer.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/3,Incorrect code_executor parameter breaks dependency injection chain,api/core/workflow/nodes/node_factory.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/3,Variable scope error causes UnboundLocalError when template rendering succeeds,api/core/workflow/nodes/template_transform/template_transform_node.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/3,New pytest test function missing type annotations,api/tests/unit_tests/core/workflow/nodes/template_transform/template_transform_node_spec.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/3,New pytest test function missing type annotations,api/tests/unit_tests/core/workflow/nodes/template_transform/template_transform_node_spec.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/3,New pytest test function missing type annotations,api/tests/unit_tests/core/workflow/nodes/template_transform/template_transform_node_spec.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/4,Session without context manager usage,api/services/conversation_variable_updater.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/4,Database transaction commits called on every variable update instead of batched,api/core/app/layers/conversation_variable_persist_layer.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/4,Conversation variable persistence layer registered before persistence layer causing event ordering issue,api/core/app/apps/advanced_chat/app_runner.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/4,Conversation variable persistence failures are silently ignored,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/dify/pull/4,ConversationVariable query missing tenant_id filter,api/services/conversation_variable_updater.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/4,Missing return type annotation on __init__,api/tests/unit_tests/core/app/layers/test_pause_state_persist_layer.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/5,Console.log in production frontend code,web/app/components/share/text-generation/index.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/5,Missing null check for max_length causes runtime error in batch validation,web/app/components/share/text-generation/index.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/5,Inconsistent maxLength handling for paragraph inputs in chat interface,web/app/components/app/configuration/debug/chat-user-input.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/5,Number input type changed to text breaks numeric validation,web/app/components/app/configuration/prompt-value-panel/index.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/5,Possible undefined used as number (max_length) under strict TS,web/app/components/share/text-generation/index.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/6,Obfuscated SMTP class selection logic,api/libs/smtp.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/6,Incorrect EHLO hostname parameter in opportunistic TLS mode,api/libs/smtp.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/6,Empty string fallback breaks SMTP local_hostname default behavior,api/libs/smtp.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/6,Redundant empty string to None conversion defeats purpose of hostname override,api/libs/smtp.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/6,Backend config module exceeds 800 lines,api/configs/feature/__init__.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/7,Interface used instead of type,web/test/i18n-mock.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/7,Missing defaultNs parameter in useTranslation mock breaks namespace support,web/test/i18n-mock.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/7,Incorrect translation lookup order breaks backward compatibility with simple key translations,web/test/i18n-mock.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/7,Missing returnObjects support breaks production components and tests,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/dify/pull/8,Hardcoded devtools loading message text,web/app/components/devtools/react-scan/loader.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/8,Devtools rendered before application children causes layout issues,web/context/query-client.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/8,Missing error logging in TanStack devtools lazy import,web/app/components/devtools/tanstack/loader.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/8,console.error violates Frontend Code Must Not Use console Statements rule,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/dify/pull/8,console.error used in frontend code,web/app/components/devtools/react-scan/loader.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/9,Any type used for selector parameter,web/app/components/plugins/plugin-page/context.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/9,Query parameter naming collision between plugin page and marketplace,web/app/components/plugins/marketplace/atoms.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/9,Inverted logic for search mode activation based on category collections,web/app/components/plugins/marketplace/atoms.ts,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/9,Reverted query parameter change breaks plugin page tab navigation,web/app/components/plugins/plugin-page/context.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/10,__str__ without complementary __repr__,api/services/billing_service.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/10,Wrong dictionary used in Redis cache pipeline loop,api/services/billing_service.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/10,Type contract violation in get_plan_bulk return value,api/services/billing_service.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/10,Incorrect cache count in observability logging,api/services/billing_service.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/10,Raising generic Exception instead of domain-specific exception,api/services/billing_service.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/10,Fixture function missing parameter and return type annotations,api/tests/test_containers_integration_tests/services/test_billing_service.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/10,Helper function missing return type annotation,api/tests/test_containers_integration_tests/services/test_billing_service.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/10,Helper function missing return type annotation (and uses unparameterized dict),api/tests/test_containers_integration_tests/services/test_billing_service.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/10,Helper function missing return type annotation,api/tests/test_containers_integration_tests/services/test_billing_service.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/10,Test function missing parameter and return type annotations,api/tests/test_containers_integration_tests/services/test_billing_service.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/10,Unit test missing parameter and return type annotations,api/tests/unit_tests/services/test_billing_service.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/11,Pydantic v1 Config class usage,api/core/agent/base_agent_runner.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/11,Swapped answer price unit values causing incorrect billing calculations,api/core/agent/base_agent_runner.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/11,Type mismatch in total_price initialization breaks Decimal arithmetic,api/core/agent/base_agent_runner.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/11,Tool responses replaced with tool inputs in agent history organization,api/core/agent/base_agent_runner.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/11,Broad exception catch (except Exception) added for tool_inputs JSON parsing,api/core/agent/base_agent_runner.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/11,Broad exception catch (except Exception) added for tool_responses JSON parsing,api/core/agent/base_agent_runner.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/12,Python variable uses camelCase naming,api/libs/helper.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/12,Missing escape parameter in 'not contains' metadata filter,api/core/rag/retrieval/dataset_retrieval.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/12,Incorrect escape character in IRIS vector database LIKE query,api/core/rag/datasource/vdb/iris/iris_vector.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/12,Keyword trimming logic may break escape sequences,api/services/workflow_app_service.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/12,Improper import ordering (isort/ruff),api/tests/test_containers_integration_tests/services/test_tag_service.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/13,Print statement in production code,api/core/workflow/graph_engine/graph_traversal/skip_propagator.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/13,Node execution started before being enqueued and marked as TAKEN,api/core/workflow/graph_engine/graph_traversal/skip_propagator.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/13,Edge marked as skipped after recursive propagation breaks skip chain,api/core/workflow/graph_engine/graph_traversal/skip_propagator.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/13,Nested helper function missing type annotations,api/tests/unit_tests/core/workflow/graph_engine/graph_traversal/test_skip_propagator.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/dify/pull/13,Nested helper function missing type annotations,api/tests/unit_tests/core/workflow/graph_engine/graph_traversal/test_skip_propagator.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/1,SettingsTextFormatter missing @MainActor annotation,focus-ios/Blockzilla/UIComponents/UIConstants.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/1,Incorrect localized string reference in SettingsTextFormatter,focus-ios/Blockzilla/UIComponents/UIConstants.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/1,Inconsistent format specifier documentation in RolloutsSettingMessage comment,firefox-ios/Shared/Strings.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/1,Linter exclusion points to wrong message key version,.github/l10n/linter_config_ios.json,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/1,SettingsTextFormatter class missing final keyword,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/1,SettingsTextFormatter and its methods lack explicit access control,focus-ios/Blockzilla/UIComponents/UIConstants.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/1,SettingsTextFormatter should be marked final,focus-ios/Blockzilla/UIComponents/UIConstants.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/1,Line length exceeds SwiftLint limit,focus-ios/Blockzilla/UIComponents/UIConstants.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/1,Line length exceeds SwiftLint limit,focus-ios/Blockzilla/UIComponents/UIConstants.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/1,Line length exceeds SwiftLint limit,focus-ios/Blockzilla/UIComponents/UIConstants.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/1,Line length exceeds SwiftLint limit,focus-ios/Blockzilla/UIComponents/UIConstants.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/1,Line length exceeds SwiftLint limit,focus-ios/Blockzilla/UIComponents/UIConstants.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/2,Missing Mozilla Public License header,firefox-ios/firefox-ios-tests/Tests/XCUITests/A11yUtils.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/2,Missing try keyword in async throws method call,firefox-ios/firefox-ios-tests/Tests/XCUITests/BaseTestCase.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/2,Incorrect initialization order in test setup,firefox-ios/firefox-ios-tests/Tests/XCUITests/FeatureFlaggedTestBase.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/2,Expectation reference dropped causing test synchronization failure,firefox-ios/firefox-ios-tests/Tests/XCUITests/ScreenGraphTest.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/2,Top-level variables lack explicit access control modifiers,firefox-ios/firefox-ios-tests/Tests/XCUITests/TodayWidgetTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/2,Top-level constants lack explicit access control modifiers,firefox-ios/firefox-ios-tests/Tests/XCUITests/TodayWidgetTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/3,UI constants not in UX struct,firefox-ios/Client/Frontend/Browser/DownloadHelper/DownloadToast.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/3,Incorrect async Task wrapper breaks MainActor isolation in onboarding action handler,firefox-ios/Client/Coordinators/Launch/LaunchCoordinator.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/3,Missing concurrency annotations on JavaScript alert callback violates Swift 6 requirements,firefox-ios/Client/Frontend/Browser/BrowserViewController/Extensions/BrowserViewController+WebViewDelegates.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/3,Missing @Sendable annotation on completionHandler breaks WKUIDelegate contract,firefox-ios/Client/Frontend/Browser/BrowserViewController/WebEngineIntegration/BrowserWebUIDelegate.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/3,Function signature exceeds SwiftLint line length limit,firefox-ios/Client/Frontend/Browser/BrowserViewController/Actions/WebContextMenuActionsProvider.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/3,Function signature exceeds SwiftLint line length limit,firefox-ios/Client/Frontend/Browser/BrowserViewController/Actions/WebContextMenuActionsProvider.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/3,UI-related callback closure missing @MainActor annotation,firefox-ios/Client/Coordinators/Launch/LaunchCoordinator.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/3,Protocol property missing explicit access control modifier,firefox-ios/Client/Frontend/Browser/TabScrollController/TabProviderAdapter.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/3,Property missing explicit access control modifier,firefox-ios/firefox-ios-tests/Tests/ClientTests/Mocks/MockTabProviderProtocol.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/4,Helper methods marked public inappropriately,firefox-ios/firefox-ios-tests/Tests/XCUITests/ClipBoardTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/4,Missing clipboard verification after copy operation,firefox-ios/firefox-ios-tests/Tests/XCUITests/ClipBoardTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/4,Incorrect UI element verification for light theme selection,firefox-ios/firefox-ios-tests/Tests/XCUITests/DisplaySettingsTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/4,Navigation timing issue in settings toggle verification,firefox-ios/firefox-ios-tests/Tests/XCUITests/HomePageSettingsUITest.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/4,Public methods lack required documentation comments,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/4,Public helper methods lack required documentation comments,firefox-ios/firefox-ios-tests/Tests/XCUITests/ClipBoardTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/5,Missing Mozilla Public License header,firefox-ios/Client/Frontend/Browser/Tabs/Action/TabPanelAction.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/5,Off-by-one error in scroll index calculation,firefox-ios/Client/Frontend/Browser/Tabs/State/TabsPanelState.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/5,Incorrect section index after inactive tabs removal,firefox-ios/Client/Frontend/Browser/Tabs/Views/TabDisplayView.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/5,Nested struct added without explicit access control modifier,firefox-ios/Shared/Strings.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/6,Using assert instead of XCTAssert,firefox-ios/firefox-ios-tests/Tests/ClientTests/Helpers/NotificationManagerTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/6,Incorrect tearDown order in StoriesFeedDiffableDataSourceTests,firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/StoriesFeed/StoriesFeedDiffableDataSourceTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/6,Test state cleanup after super.tearDown in RatingPromptManagerTests,firefox-ios/firefox-ios-tests/Tests/ClientTests/Helpers/RatingPromptManagerTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/6,Missing @MainActor annotation in EditBookmarkViewModelTests,firefox-ios/firefox-ios-tests/Tests/ClientTests/Library/Bookmarks/EditBookmarkViewModelTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/6,UI-related test lifecycle method not annotated with @MainActor,firefox-ios/firefox-ios-tests/Tests/ClientTests/Frontend/SyncContentSettingsViewControllerTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/6,Mock class not marked final,firefox-ios/firefox-ios-tests/Tests/ClientTests/Mocks/MockUserNotificationCenter.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/7,WebServer class missing final keyword,firefox-ios/Client/Application/WebServer.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/7,Thread safety violation calling @MainActor completion handler from background thread,firefox-ios/Client/Frontend/Browser/BrowserViewController/Extensions/BrowserViewController+WebViewDelegates.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/7,ensureMainThread generic function loses return value when dispatched asynchronously,BrowserKit/Sources/Common/Utilities/DispatchQueueHelper.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/7,MainThreadThrottler timing logic inverted causing throttling to never execute,firefox-ios/Client/Utils/MainThreadThrottler.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/7,Public ensureMainThread<T> lacks documentation comment,BrowserKit/Sources/Common/Utilities/DispatchQueueHelper.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/7,SwiftLint violation: multiple consecutive spaces,firefox-ios/Client/Frontend/Browser/RelayController.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/7,Modified typealias missing explicit access control,firefox-ios/Client/Frontend/Browser/RelayController.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/7,Modified typealias missing explicit access control,firefox-ios/Client/Frontend/Browser/SearchEngines/SearchEngineProvider.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/8,Missing MARK comments in Swift,firefox-ios/firefox-ios-tests/Tests/ClientTests/DependencyInjection/DependencyHelperMock.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/8,Missing await on async MainActor method causing race condition,firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/LaunchView/LaunchScreenViewModelTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/8,Premature dependency container reset before cleanup,firefox-ios/firefox-ios-tests/Tests/ClientTests/TabManagement/TabManagerTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/8,Incorrect tearDown sequence violates cleanup dependencies,firefox-ios/firefox-ios-tests/Tests/ClientTests/StartAtHome/StartAtHomeHelperTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/9,Missing private modifier on gleanWrapper,firefox-ios/Client/Frontend/Browser/Toolbars/ToolbarTelemetry.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/9,Incorrect Reader Mode URL handling in cancelEditMode,firefox-ios/Client/Frontend/Browser/Toolbars/Redux/ToolbarMiddleware.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/9,Inverted reader mode telemetry state tracking,firefox-ios/Client/Frontend/Browser/Toolbars/Redux/ToolbarMiddleware.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/9,Wrong display view type for reader mode action,firefox-ios/Client/Frontend/Browser/BrowserViewController/State/BrowserViewControllerState.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/10,Missing Mozilla Public License header,BrowserKit/Sources/ExecutableContentBlockingGenerator/MainContentBlockerGenerator.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/10,Test completes without waiting for async image download,BrowserKit/Tests/SiteImageViewTests/SVGImageProcessorTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/10,Closure wrapper loses @Sendable annotation causing concurrency safety violation,firefox-ios/Client/Frontend/Home/Homepage/SectionHeader/LabelButtonHeaderView.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/10,Async test assertion never verified due to missing expectation,BrowserKit/Tests/WebEngineTests/WKUIHandlerTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/10,Unsafe concurrency annotation on non-thread-safe static property,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/10,Static property missing explicit access control modifier,BrowserKit/Sources/ExecutableContentBlockingGenerator/MainContentBlockerGenerator.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/11,Direct UIApplication.shared usage instead of protocol,firefox-ios/Client/Frontend/Browser/Toolbars/AddressToolbarContainer.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/11,Incorrect stack view reference in divider width calculation,BrowserKit/Sources/ToolbarKit/AddressToolbar/BrowserAddressToolbar.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/11,Duplicate browserActionStack reference causing missing trailing page action animations,BrowserKit/Sources/ToolbarKit/AddressToolbar/BrowserAddressToolbar.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/11,Incorrect skeleton bar constraint references causing toolbar layout failure,firefox-ios/Client/Frontend/Browser/Toolbars/AddressToolbarContainer.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/11,Unused local constant triggers SwiftLint unused_variable,firefox-ios/Client/Frontend/Browser/Toolbars/AddressToolbarContainer.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/12,Nested test delegate missing final modifier,BrowserKit/Tests/WebEngineTests/Utilities/WebKitTestHelpers.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/12,Wrong frame captured in navigation delegate,BrowserKit/Tests/WebEngineTests/Utilities/WebKitTestHelpers.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/12,Ignoring XCTWaiter result allows returning stale data on timeout,BrowserKit/Tests/WebEngineTests/Utilities/WebKitTestHelpers.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/12,Test expectation fulfilled after wait causes timeout,BrowserKit/Tests/WebEngineTests/WKUIHandlerTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/12,Force unwrap of URL initializer in tests,BrowserKit/Tests/WebEngineTests/WKUIHandlerTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/12,Force unwrap of URL initializer in tests (second occurrence),BrowserKit/Tests/WebEngineTests/WKUIHandlerTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/12,Force unwrap of URL initializer in tests (third occurrence),BrowserKit/Tests/WebEngineTests/WKUIHandlerTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/12,Unused local constant,BrowserKit/Tests/WebEngineTests/Utilities/WebKitTestHelpers.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/12,Missing explicit access control on class members,BrowserKit/Tests/WebEngineTests/Utilities/WebKitTestHelpers.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/12,Missing explicit access control on helper method,BrowserKit/Tests/WebEngineTests/Utilities/WebKitTestHelpers.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/12,Missing // MARK: section organization,BrowserKit/Tests/WebEngineTests/Utilities/WebKitTestHelpers.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/13,Test method missing test prefix,firefox-ios/firefox-ios-tests/Tests/XCUITests/ShareLongPressTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/13,Incorrect logical operator in tearDown causing theme reset to be skipped for all iPad tests,firefox-ios/firefox-ios-tests/Tests/XCUITests/OnboardingTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/13,Insufficient timeout for paste permission dialog causing test flakiness,firefox-ios/firefox-ios-tests/Tests/XCUITests/BaseTestCase.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/firefox-ios/pull/13,Long-press duration too short to trigger context menu in bookmark sharing test,firefox-ios/firefox-ios-tests/Tests/XCUITests/ShareLongPressTests.swift,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/1,Logger uses direct logging.getLogger initialization,src/prefect/_sdk/fetcher.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/1,Incorrect deployment filtering breaks full-name matching,src/prefect/_sdk/fetcher.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/1,Missing type validation for work pool job variables schema,src/prefect/_sdk/fetcher.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/1,Removed strict zip validation enables silent data corruption,src/prefect/_sdk/fetcher.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/2,Cross-field validation uses field validator,src/prefect/server/events/schemas/automations.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/2,Incorrect automation_triggered_event_id for state-specific actions,src/prefect/server/events/triggers.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/2,Missing related resources in action.triggered event on failure path,src/prefect/server/events/actions.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/2,Validation incorrectly rejects proactive triggers with automation_triggered_event_id,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/prefect/pull/3,Test file separated from component,ui-v2/src/components/schemas/__tests__/schema-form-input-array-list.test.tsx,FILE_NOT_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/3,Drag-and-drop reordering swaps source and target indices,ui-v2/src/components/schemas/schema-form-input-array-list.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/3,Prefix items incorrectly included in sortable context,ui-v2/src/components/schemas/schema-form-input-array-list.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/3,Unused local variable `prefixItemsCount` added,ui-v2/src/components/schemas/schema-form-input-array-list.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/4,TypeScript using space indentation,ui-v2/src/components/blocks/block-document-combobox/block-document-combobox.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/4,Selected block document not found when search filter is active,ui-v2/src/components/blocks/block-document-combobox/block-document-combobox.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/4,Regex validation rejects valid uppercase characters in block names,ui-v2/src/components/blocks/block-document-create-dialog/block-document-create-dialog.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/4,Race condition: dialog closes before parent callback executes,ui-v2/src/components/blocks/block-document-create-dialog/block-document-create-dialog.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/5,Cross-field validation using field_validator incorrectly,src/integrations/prefect-gcp/prefect_gcp/cloud_storage.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/5,Incorrect string matching for path prefix detection causes false positives,src/integrations/prefect-gcp/prefect_gcp/cloud_storage.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/5,Incorrect parameter name prevents timeout configuration in test harness,src/integrations/prefect-gcp/tests/conftest.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/5,Test constructs invalid path with double slashes,src/integrations/prefect-gcp/tests/test_cloud_storage.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/5,Unused import: model_validator,src/integrations/prefect-gcp/prefect_gcp/cloud_storage.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/6,Missing sync wrapper for async function,src/prefect/deployments/flow_runs.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/6,Missing await on async function call in task input collection,src/prefect/deployments/flow_runs.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/6,Wrong variable used for deployment ID in flow run creation,src/prefect/deployments/flow_runs.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/6,Poll interval delay happens before first status check in timeout loop,src/prefect/deployments/flow_runs.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/6,Missing required `from __future__ import annotations` import,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/prefect/pull/6,Unused import added (dynamic_key_for_task_run),src/prefect/deployments/flow_runs.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/7,Logger uses direct logging.getLogger,src/prefect/server/events/triggers.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/7,Advisory lock uses non-deterministic hash breaking concurrency control,src/prefect/server/events/models/composite_trigger_child_firing.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/7,Race detection compares lengths instead of ID sets allowing double-firing,src/prefect/server/events/triggers.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/7,clear_child_firings returns wrong ID field breaking race detection,src/prefect/server/events/models/composite_trigger_child_firing.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/7,Modified test file is in a non-mirroring directory structure,tests/events/server/triggers/test_composite_triggers.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/8,Direct logging.getLogger() call used,src/prefect/server/api/server.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/8,Wrong static subpath used for V2 UI,src/prefect/server/api/server.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/8,Path mismatch for V2 UI static files,src/prefect/__init__.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/8,Experimental V2 UI enabled by default,src/prefect/settings/models/server/ui.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/9,Test file not co-located with component,ui-v2/src/components/flows/flow-icon-text/__tests__/flow-icon-text.test.tsx,FILE_NOT_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/9,QueryClient instance mismatch between router context and provider,ui-v2/src/components/flows/flow-icon-text/flow-icon-text.stories.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/9,Missing Suspense fallback causes blank UI during loading,ui-v2/src/components/flows/flow-icon-text/flow-icon-text.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/9,Unused import violates Rule #12 noUnusedImports configuration,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/prefect/pull/9,Unused import: Skeleton,ui-v2/src/components/flows/flow-icon-text/flow-icon-text.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/10,TypeScript strict mode is disabled,ui-v2/tsconfig.app.json,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/10,Empty lines not filtered in Expected Events textarea,ui-v2/src/components/automations/automations-wizard/trigger-step/custom-trigger-fields.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/10,Incorrect field switching in DeploymentStatusTriggerFields breaks trigger data model,ui-v2/src/components/automations/automations-wizard/trigger-step/deployment-status-trigger-fields.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/10,parseInt without radix causes NaN values in threshold field,ui-v2/src/components/automations/automations-wizard/trigger-step/work-pool-status-trigger-fields.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/10,New React component added without a co-located test file,ui-v2/src/components/automations/automations-wizard/trigger-step/custom-trigger-fields.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/10,New React component added without a co-located test file,ui-v2/src/components/automations/automations-wizard/trigger-step/deployment-status-trigger-fields.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/10,New React component added without a co-located test file,ui-v2/src/components/automations/automations-wizard/trigger-step/work-pool-status-trigger-fields.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/10,New React component added without a co-located test file,ui-v2/src/components/automations/automations-wizard/trigger-step/work-queue-status-trigger-fields.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/11,Test file in wrong directory structure,src/integrations/prefect-kubernetes/tests/unit/test_observer.py,FILE_NOT_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/11,Race condition: semaphore initialized after clients during startup,src/integrations/prefect-kubernetes/prefect_kubernetes/observer.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/11,Semaphore context released before API call defeats concurrency control,src/integrations/prefect-kubernetes/prefect_kubernetes/observer.py,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/11,Test file deleted violating mandatory test coverage requirement,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/prefect/pull/12,Test file separated from hook,ui-v2/src/__tests__/hooks/use-state-favicon.test.ts,FILE_NOT_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/12,Incorrect falsy value handling for run_count displays wrong value for zero,ui-v2/src/components/task-runs/task-run-details/task-run-details.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/12,Missing type coercion for retries value causes potential type inconsistency,ui-v2/src/components/task-runs/task-run-details/task-run-details.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/12,Incorrect truthy check for retry_jitter_factor hides valid zero values,ui-v2/src/components/task-runs/task-run-details/task-run-details.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/12,Missing test file for new use-state-favicon hook violates repository testing rules,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/prefect/pull/12,Flow run link displays empty or undefined text when flow_run_name is missing,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/prefect/pull/13,Unused WorkPoolUpdate type import,ui-v2/src/components/work-pools/edit/work-pool-edit-form.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/13,Description field incorrectly trims whitespace,ui-v2/src/components/work-pools/edit/work-pool-edit-form.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/prefect/pull/13,Removed HTML5 min validation from concurrency limit input,ui-v2/src/components/work-pools/edit/work-pool-edit-form.tsx,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/1,Test function missing REDIS_TEST wrapper,src/dict.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/1,Stored-key used for lookup instead of extracted key in defragmentation,src/defrag.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/1,Wrong stored-key pointer used for dict lookup after keyDup,src/dict.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/1,Unused local variable triggers -Werror build failure,src/defrag.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/2,Unused variable causes compilation warning,src/cluster_asm.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/2,Incorrect comparison logic causes false negatives when comparing slot ranges,src/cluster.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/2,Memory leak due to missing error message reply to client,src/cluster.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/2,Incorrect accumulation of trim job key count across multiple jobs,src/cluster_asm.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/2,slotRangeArrayIsEqual mutates input arrays causing data corruption,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/redis/pull/2,Helper function asmCountKeysInSlots violates static function encapsulation rule,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/redis/pull/2,Non-static internal helper function exported as global symbol,src/cluster_asm.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/3,Direct malloc/free instead of zmalloc/zfree,src/cluster.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/3,Off-by-one error causing buffer overflow in extractSlotFromKeysResult,src/cluster.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/3,Incorrect condition causes cross-slot check for keyless commands,src/server.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/3,Uninitialized slot value for keyless commands due to missing assignment,src/db.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/3,Call to extractSlotFromKeysResult without a visible prototype (implicit declaration),src/db.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/4,Direct malloc instead of zmalloc,src/cluster.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/4,Incorrect operation order causes potential data loss during cluster verification,src/cluster.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/4,ASM cron runs before cluster state update causing stale state issues,src/server.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/4,Internal helper function clusterDeleteKeysInUnownedSlots missing static declaration,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/redis/pull/4,Non-static internal helper function exported from cluster.c,src/cluster.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/5,Direct malloc_usable_size instead of zmalloc_size,src/object.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/5,Incorrect memory calculation for QUICKLIST due to wrong denominator,src/object.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/5,Variable shadowing breaks sampling consistency for STREAM objects,src/object.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/5,Double-counting last listpack in STREAM memory calculation,src/object.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/5,Unused variable 'elecount' causes build failure with -Werror,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/redis/pull/5,Internal helper function kvobjComputeSize is not declared static,src/object.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/6,Missing tri-license header in version.h,src/version.h,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/6,Active defragmentation incorrectly forced ON after replication sync,src/replication.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/6,Stream entries incorrectly marked as referenced when cgroups_ref is NULL,src/t_stream.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/6,Inverted reply discard logic causes test infrastructure failure,tests/unit/memefficiency.tcl,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/6,Unused local variable triggers -Werror build failure,src/replication.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/6,Header file lacks required double-underscore include guard,src/version.h,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/7,Single underscore include guard used,src/server.h,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/7,Unsigned integer wraparound in AOF corruption size check,src/aof.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/7,Incorrect early exit prevents loading incremental AOF after successful base recovery,src/aof.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/8,Unused variable causes compilation warning,src/t_hash.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/8,Buffer overflow in HPEXPIREAT propagation array,src/t_hash.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/8,Off-by-one error in field expiration comparison,src/t_hash.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/8,Memory leak in HPEXPIREAT propagation,src/t_hash.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/8,Out-of-bounds write to argv array may trigger -Warray-bounds (and is UB),src/t_hash.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/9,Helper function missing static keyword,src/t_hash.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/9,HINCRBYFLOAT removes field expiration time locally on master,src/t_hash.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/redis/pull/9,Incorrect argument count in rewriteClientCommandVector causes malformed replication,src/t_hash.c,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/1,Android function missing target_os guard,crates/tauri-cli/src/mobile/android/mod.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/1,Auto-increment version code incorrectly applied in dev mode,crates/tauri-cli/src/mobile/android/mod.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/1,Version code validation occurs before dev mode clamping causing build failures,crates/tauri-cli/src/mobile/android/mod.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/1,File comparison logic always evaluates to not-equal due to operand order,crates/tauri-cli/src/mobile/android/mod.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/1,Auto-increment version code lacks maximum value validation,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/tauri/pull/1,Public function added without documentation,crates/tauri-cli/src/mobile/android/mod.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/1,Use of unwrap() on lock/as_ref in fallible path,crates/tauri-cli/src/mobile/android/build.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/1,Use of unwrap() on lock/as_ref in fallible path,crates/tauri-cli/src/mobile/android/dev.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/2,Manual error trait implementation used,crates/tauri-bundler/src/bundle/linux/appimage/mod.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/2,Inverted existence check prevents GTK plugin installation,crates/tauri-bundler/src/bundle/linux/appimage/mod.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/2,File permissions set before file creation causes failure,crates/tauri-bundler/src/bundle/linux/appimage/mod.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/2,Architecture mapping bypassed in linuxdeploy download URL,crates/tauri-bundler/src/bundle/linux/appimage/mod.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/2,Missing From<FileWriteError> implementation causes compilation failure,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/tauri/pull/2,New shell script does not follow 2-space indentation (EditorConfig),crates/tauri-bundler/src/bundle/linux/appimage/linuxdeploy-plugin-gstreamer.sh,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/2,New shell script does not follow 2-space indentation (EditorConfig),crates/tauri-bundler/src/bundle/linux/appimage/linuxdeploy-plugin-gtk.sh,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/3,Schema not regenerated after config change,crates/tauri-utils/src/config.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/3,TOML parsing errors incorrectly wrapped as JSON errors,crates/tauri-utils/src/config/parse.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/3,Case mismatch between BundleType serialization and deserialization for Flatpak,crates/tauri-utils/src/config.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/3,User-facing change added without a corresponding .changes entry,crates/tauri-utils/src/config.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/4,Line exceeds max_width of 100,crates/tauri-cli/src/helpers/config.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/4,Incorrect field path for extracting original bundle identifier,crates/tauri-cli/src/helpers/config.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/4,Schema validation never executes due to impossible condition,crates/tauri-cli/src/helpers/config.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/4,Config merge operation fails to apply merged values,crates/tauri-cli/src/helpers/config.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/4,Panicking on fallible config schema parsing/validation via expect(),crates/tauri-cli/src/helpers/config.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/5,Unsafe block lacks safety documentation,crates/tauri-cli/src/interface/rust/desktop.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/5,Missing tauri_dir parameter causes workspace resolution to use wrong directory,crates/tauri-cli/src/helpers/cargo_manifest.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/5,Configuration merge bypasses validation when merging with empty configs,crates/tauri-cli/src/helpers/config.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/5,Missing directory parameter breaks WiX upgrade code validation,crates/tauri-cli/src/helpers/config.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/5,New public struct and function lack rustdoc comments,crates/tauri-cli/src/helpers/app_paths.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/5,New public config functions lack rustdoc comments,crates/tauri-cli/src/helpers/config.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/5,New/modified path resolution introduces panics/unwraps for fallible operations,crates/tauri-cli/src/helpers/app_paths.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/6,Needless borrow and dereference pattern,crates/tauri/src/app/plugin.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/6,Exit command resolves after activity termination,crates/tauri/mobile/android/src/main/java/app/tauri/AppPlugin.kt,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/6,Back navigation handled by both framework and plugin,crates/tauri/mobile/android-codegen/TauriActivity.kt,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/6,Exit command not registered in build.rs permissions,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/tauri/pull/7,Windows-only Sha256 lacks platform guards,crates/tauri-bundler/src/utils/http_utils.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/7,"GitHub mirror URL ignored, always downloads from original URL",crates/tauri-bundler/src/utils/http_utils.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/7,Version mismatch between CLI and Tauri core in metadata,crates/tauri-cli/metadata-v2.json,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/7,Version bump without corresponding .changes change file in this PR,crates/tauri-bundler/Cargo.toml,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/7,Version bump without corresponding .changes change file in this PR,crates/tauri-cli/Cargo.toml,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/8,new_click method missing must_use attribute,crates/tauri/src/tray/mod.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/8,Inverted mouse button state mapping in tray icon event conversion,crates/tauri/src/tray/mod.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/8,PatternJavascript struct gated behind isolation feature breaks brownfield pattern,crates/tauri/src/pattern.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/8,Config schema/source changed without corresponding generated artifacts update,crates/tauri-utils/src/config.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/8,v1 config schema/source changed without corresponding generated artifacts update,crates/tauri-utils/src/config_v1/mod.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/9,Homepage duplicated in workspace member,crates/tauri-bundler/Cargo.toml,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/9,Incorrect tauri version in metadata file,crates/tauri-cli/metadata-v2.json,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/9,Dependency version mismatch for tauri-bundler,crates/tauri-cli/Cargo.toml,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/10,Inconsistent spacing around function arguments,crates/tauri/src/webview/webview_window.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/10,Cookie deletion incorrectly calls SetCookie instead of DeleteCookie,crates/tauri-runtime-wry/src/lib.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/10,Window size applied before position in window_features causing incorrect window placement,crates/tauri/src/webview/webview_window.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/10,Changed window naming pattern breaks window label consistency,examples/api/src-tauri/src/lib.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/10,Public re-export lacks rustdoc documentation,crates/tauri/src/webview/mod.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/10,New code uses unwrap() on fallible operations,examples/api/src-tauri/src/lib.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/10,User-facing API change without a .changes entry,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/tauri/pull/11,Needless return statement in function,crates/tauri-bundler/src/utils/http_utils.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/11,GitHub mirror URL construction missing path component,crates/tauri-bundler/src/utils/http_utils.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/11,WebView2 offline installer bypasses platform certificate verification,crates/tauri-bundler/src/bundle/windows/util.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/11,Inverted condition prevents lock version display for multiple crate versions,crates/tauri-cli/src/helpers/cargo_manifest.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/11,crate_latest_version missing proxy configuration with platform-certs,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/tauri/pull/11,GitHub mirror downloads bypass platform certificate verification,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/tauri/pull/12,File association uses expect instead Result,crates/tauri-bundler/src/bundle/macos/app.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/12,Wrong field used for UTTypeConformsTo in exported type declarations,crates/tauri-bundler/src/bundle/macos/app.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/12,Inverted condition excludes file extensions from CFBundleDocumentTypes,crates/tauri-bundler/src/bundle/macos/app.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/12,Clippy lint: unnecessary `to_string()` on `&String` when building LSItemContentTypes,crates/tauri-bundler/src/bundle/macos/app.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/12,Clippy lint: unnecessary `to_string()` on `&String` for CFBundleTypeName,crates/tauri-bundler/src/bundle/macos/app.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/13,Error enum doesn't use thiserror,crates/tauri-macos-sign/src/lib.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/13,Missing error source for FailedToEncodeDER variant,crates/tauri-macos-sign/src/lib.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/13,Swapped source and destination in ditto archive command,crates/tauri-macos-sign/src/lib.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/13,Inverted logic for non-blocking notarization success check,crates/tauri-macos-sign/src/lib.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/13,Public Error enum missing #[non_exhaustive] attribute,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/tauri/pull/13,Missing error source for Plist variant breaks error chain,,MISSING_GROUND_TRUTH_FILE_PATH
+https://github.com/agentic-review-benchmarks/tauri/pull/13,Public Error enum missing #[non_exhaustive],crates/tauri-macos-sign/src/lib.rs,FILE_FOUND_IN_DIFF
+https://github.com/agentic-review-benchmarks/tauri/pull/13,Use of expect() for fallible PathBuf-to-str conversion,crates/tauri-macos-sign/src/lib.rs,FILE_FOUND_IN_DIFF

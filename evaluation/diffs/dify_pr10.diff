@@ -1,0 +1,564 @@
+diff --git a/api/services/billing_service.py b/api/services/billing_service.py
+index 3d7cb6cc8d42ec..5aa7f5cca06d29 100644
+--- a/api/services/billing_service.py
++++ b/api/services/billing_service.py
+@@ -1,3 +1,4 @@
++import json
+ import logging
+ import os
+ from collections.abc import Sequence
+@@ -24,6 +25,10 @@ class SubscriptionPlan(TypedDict):
+     plan: str
+     expiration_date: int
+ 
++    def __str__(self) -> str:
++        """Return a human-readable string representation for debugging."""
++        return f"Plan: {self['plan']}, Expiration: {self['expiration_date']}"
++
+ 
+ class BillingService:
+     base_url = os.environ.get("BILLING_API_URL", "BILLING_API_URL")
+@@ -31,6 +36,11 @@ class BillingService:
+ 
+     compliance_download_rate_limiter = RateLimiter("compliance_download_rate_limiter", 4, 60)
+ 
++    # Redis key prefix for tenant plan cache
++    _PLAN_CACHE_KEY_PREFIX = "tenant_plan:"
++    # Cache TTL: 10 minutes
++    _PLAN_CACHE_TTL = 600
++
+     @classmethod
+     def get_info(cls, tenant_id: str):
+         params = {"tenant_id": tenant_id}
+@@ -272,14 +282,110 @@ def get_plan_bulk(cls, tenant_ids: Sequence[str]) -> dict[str, SubscriptionPlan]
+                 data = resp.get("data", {})
+ 
+                 for tenant_id, plan in data.items():
+-                    subscription_plan = subscription_adapter.validate_python(plan)
+-                    results[tenant_id] = subscription_plan
++                    try:
++                        subscription_plan = subscription_adapter.validate_python(plan)
++                        results[tenant_id] = subscription_plan
++                    except Exception:
++                        logger.exception(
++                            "get_plan_bulk: failed to validate subscription plan for tenant(%s)", tenant_id
++                        )
++                        results[tenant_id] = None
+             except Exception:
+-                logger.exception("Failed to fetch billing info batch for tenants: %s", chunk)
++                logger.exception("get_plan_bulk: failed to fetch billing info batch for tenants: %s", chunk)
+                 continue
+ 
+         return results
+ 
++    @classmethod
++    def _make_plan_cache_key(cls, tenant_id: str) -> str:
++        return f"{cls._PLAN_CACHE_KEY_PREFIX}{tenant_id}"
++
++    @classmethod
++    def get_plan_bulk_with_cache(cls, tenant_ids: Sequence[str]) -> dict[str, SubscriptionPlan]:
++        """
++        Bulk fetch billing subscription plan with cache to reduce billing API loads in batch job scenarios.
++
++        NOTE: if you want to high data consistency, use get_plan_bulk instead.
++
++        Returns:
++            Mapping of tenant_id -> {plan: str, expiration_date: int}
++        """
++        tenant_plans: dict[str, SubscriptionPlan] = {}
++
++        if not tenant_ids:
++            return tenant_plans
++
++        subscription_adapter = TypeAdapter(SubscriptionPlan)
++
++        # Step 1: Batch fetch from Redis cache using mget
++        redis_keys = [cls._make_plan_cache_key(tenant_id) for tenant_id in tenant_ids]
++        try:
++            cached_values = redis_client.mget(redis_keys)
++
++            if len(cached_values) != len(tenant_ids):
++                raise Exception(
++                    "get_plan_bulk_with_cache: unexpected error: redis mget failed: cached values length mismatch"
++                )
++
++            # Map cached values back to tenant_ids
++            cache_misses: list[str] = []
++
++            for tenant_id, cached_value in zip(tenant_ids, cached_values):
++                if cached_value:
++                    try:
++                        # Redis returns bytes, decode to string and parse JSON
++                        json_str = cached_value.decode("utf-8") if isinstance(cached_value, bytes) else cached_value
++                        plan_dict = json.loads(json_str)
++                        subscription_plan = subscription_adapter.validate_python(plan_dict)
++                        tenant_plans[tenant_id] = subscription_plan
++                    except Exception:
++                        logger.exception(
++                            "get_plan_bulk_with_cache: process tenant(%s) failed, add to cache misses", tenant_id
++                        )
++                        cache_misses.append(tenant_id)
++                else:
++                    cache_misses.append(tenant_id)
++
++            logger.info(
++                "get_plan_bulk_with_cache: cache hits=%s, cache misses=%s",
++                len(tenant_plans),
++                len(cache_misses),
++            )
++        except Exception:
++            logger.exception("get_plan_bulk_with_cache: redis mget failed, falling back to API")
++            cache_misses = list(tenant_ids)
++
++        # Step 2: Fetch missing plans from billing API
++        if cache_misses:
++            bulk_plans = BillingService.get_plan_bulk(cache_misses)
++
++            if bulk_plans:
++                plans_to_cache: dict[str, SubscriptionPlan] = {}
++
++                for tenant_id, subscription_plan in bulk_plans.items():
++                    tenant_plans[tenant_id] = subscription_plan
++                    plans_to_cache[tenant_id] = subscription_plan
++
++                # Step 3: Batch update Redis cache using pipeline
++                if plans_to_cache:
++                    try:
++                        pipe = redis_client.pipeline()
++                        for tenant_id, subscription_plan in bulk_plans.items():
++                            redis_key = cls._make_plan_cache_key(tenant_id)
++                            # Serialize dict to JSON string
++                            json_str = json.dumps(subscription_plan)
++                            pipe.setex(redis_key, cls._PLAN_CACHE_TTL, json_str)
++                        pipe.execute()
++
++                        logger.info(
++                            "get_plan_bulk_with_cache: cached %s new tenant plans to Redis",
++                            len(bulk_plans),
++                        )
++                    except Exception:
++                        logger.exception("get_plan_bulk_with_cache: redis pipeline failed")
++
++        return tenant_plans
++
+     @classmethod
+     def get_expired_subscription_cleanup_whitelist(cls) -> Sequence[str]:
+         resp = cls._send_request("GET", "/subscription/cleanup/whitelist")
+diff --git a/api/tests/test_containers_integration_tests/services/test_billing_service.py b/api/tests/test_containers_integration_tests/services/test_billing_service.py
+new file mode 100644
+index 00000000000000..76708b36b1c1ef
+--- /dev/null
++++ b/api/tests/test_containers_integration_tests/services/test_billing_service.py
+@@ -0,0 +1,365 @@
++import json
++from unittest.mock import patch
++
++import pytest
++
++from extensions.ext_redis import redis_client
++from services.billing_service import BillingService
++
++
++class TestBillingServiceGetPlanBulkWithCache:
++    """
++    Comprehensive integration tests for get_plan_bulk_with_cache using testcontainers.
++
++    This test class covers all major scenarios:
++    - Cache hit/miss scenarios
++    - Redis operation failures and fallback behavior
++    - Invalid cache data handling
++    - TTL expiration handling
++    - Error recovery and logging
++    """
++
++    @pytest.fixture(autouse=True)
++    def setup_redis_cleanup(self, flask_app_with_containers):
++        """Clean up Redis cache before and after each test."""
++        with flask_app_with_containers.app_context():
++            # Clean up before test
++            yield
++            # Clean up after test
++            # Delete all test cache keys
++            pattern = f"{BillingService._PLAN_CACHE_KEY_PREFIX}*"
++            keys = redis_client.keys(pattern)
++            if keys:
++                redis_client.delete(*keys)
++
++    def _create_test_plan_data(self, plan: str = "sandbox", expiration_date: int = 1735689600):
++        """Helper to create test SubscriptionPlan data."""
++        return {"plan": plan, "expiration_date": expiration_date}
++
++    def _set_cache(self, tenant_id: str, plan_data: dict, ttl: int = 600):
++        """Helper to set cache data in Redis."""
++        cache_key = BillingService._make_plan_cache_key(tenant_id)
++        json_str = json.dumps(plan_data)
++        redis_client.setex(cache_key, ttl, json_str)
++
++    def _get_cache(self, tenant_id: str):
++        """Helper to get cache data from Redis."""
++        cache_key = BillingService._make_plan_cache_key(tenant_id)
++        value = redis_client.get(cache_key)
++        if value:
++            if isinstance(value, bytes):
++                return value.decode("utf-8")
++            return value
++        return None
++
++    def test_get_plan_bulk_with_cache_all_cache_hit(self, flask_app_with_containers):
++        """Test bulk plan retrieval when all tenants are in cache."""
++        with flask_app_with_containers.app_context():
++            # Arrange
++            tenant_ids = ["tenant-1", "tenant-2", "tenant-3"]
++            expected_plans = {
++                "tenant-1": self._create_test_plan_data("sandbox", 1735689600),
++                "tenant-2": self._create_test_plan_data("professional", 1767225600),
++                "tenant-3": self._create_test_plan_data("team", 1798761600),
++            }
++
++            # Pre-populate cache
++            for tenant_id, plan_data in expected_plans.items():
++                self._set_cache(tenant_id, plan_data)
++
++            # Act
++            with patch.object(BillingService, "get_plan_bulk") as mock_get_plan_bulk:
++                result = BillingService.get_plan_bulk_with_cache(tenant_ids)
++
++            # Assert
++            assert len(result) == 3
++            assert result["tenant-1"]["plan"] == "sandbox"
++            assert result["tenant-1"]["expiration_date"] == 1735689600
++            assert result["tenant-2"]["plan"] == "professional"
++            assert result["tenant-2"]["expiration_date"] == 1767225600
++            assert result["tenant-3"]["plan"] == "team"
++            assert result["tenant-3"]["expiration_date"] == 1798761600
++
++            # Verify API was not called
++            mock_get_plan_bulk.assert_not_called()
++
++    def test_get_plan_bulk_with_cache_all_cache_miss(self, flask_app_with_containers):
++        """Test bulk plan retrieval when all tenants are not in cache."""
++        with flask_app_with_containers.app_context():
++            # Arrange
++            tenant_ids = ["tenant-1", "tenant-2"]
++            expected_plans = {
++                "tenant-1": self._create_test_plan_data("sandbox", 1735689600),
++                "tenant-2": self._create_test_plan_data("professional", 1767225600),
++            }
++
++            # Act
++            with patch.object(BillingService, "get_plan_bulk", return_value=expected_plans) as mock_get_plan_bulk:
++                result = BillingService.get_plan_bulk_with_cache(tenant_ids)
++
++            # Assert
++            assert len(result) == 2
++            assert result["tenant-1"]["plan"] == "sandbox"
++            assert result["tenant-2"]["plan"] == "professional"
++
++            # Verify API was called with correct tenant_ids
++            mock_get_plan_bulk.assert_called_once_with(tenant_ids)
++
++            # Verify data was written to cache
++            cached_1 = self._get_cache("tenant-1")
++            cached_2 = self._get_cache("tenant-2")
++            assert cached_1 is not None
++            assert cached_2 is not None
++
++            # Verify cache content
++            cached_data_1 = json.loads(cached_1)
++            cached_data_2 = json.loads(cached_2)
++            assert cached_data_1 == expected_plans["tenant-1"]
++            assert cached_data_2 == expected_plans["tenant-2"]
++
++            # Verify TTL is set
++            cache_key_1 = BillingService._make_plan_cache_key("tenant-1")
++            ttl_1 = redis_client.ttl(cache_key_1)
++            assert ttl_1 > 0
++            assert ttl_1 <= 600  # Should be <= 600 seconds
++
++    def test_get_plan_bulk_with_cache_partial_cache_hit(self, flask_app_with_containers):
++        """Test bulk plan retrieval when some tenants are in cache, some are not."""
++        with flask_app_with_containers.app_context():
++            # Arrange
++            tenant_ids = ["tenant-1", "tenant-2", "tenant-3"]
++            # Pre-populate cache for tenant-1 and tenant-2
++            self._set_cache("tenant-1", self._create_test_plan_data("sandbox", 1735689600))
++            self._set_cache("tenant-2", self._create_test_plan_data("professional", 1767225600))
++
++            # tenant-3 is not in cache
++            missing_plan = {"tenant-3": self._create_test_plan_data("team", 1798761600)}
++
++            # Act
++            with patch.object(BillingService, "get_plan_bulk", return_value=missing_plan) as mock_get_plan_bulk:
++                result = BillingService.get_plan_bulk_with_cache(tenant_ids)
++
++            # Assert
++            assert len(result) == 3
++            assert result["tenant-1"]["plan"] == "sandbox"
++            assert result["tenant-2"]["plan"] == "professional"
++            assert result["tenant-3"]["plan"] == "team"
++
++            # Verify API was called only for missing tenant
++            mock_get_plan_bulk.assert_called_once_with(["tenant-3"])
++
++            # Verify tenant-3 data was written to cache
++            cached_3 = self._get_cache("tenant-3")
++            assert cached_3 is not None
++            cached_data_3 = json.loads(cached_3)
++            assert cached_data_3 == missing_plan["tenant-3"]
++
++    def test_get_plan_bulk_with_cache_redis_mget_failure(self, flask_app_with_containers):
++        """Test fallback to API when Redis mget fails."""
++        with flask_app_with_containers.app_context():
++            # Arrange
++            tenant_ids = ["tenant-1", "tenant-2"]
++            expected_plans = {
++                "tenant-1": self._create_test_plan_data("sandbox", 1735689600),
++                "tenant-2": self._create_test_plan_data("professional", 1767225600),
++            }
++
++            # Act
++            with (
++                patch.object(redis_client, "mget", side_effect=Exception("Redis connection error")),
++                patch.object(BillingService, "get_plan_bulk", return_value=expected_plans) as mock_get_plan_bulk,
++            ):
++                result = BillingService.get_plan_bulk_with_cache(tenant_ids)
++
++            # Assert
++            assert len(result) == 2
++            assert result["tenant-1"]["plan"] == "sandbox"
++            assert result["tenant-2"]["plan"] == "professional"
++
++            # Verify API was called for all tenants (fallback)
++            mock_get_plan_bulk.assert_called_once_with(tenant_ids)
++
++            # Verify data was written to cache after fallback
++            cached_1 = self._get_cache("tenant-1")
++            cached_2 = self._get_cache("tenant-2")
++            assert cached_1 is not None
++            assert cached_2 is not None
++
++    def test_get_plan_bulk_with_cache_invalid_json_in_cache(self, flask_app_with_containers):
++        """Test fallback to API when cache contains invalid JSON."""
++        with flask_app_with_containers.app_context():
++            # Arrange
++            tenant_ids = ["tenant-1", "tenant-2", "tenant-3"]
++
++            # Set valid cache for tenant-1
++            self._set_cache("tenant-1", self._create_test_plan_data("sandbox", 1735689600))
++
++            # Set invalid JSON for tenant-2
++            cache_key_2 = BillingService._make_plan_cache_key("tenant-2")
++            redis_client.setex(cache_key_2, 600, "invalid json {")
++
++            # tenant-3 is not in cache
++            expected_plans = {
++                "tenant-2": self._create_test_plan_data("professional", 1767225600),
++                "tenant-3": self._create_test_plan_data("team", 1798761600),
++            }
++
++            # Act
++            with patch.object(BillingService, "get_plan_bulk", return_value=expected_plans) as mock_get_plan_bulk:
++                result = BillingService.get_plan_bulk_with_cache(tenant_ids)
++
++            # Assert
++            assert len(result) == 3
++            assert result["tenant-1"]["plan"] == "sandbox"  # From cache
++            assert result["tenant-2"]["plan"] == "professional"  # From API (fallback)
++            assert result["tenant-3"]["plan"] == "team"  # From API
++
++            # Verify API was called for tenant-2 and tenant-3
++            mock_get_plan_bulk.assert_called_once_with(["tenant-2", "tenant-3"])
++
++            # Verify tenant-2's invalid JSON was replaced with correct data in cache
++            cached_2 = self._get_cache("tenant-2")
++            assert cached_2 is not None
++            cached_data_2 = json.loads(cached_2)
++            assert cached_data_2 == expected_plans["tenant-2"]
++            assert cached_data_2["plan"] == "professional"
++            assert cached_data_2["expiration_date"] == 1767225600
++
++            # Verify tenant-2 cache has correct TTL
++            cache_key_2_new = BillingService._make_plan_cache_key("tenant-2")
++            ttl_2 = redis_client.ttl(cache_key_2_new)
++            assert ttl_2 > 0
++            assert ttl_2 <= 600
++
++            # Verify tenant-3 data was also written to cache
++            cached_3 = self._get_cache("tenant-3")
++            assert cached_3 is not None
++            cached_data_3 = json.loads(cached_3)
++            assert cached_data_3 == expected_plans["tenant-3"]
++
++    def test_get_plan_bulk_with_cache_invalid_plan_data_in_cache(self, flask_app_with_containers):
++        """Test fallback to API when cache data doesn't match SubscriptionPlan schema."""
++        with flask_app_with_containers.app_context():
++            # Arrange
++            tenant_ids = ["tenant-1", "tenant-2", "tenant-3"]
++
++            # Set valid cache for tenant-1
++            self._set_cache("tenant-1", self._create_test_plan_data("sandbox", 1735689600))
++
++            # Set invalid plan data for tenant-2 (missing expiration_date)
++            cache_key_2 = BillingService._make_plan_cache_key("tenant-2")
++            invalid_data = json.dumps({"plan": "professional"})  # Missing expiration_date
++            redis_client.setex(cache_key_2, 600, invalid_data)
++
++            # tenant-3 is not in cache
++            expected_plans = {
++                "tenant-2": self._create_test_plan_data("professional", 1767225600),
++                "tenant-3": self._create_test_plan_data("team", 1798761600),
++            }
++
++            # Act
++            with patch.object(BillingService, "get_plan_bulk", return_value=expected_plans) as mock_get_plan_bulk:
++                result = BillingService.get_plan_bulk_with_cache(tenant_ids)
++
++            # Assert
++            assert len(result) == 3
++            assert result["tenant-1"]["plan"] == "sandbox"  # From cache
++            assert result["tenant-2"]["plan"] == "professional"  # From API (fallback)
++            assert result["tenant-3"]["plan"] == "team"  # From API
++
++            # Verify API was called for tenant-2 and tenant-3
++            mock_get_plan_bulk.assert_called_once_with(["tenant-2", "tenant-3"])
++
++    def test_get_plan_bulk_with_cache_redis_pipeline_failure(self, flask_app_with_containers):
++        """Test that pipeline failure doesn't affect return value."""
++        with flask_app_with_containers.app_context():
++            # Arrange
++            tenant_ids = ["tenant-1", "tenant-2"]
++            expected_plans = {
++                "tenant-1": self._create_test_plan_data("sandbox", 1735689600),
++                "tenant-2": self._create_test_plan_data("professional", 1767225600),
++            }
++
++            # Act
++            with (
++                patch.object(BillingService, "get_plan_bulk", return_value=expected_plans),
++                patch.object(redis_client, "pipeline") as mock_pipeline,
++            ):
++                # Create a mock pipeline that fails on execute
++                mock_pipe = mock_pipeline.return_value
++                mock_pipe.execute.side_effect = Exception("Pipeline execution failed")
++
++                result = BillingService.get_plan_bulk_with_cache(tenant_ids)
++
++            # Assert - Function should still return correct result despite pipeline failure
++            assert len(result) == 2
++            assert result["tenant-1"]["plan"] == "sandbox"
++            assert result["tenant-2"]["plan"] == "professional"
++
++            # Verify pipeline was attempted
++            mock_pipeline.assert_called_once()
++
++    def test_get_plan_bulk_with_cache_empty_tenant_ids(self, flask_app_with_containers):
++        """Test with empty tenant_ids list."""
++        with flask_app_with_containers.app_context():
++            # Act
++            with patch.object(BillingService, "get_plan_bulk") as mock_get_plan_bulk:
++                result = BillingService.get_plan_bulk_with_cache([])
++
++            # Assert
++            assert result == {}
++            assert len(result) == 0
++
++            # Verify no API calls
++            mock_get_plan_bulk.assert_not_called()
++
++            # Verify no Redis operations (mget with empty list would return empty list)
++            # But we should check that mget was not called at all
++            # Since we can't easily verify this without more mocking, we just verify the result
++
++    def test_get_plan_bulk_with_cache_ttl_expired(self, flask_app_with_containers):
++        """Test that expired cache keys are treated as cache misses."""
++        with flask_app_with_containers.app_context():
++            # Arrange
++            tenant_ids = ["tenant-1", "tenant-2"]
++
++            # Set cache for tenant-1 with very short TTL (1 second) to simulate expiration
++            self._set_cache("tenant-1", self._create_test_plan_data("sandbox", 1735689600), ttl=1)
++
++            # Wait for TTL to expire (key will be deleted by Redis)
++            import time
++
++            time.sleep(2)
++
++            # Verify cache is expired (key doesn't exist)
++            cache_key_1 = BillingService._make_plan_cache_key("tenant-1")
++            exists = redis_client.exists(cache_key_1)
++            assert exists == 0  # Key doesn't exist (expired)
++
++            # tenant-2 is not in cache
++            expected_plans = {
++                "tenant-1": self._create_test_plan_data("sandbox", 1735689600),
++                "tenant-2": self._create_test_plan_data("professional", 1767225600),
++            }
++
++            # Act
++            with patch.object(BillingService, "get_plan_bulk", return_value=expected_plans) as mock_get_plan_bulk:
++                result = BillingService.get_plan_bulk_with_cache(tenant_ids)
++
++            # Assert
++            assert len(result) == 2
++            assert result["tenant-1"]["plan"] == "sandbox"
++            assert result["tenant-2"]["plan"] == "professional"
++
++            # Verify API was called for both tenants (tenant-1 expired, tenant-2 missing)
++            mock_get_plan_bulk.assert_called_once_with(tenant_ids)
++
++            # Verify both were written to cache with correct TTL
++            cache_key_1_new = BillingService._make_plan_cache_key("tenant-1")
++            cache_key_2 = BillingService._make_plan_cache_key("tenant-2")
++            ttl_1_new = redis_client.ttl(cache_key_1_new)
++            ttl_2 = redis_client.ttl(cache_key_2)
++            assert ttl_1_new > 0
++            assert ttl_1_new <= 600
++            assert ttl_2 > 0
++            assert ttl_2 <= 600
+diff --git a/api/tests/unit_tests/services/test_billing_service.py b/api/tests/unit_tests/services/test_billing_service.py
+index f50f744a75e27d..d00743278e443d 100644
+--- a/api/tests/unit_tests/services/test_billing_service.py
++++ b/api/tests/unit_tests/services/test_billing_service.py
+@@ -1294,6 +1294,42 @@ def test_get_plan_bulk_with_empty_data_response(self, mock_send_request):
+         # Assert
+         assert result == {}
+ 
++    def test_get_plan_bulk_with_invalid_tenant_plan_skipped(self, mock_send_request):
++        """Test bulk plan retrieval when one tenant has invalid plan data (should skip that tenant)."""
++        # Arrange
++        tenant_ids = ["tenant-valid-1", "tenant-invalid", "tenant-valid-2"]
++
++        # Response with one invalid tenant plan (missing expiration_date) and two valid ones
++        mock_send_request.return_value = {
++            "data": {
++                "tenant-valid-1": {"plan": "sandbox", "expiration_date": 1735689600},
++                "tenant-invalid": {"plan": "professional"},  # Missing expiration_date field
++                "tenant-valid-2": {"plan": "team", "expiration_date": 1767225600},
++            }
++        }
++
++        # Act
++        with patch("services.billing_service.logger") as mock_logger:
++            result = BillingService.get_plan_bulk(tenant_ids)
++
++        # Assert - should only contain valid tenants
++        assert len(result) == 2
++        assert "tenant-valid-1" in result
++        assert "tenant-valid-2" in result
++        assert "tenant-invalid" not in result
++
++        # Verify valid tenants have correct data
++        assert result["tenant-valid-1"]["plan"] == "sandbox"
++        assert result["tenant-valid-1"]["expiration_date"] == 1735689600
++        assert result["tenant-valid-2"]["plan"] == "team"
++        assert result["tenant-valid-2"]["expiration_date"] == 1767225600
++
++        # Verify exception was logged for the invalid tenant
++        mock_logger.exception.assert_called_once()
++        log_call_args = mock_logger.exception.call_args[0]
++        assert "get_plan_bulk: failed to validate subscription plan for tenant" in log_call_args[0]
++        assert "tenant-invalid" in log_call_args[1]
++
+     def test_get_expired_subscription_cleanup_whitelist_success(self, mock_send_request):
+         """Test successful retrieval of expired subscription cleanup whitelist."""
+         # Arrange

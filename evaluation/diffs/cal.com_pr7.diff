@@ -1,0 +1,253 @@
+diff --git a/packages/features/calendar-subscription/adapters/AdaptersFactory.ts b/packages/features/calendar-subscription/adapters/AdaptersFactory.ts
+index 6880234ae0ac..b43c28c508c3 100644
+--- a/packages/features/calendar-subscription/adapters/AdaptersFactory.ts
++++ b/packages/features/calendar-subscription/adapters/AdaptersFactory.ts
+@@ -4,9 +4,25 @@ import type { ICalendarSubscriptionPort } from "@calcom/features/calendar-subscr
+ 
+ export type CalendarSubscriptionProvider = "google_calendar" | "office365_calendar";
+ 
++/**
++ * Generic calendar suffixes that should be excluded from subscription.
++ * These are special calendars (holidays, contacts, shared, imported, resources)
++ * that are not user's personal calendars and shouldn't be subscribed to for sync.
++ */
++export const GENERIC_CALENDAR_SUFFIXES: Record<CalendarSubscriptionProvider, string[]> = {
++  google_calendar: [
++    "@group.v.calendar.google.com",
++    "@group.calendar.google.com",
++    "@import.calendar.google.com",
++    "@resource.calendar.google.com",
++  ],
++  office365_calendar: [],
++};
++
+ export interface AdapterFactory {
+   get(provider: CalendarSubscriptionProvider): ICalendarSubscriptionPort;
+   getProviders(): CalendarSubscriptionProvider[];
++  getGenericCalendarSuffixes(): string[];
+ }
+ 
+ /**
+@@ -41,4 +57,16 @@ export class DefaultAdapterFactory implements AdapterFactory {
+     const providers: CalendarSubscriptionProvider[] = ["google_calendar"];
+     return providers;
+   }
++
++  /**
++   * Returns all generic calendar suffixes that should be excluded from subscription
++   * across all supported providers.
++   *
++   * @returns
++   */
++  getGenericCalendarSuffixes(): string[] {
++    return Object.keys(GENERIC_CALENDAR_SUFFIXES).flatMap(
++      (provider) => GENERIC_CALENDAR_SUFFIXES[provider as CalendarSubscriptionProvider]
++    );
++  }
+ }
+diff --git a/packages/features/calendar-subscription/lib/CalendarSubscriptionService.ts b/packages/features/calendar-subscription/lib/CalendarSubscriptionService.ts
+index a1854d56489d..ae0c86392d6a 100644
+--- a/packages/features/calendar-subscription/lib/CalendarSubscriptionService.ts
++++ b/packages/features/calendar-subscription/lib/CalendarSubscriptionService.ts
+@@ -392,6 +392,7 @@ export class CalendarSubscriptionService {
+       take: 100,
+       integrations: this.deps.adapterFactory.getProviders(),
+       teamIds,
++      genericCalendarSuffixes: this.deps.adapterFactory.getGenericCalendarSuffixes(),
+     });
+     log.debug("checkForNewSubscriptions", { count: rows.length });
+     await Promise.allSettled(rows.map(({ id }) => this.subscribe(id)));
+diff --git a/packages/features/calendar-subscription/lib/__tests__/CalendarSubscriptionService.test.ts b/packages/features/calendar-subscription/lib/__tests__/CalendarSubscriptionService.test.ts
+index 8519a2e4b69a..e60a77179b03 100644
+--- a/packages/features/calendar-subscription/lib/__tests__/CalendarSubscriptionService.test.ts
++++ b/packages/features/calendar-subscription/lib/__tests__/CalendarSubscriptionService.test.ts
+@@ -112,6 +112,12 @@ describe("CalendarSubscriptionService", () => {
+     mockAdapterFactory = {
+       get: vi.fn().mockReturnValue(mockAdapter),
+       getProviders: vi.fn().mockReturnValue(["google_calendar", "office365_calendar"]),
++      getGenericCalendarSuffixes: vi.fn().mockReturnValue([
++        "@group.v.calendar.google.com",
++        "@group.calendar.google.com",
++        "@import.calendar.google.com",
++        "@resource.calendar.google.com",
++      ]),
+     };
+ 
+     mockSelectedCalendarRepository = {
+@@ -385,6 +391,12 @@ describe("CalendarSubscriptionService", () => {
+         take: 100,
+         integrations: ["google_calendar", "office365_calendar"],
+         teamIds: [1, 2, 3],
++        genericCalendarSuffixes: [
++          "@group.v.calendar.google.com",
++          "@group.calendar.google.com",
++          "@import.calendar.google.com",
++          "@resource.calendar.google.com",
++        ],
+       });
+       expect(subscribeSpy).toHaveBeenCalledWith(mockSelectedCalendar.id);
+     });
+@@ -411,6 +423,12 @@ describe("CalendarSubscriptionService", () => {
+         take: 100,
+         integrations: ["google_calendar", "office365_calendar"],
+         teamIds: [10, 20],
++        genericCalendarSuffixes: [
++          "@group.v.calendar.google.com",
++          "@group.calendar.google.com",
++          "@import.calendar.google.com",
++          "@resource.calendar.google.com",
++        ],
+       });
+       expect(subscribeSpy).toHaveBeenCalledTimes(2);
+       expect(subscribeSpy).toHaveBeenCalledWith("calendar-with-cache");
+@@ -437,6 +455,12 @@ describe("CalendarSubscriptionService", () => {
+         take: 100,
+         integrations: ["google_calendar", "office365_calendar"],
+         teamIds: [teamId],
++        genericCalendarSuffixes: [
++          "@group.v.calendar.google.com",
++          "@group.calendar.google.com",
++          "@import.calendar.google.com",
++          "@resource.calendar.google.com",
++        ],
+       });
+       expect(mockSelectedCalendarRepository.findNextSubscriptionBatch).not.toHaveBeenCalledWith(
+         expect.objectContaining({
+@@ -463,6 +487,12 @@ describe("CalendarSubscriptionService", () => {
+         take: 100,
+         integrations: ["google_calendar", "office365_calendar"],
+         teamIds: [],
++        genericCalendarSuffixes: [
++          "@group.v.calendar.google.com",
++          "@group.calendar.google.com",
++          "@import.calendar.google.com",
++          "@resource.calendar.google.com",
++        ],
+       });
+       expect(subscribeSpy).not.toHaveBeenCalled();
+     });
+diff --git a/packages/features/selectedCalendar/repositories/SelectedCalendarRepository.interface.ts b/packages/features/selectedCalendar/repositories/SelectedCalendarRepository.interface.ts
+index 2d1193851750..d4090c30d57c 100644
+--- a/packages/features/selectedCalendar/repositories/SelectedCalendarRepository.interface.ts
++++ b/packages/features/selectedCalendar/repositories/SelectedCalendarRepository.interface.ts
+@@ -21,15 +21,18 @@ export interface ISelectedCalendarRepository {
+    *
+    * @param take the number of calendars to take
+    * @param integrations the list of integrations
++   * @param genericCalendarSuffixes the list of generic calendar suffixes to exclude
+    */
+   findNextSubscriptionBatch({
+     take,
+     teamIds,
+     integrations,
++    genericCalendarSuffixes,
+   }: {
+     take: number;
+     teamIds: number[];
+     integrations?: string[];
++    genericCalendarSuffixes?: string[];
+   }): Promise<SelectedCalendar[]>;
+ 
+   /**
+diff --git a/packages/features/selectedCalendar/repositories/SelectedCalendarRepository.test.ts b/packages/features/selectedCalendar/repositories/SelectedCalendarRepository.test.ts
+index a963fe706a6c..141e4e74cec4 100644
+--- a/packages/features/selectedCalendar/repositories/SelectedCalendarRepository.test.ts
++++ b/packages/features/selectedCalendar/repositories/SelectedCalendarRepository.test.ts
+@@ -131,6 +131,7 @@ describe("SelectedCalendarRepository", () => {
+               },
+             },
+           },
++          AND: undefined,
+         },
+         take: 10,
+       });
+@@ -160,6 +161,7 @@ describe("SelectedCalendarRepository", () => {
+               },
+             },
+           },
++          AND: undefined,
+         },
+         take: 5,
+       });
+@@ -189,6 +191,43 @@ describe("SelectedCalendarRepository", () => {
+               },
+             },
+           },
++          AND: undefined,
++        },
++        take: 10,
++      });
++
++      expect(result).toEqual(mockCalendars);
++    });
++
++    test("should filter out generic calendars when genericCalendarSuffixes is provided", async () => {
++      const mockCalendars = [mockSelectedCalendar];
++      vi.mocked(mockPrismaClient.selectedCalendar.findMany).mockResolvedValue(mockCalendars);
++
++      const genericSuffixes = ["@group.v.calendar.google.com", "@group.calendar.google.com"];
++
++      const result = await repository.findNextSubscriptionBatch({
++        take: 10,
++        teamIds: [1, 2],
++        integrations: ["google_calendar"],
++        genericCalendarSuffixes: genericSuffixes,
++      });
++
++      expect(mockPrismaClient.selectedCalendar.findMany).toHaveBeenCalledWith({
++        where: {
++          integration: { in: ["google_calendar"] },
++          OR: [{ syncSubscribedAt: null }, { channelExpiration: { lte: expect.any(Date) } }],
++          user: {
++            teams: {
++              some: {
++                teamId: { in: [1, 2] },
++                accepted: true,
++              },
++            },
++          },
++          AND: [
++            { NOT: { externalId: { endsWith: "@group.v.calendar.google.com" } } },
++            { NOT: { externalId: { endsWith: "@group.calendar.google.com" } } },
++          ],
+         },
+         take: 10,
+       });
+diff --git a/packages/features/selectedCalendar/repositories/SelectedCalendarRepository.ts b/packages/features/selectedCalendar/repositories/SelectedCalendarRepository.ts
+index d42b4fc18e5f..1e7bcd9df36d 100644
+--- a/packages/features/selectedCalendar/repositories/SelectedCalendarRepository.ts
++++ b/packages/features/selectedCalendar/repositories/SelectedCalendarRepository.ts
+@@ -2,7 +2,7 @@ import type { ISelectedCalendarRepository } from "@calcom/features/selectedCalen
+ import type { PrismaClient } from "@calcom/prisma";
+ import type { Prisma } from "@calcom/prisma/client";
+ 
+-export class SelectedCalendarRepository implements ISelectedCalendarRepository {
++export class PrismaSelectedCalendarRepository implements ISelectedCalendarRepository {
+   constructor(private prismaClient: PrismaClient) {}
+ 
+   async findById(id: string) {
+@@ -19,10 +19,12 @@ export class SelectedCalendarRepository implements ISelectedCalendarRepository {
+     take,
+     teamIds,
+     integrations,
++    genericCalendarSuffixes,
+   }: {
+     take: number;
+     teamIds: number[];
+     integrations: string[];
++    genericCalendarSuffixes?: string[];
+   }) {
+     return this.prismaClient.selectedCalendar.findMany({
+       where: {
+@@ -36,6 +38,11 @@ export class SelectedCalendarRepository implements ISelectedCalendarRepository {
+             },
+           },
+         },
++        AND: genericCalendarSuffixes?.length
++          ? genericCalendarSuffixes?.map((suffix) => ({
++              NOT: { externalId: { endsWith: suffix } },
++            }))
++          : undefined,
+       },
+       take,
+     });

@@ -1,0 +1,37 @@
+{
+  "experiment_id": "E6_A2",
+  "timestamp": "2026-11-11T16:03:19Z",
+  "config": {
+    "experiment_id": "E6_A2",
+    "enable_codebert": true,
+    "enable_static": false,
+    "enable_rag": true,
+    "enable_llm": true,
+    "enable_multi_agent": true,
+    "enable_synthesis": true,
+    "enable_test_generator": true,
+    "require_real_weights": true,
+    "target_repo_dir": null,
+    "llm_model": "qwen2.5-coder:3b-instruct",
+    "ollama_url": "http://localhost:11434/api/generate",
+    "timeout_seconds": 30.0
+  },
+  "total_prs_scheduled": 2,
+  "successful_prs": 2,
+  "failed_prs": 0,
+  "total_findings_generated": 15,
+  "per_pr_results": {
+    "Ghost_pr1": {
+      "status": "SUCCESS",
+      "findings_count": 1,
+      "duration_seconds": 0.006,
+      "error": null
+    },
+    "Ghost_pr2": {
+      "status": "SUCCESS",
+      "findings_count": 14,
+      "duration_seconds": 0.009,
+      "error": null
+    }
+  }
+}

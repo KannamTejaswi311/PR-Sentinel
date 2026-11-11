@@ -1,0 +1,516 @@
+diff --git a/firefox-ios/Client/Application/QuickActions.swift b/firefox-ios/Client/Application/QuickActions.swift
+index bf90f81225d8e..be6d2fec73ad2 100644
+--- a/firefox-ios/Client/Application/QuickActions.swift
++++ b/firefox-ios/Client/Application/QuickActions.swift
+@@ -10,7 +10,6 @@ enum ShortcutType: String {
+     case newTab = "NewTab"
+     case newPrivateTab = "NewPrivateTab"
+     case openLastBookmark = "OpenLastBookmark"
+-    case qrCode = "QRCode"
+ 
+     var type: String {
+         return Bundle.main.bundleIdentifier! + ".\(self.rawValue)"
+diff --git a/firefox-ios/Client/Configuration/version.xcconfig b/firefox-ios/Client/Configuration/version.xcconfig
+index 69257b6b89bcc..454e213649f5b 100644
+--- a/firefox-ios/Client/Configuration/version.xcconfig
++++ b/firefox-ios/Client/Configuration/version.xcconfig
+@@ -1 +1 @@
+-APP_VERSION = 147.1
++APP_VERSION = 147.2
+diff --git a/firefox-ios/Client/Coordinators/Browser/BrowserCoordinator.swift b/firefox-ios/Client/Coordinators/Browser/BrowserCoordinator.swift
+index 9af5e8d5a5a57..5bd739f6d9e0e 100644
+--- a/firefox-ios/Client/Coordinators/Browser/BrowserCoordinator.swift
++++ b/firefox-ios/Client/Coordinators/Browser/BrowserCoordinator.swift
+@@ -353,8 +353,6 @@ class BrowserCoordinator: BaseCoordinator,
+             switch routeAction {
+             case .closePrivateTabs:
+                 handleClosePrivateTabsWidgetAction()
+-            case .showQRCode:
+-                handleQRCode()
+             case .showIntroOnboarding:
+                 showIntroOnboarding()
+             }
+@@ -377,10 +375,6 @@ class BrowserCoordinator: BaseCoordinator,
+         startLaunch(with: launchType)
+     }
+ 
+-    private func handleQRCode() {
+-        browserViewController.handleQRCode()
+-    }
+-
+     private func handleClosePrivateTabsWidgetAction() {
+         // Our widget actions will arrive as a URL passed into the client iOS app.
+         // If multiple iPad windows are open the resulting action + route will be
+diff --git a/firefox-ios/Client/Coordinators/Router/DeeplinkInput.swift b/firefox-ios/Client/Coordinators/Router/DeeplinkInput.swift
+index e95917c58e92b..34b515ba3e7ae 100644
+--- a/firefox-ios/Client/Coordinators/Router/DeeplinkInput.swift
++++ b/firefox-ios/Client/Coordinators/Router/DeeplinkInput.swift
+@@ -72,6 +72,5 @@ enum DeeplinkInput {
+         case newTab = "NewTab"
+         case newPrivateTab = "NewPrivateTab"
+         case openLastBookmark = "OpenLastBookmark"
+-        case qrCode = "QRCode"
+     }
+ }
+diff --git a/firefox-ios/Client/Coordinators/Router/Route.swift b/firefox-ios/Client/Coordinators/Router/Route.swift
+index 5a0dd47a8ce46..8beb3744134ab 100644
+--- a/firefox-ios/Client/Coordinators/Router/Route.swift
++++ b/firefox-ios/Client/Coordinators/Router/Route.swift
+@@ -120,7 +120,6 @@ enum Route {
+     /// An enumeration representing different actions that can be performed within the application.
+     enum AppAction: String, CaseIterable, Equatable {
+         case closePrivateTabs = "close-private-tabs"
+-        case showQRCode
+         case showIntroOnboarding = "show-intro-onboarding"
+     }
+ 
+diff --git a/firefox-ios/Client/Coordinators/Router/RouteBuilder.swift b/firefox-ios/Client/Coordinators/Router/RouteBuilder.swift
+index c6d29e6b82cda..c69950a6bfd61 100644
+--- a/firefox-ios/Client/Coordinators/Router/RouteBuilder.swift
++++ b/firefox-ios/Client/Coordinators/Router/RouteBuilder.swift
+@@ -233,8 +233,6 @@ final class RouteBuilder: FeatureFlaggable, @unchecked Sendable {
+             } else {
+                 return nil
+             }
+-        case .qrCode:
+-            return .action(action: .showQRCode)
+         }
+     }
+ 
+diff --git a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Actions/GeneralBrowserAction.swift b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Actions/GeneralBrowserAction.swift
+index 10311f29d44dc..4d8738d2802a2 100644
+--- a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Actions/GeneralBrowserAction.swift
++++ b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Actions/GeneralBrowserAction.swift
+@@ -51,7 +51,6 @@ enum GeneralBrowserActionType: ActionType {
+     case navigateBack
+     case navigateForward
+     case showTabTray
+-    case showQRcodeReader
+     case showBackForwardList
+     case showTrackingProtectionDetails
+     case showTabsLongPressActions
+diff --git a/firefox-ios/Client/Frontend/Browser/BrowserViewController/State/BrowserViewControllerState.swift b/firefox-ios/Client/Frontend/Browser/BrowserViewController/State/BrowserViewControllerState.swift
+index e0d3fec229f1c..6200e2457df21 100644
+--- a/firefox-ios/Client/Frontend/Browser/BrowserViewController/State/BrowserViewControllerState.swift
++++ b/firefox-ios/Client/Frontend/Browser/BrowserViewController/State/BrowserViewControllerState.swift
+@@ -21,7 +21,6 @@ struct BrowserViewControllerState: ScreenState {
+     }
+ 
+     enum DisplayType: Equatable {
+-        case qrCodeReader
+         case backForwardList
+         case trackingProtectionDetails
+         case tabsLongPressActions
+@@ -301,8 +300,6 @@ struct BrowserViewControllerState: ScreenState {
+             return handleGoToHomepageAction(state: state, action: action)
+         case GeneralBrowserActionType.addNewTab:
+             return handleAddNewTabAction(state: state, action: action)
+-        case GeneralBrowserActionType.showQRcodeReader:
+-            return handleShowQRcodeReaderAction(state: state, action: action)
+         case GeneralBrowserActionType.showBackForwardList:
+             return handleShowBackForwardListAction(state: state, action: action)
+         case GeneralBrowserActionType.showTrackingProtectionDetails:
+@@ -396,18 +393,6 @@ struct BrowserViewControllerState: ScreenState {
+             microsurveyState: MicrosurveyPromptState.reducer(state.microsurveyState, action))
+     }
+ 
+-    @MainActor
+-    private static func handleShowQRcodeReaderAction(state: BrowserViewControllerState,
+-                                                     action: GeneralBrowserAction) -> BrowserViewControllerState {
+-        return BrowserViewControllerState(
+-            searchScreenState: state.searchScreenState,
+-            toast: state.toast,
+-            windowUUID: state.windowUUID,
+-            browserViewType: state.browserViewType,
+-            displayView: .qrCodeReader,
+-            microsurveyState: MicrosurveyPromptState.reducer(state.microsurveyState, action))
+-    }
+-
+     @MainActor
+     private static func handleShowBackForwardListAction(state: BrowserViewControllerState,
+                                                         action: GeneralBrowserAction) -> BrowserViewControllerState {
+@@ -578,7 +563,7 @@ struct BrowserViewControllerState: ScreenState {
+             toast: state.toast,
+             windowUUID: state.windowUUID,
+             browserViewType: state.browserViewType,
+-            displayView: .readerMode,
++            displayView: .readerModeLongPressAction,
+             microsurveyState: MicrosurveyPromptState.reducer(state.microsurveyState, action))
+     }
+ 
+diff --git a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift
+index efe633bf40580..70fa24c44683b 100644
+--- a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift
++++ b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift
+@@ -32,7 +32,6 @@ class BrowserViewController: UIViewController,
+                              Notifiable,
+                              LibraryPanelDelegate,
+                              RecentlyClosedPanelDelegate,
+-                             QRCodeViewControllerDelegate,
+                              StoreSubscriber,
+                              BrowserFrameInfoProvider,
+                              NavigationToolbarContainerDelegate,
+@@ -2842,8 +2841,6 @@ class BrowserViewController: UIViewController,
+         guard let displayState = state.displayView else { return }
+ 
+         switch displayState {
+-        case .qrCodeReader:
+-            navigationHandler?.showQRCode(delegate: self)
+         case .backForwardList:
+             navigationHandler?.showBackForwardList()
+         case .tabsLongPressActions:
+@@ -3370,12 +3367,6 @@ class BrowserViewController: UIViewController,
+         }
+     }
+ 
+-    func handleQRCode() {
+-        cancelEditMode()
+-        openBlankNewTab(focusLocationField: false, isPrivate: false)
+-        navigationHandler?.showQRCode(delegate: self)
+-    }
+-
+     // MARK: - Toolbar Refactor Deeplink Helper Method.
+     private func cancelEditMode() {
+         let action = ToolbarAction(windowUUID: self.windowUUID,
+@@ -3980,42 +3971,6 @@ class BrowserViewController: UIViewController,
+         tabManager.selectTab(tabManager.addTab(URLRequest(url: url)))
+     }
+ 
+-    // MARK: - QRCodeViewControllerDelegate
+-
+-    func didScanQRCodeWithURL(_ url: URL) {
+-        guard let tab = tabManager.selectedTab else { return }
+-        finishEditingAndSubmit(url, visitType: VisitType.typed, forTab: tab)
+-        TelemetryWrapper.recordEvent(category: .action, method: .scan, object: .qrCodeURL)
+-    }
+-
+-    func didScanQRCodeWithTextContent(_ content: TextContentDetector.DetectedType?, rawText text: String) {
+-        TelemetryWrapper.recordEvent(category: .action, method: .scan, object: .qrCodeText)
+-        let defaultAction: () -> Void = { [weak self] in
+-            guard let tab = self?.tabManager.selectedTab else { return }
+-            self?.submitSearchText(text, forTab: tab)
+-        }
+-        switch content {
+-        case .some(.link(let url)):
+-            if url.isWebPage() {
+-                didScanQRCodeWithURL(url)
+-            } else {
+-                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+-            }
+-        case .some(.phoneNumber(let phoneNumber)):
+-            if let url = URL(string: "tel:\(phoneNumber)") {
+-                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+-            } else {
+-                defaultAction()
+-            }
+-        default:
+-            defaultAction()
+-        }
+-    }
+-
+-    var qrCodeScanningPermissionLevel: QRCodeScanPermissions {
+-        return .default
+-    }
+-
+     // MARK: - BrowserFrameInfoProvider
+ 
+     func getHeaderSize() -> CGSize {
+diff --git a/firefox-ios/Client/Frontend/Browser/Toolbars/Redux/ToolbarActionConfiguration.swift b/firefox-ios/Client/Frontend/Browser/Toolbars/Redux/ToolbarActionConfiguration.swift
+index 311f6ec284987..7aefc9d8ea93e 100644
+--- a/firefox-ios/Client/Frontend/Browser/Toolbars/Redux/ToolbarActionConfiguration.swift
++++ b/firefox-ios/Client/Frontend/Browser/Toolbars/Redux/ToolbarActionConfiguration.swift
+@@ -14,7 +14,6 @@ struct ToolbarActionConfiguration: Equatable, FeatureFlaggable {
+         case search
+         case tabs
+         case menu
+-        case qrCode
+         case share
+         case reload
+         case stopLoading
+diff --git a/firefox-ios/Client/Frontend/Browser/Toolbars/Redux/ToolbarMiddleware.swift b/firefox-ios/Client/Frontend/Browser/Toolbars/Redux/ToolbarMiddleware.swift
+index 3dc93c5a348b5..292906560c260 100644
+--- a/firefox-ios/Client/Frontend/Browser/Toolbars/Redux/ToolbarMiddleware.swift
++++ b/firefox-ios/Client/Frontend/Browser/Toolbars/Redux/ToolbarMiddleware.swift
+@@ -221,19 +221,6 @@ final class ToolbarMiddleware: FeatureFlaggable {
+                                               actionType: GeneralBrowserActionType.addNewTab)
+             store.dispatch(action)
+ 
+-        case .qrCode:
+-            toolbarTelemetry.qrCodeButtonTapped(isPrivate: toolbarState.isPrivateMode)
+-
+-            if toolbarState.addressToolbar.isEditing {
+-                let toolbarAction = ToolbarAction(windowUUID: action.windowUUID,
+-                                                  actionType: ToolbarActionType.cancelEdit)
+-                store.dispatch(toolbarAction)
+-            }
+-
+-            let action = GeneralBrowserAction(windowUUID: action.windowUUID,
+-                                              actionType: GeneralBrowserActionType.showQRcodeReader)
+-            store.dispatch(action)
+-
+         case .back:
+             toolbarTelemetry.backButtonTapped(isPrivate: toolbarState.isPrivateMode)
+             let action = GeneralBrowserAction(windowUUID: action.windowUUID,
+@@ -495,7 +482,7 @@ final class ToolbarMiddleware: FeatureFlaggable {
+     private func cancelEditMode(windowUUID: WindowUUID) {
+         var url = tabManager(for: windowUUID).selectedTab?.url
+         if let currentURL = url {
+-            url = (currentURL.isWebPage() && !currentURL.isReaderModeURL) ? url : nil
++            url = (currentURL.isWebPage() || currentURL.isReaderModeURL) ? url : nil
+         }
+         let action = ToolbarAction(url: url, windowUUID: windowUUID, actionType: ToolbarActionType.cancelEdit)
+         store.dispatch(action)
+@@ -534,8 +521,8 @@ final class ToolbarMiddleware: FeatureFlaggable {
+         guard let toolbarState = state.screenState(ToolbarState.self, for: .toolbar, window: windowUUID) else { return }
+ 
+         let isReaderModeEnabled = switch toolbarState.addressToolbar.readerModeState {
+-        case .available: true // will be enabled after action gets executed
+-        default: false
++        case .available: false // will be enabled after action gets executed
++        default: true
+         }
+ 
+         toolbarTelemetry.readerModeButtonTapped(isPrivate: toolbarState.isPrivateMode, isEnabled: isReaderModeEnabled)
+diff --git a/firefox-ios/Client/Frontend/Browser/Toolbars/ToolbarTelemetry.swift b/firefox-ios/Client/Frontend/Browser/Toolbars/ToolbarTelemetry.swift
+index 8fbf1a7c0270f..802f067a0d157 100644
+--- a/firefox-ios/Client/Frontend/Browser/Toolbars/ToolbarTelemetry.swift
++++ b/firefox-ios/Client/Frontend/Browser/Toolbars/ToolbarTelemetry.swift
+@@ -6,7 +6,7 @@ import Foundation
+ import Glean
+ 
+ struct ToolbarTelemetry {
+-    private let gleanWrapper: GleanWrapper
++    let gleanWrapper: GleanWrapper
+ 
+     init(gleanWrapper: GleanWrapper = DefaultGleanWrapper()) {
+         self.gleanWrapper = gleanWrapper
+@@ -17,11 +17,6 @@ struct ToolbarTelemetry {
+     }
+ 
+     // Tap
+-    func qrCodeButtonTapped(isPrivate: Bool) {
+-        let isPrivateExtra = GleanMetrics.Toolbar.QrScanButtonTappedExtra(isPrivate: isPrivate)
+-        gleanWrapper.recordEvent(for: GleanMetrics.Toolbar.qrScanButtonTapped, extras: isPrivateExtra)
+-    }
+-
+     func clearSearchButtonTapped(isPrivate: Bool) {
+         let isPrivateExtra = GleanMetrics.Toolbar.ClearSearchButtonTappedExtra(isPrivate: isPrivate)
+         gleanWrapper.recordEvent(for: GleanMetrics.Toolbar.clearSearchButtonTapped, extras: isPrivateExtra)
+diff --git a/firefox-ios/Client/Glean/probes/metrics.yaml b/firefox-ios/Client/Glean/probes/metrics.yaml
+index 22f3af84bb5e7..ec7e2d29950c7 100755
+--- a/firefox-ios/Client/Glean/probes/metrics.yaml
++++ b/firefox-ios/Client/Glean/probes/metrics.yaml
+@@ -1530,23 +1530,6 @@ private_browsing:
+       - fx-ios-data-stewards@mozilla.com
+     expires: never
+ 
+-# QR Code metrics
+-qr_code:
+-  scanned:
+-    type: counter
+-    description: |
+-      Counts the number of times a QR code is scanned.
+-    bugs:
+-      - https://bugzilla.mozilla.org/show_bug.cgi?id=1644846
+-    data_reviews:
+-      - https://bugzilla.mozilla.org/show_bug.cgi?id=1644846
+-      - https://github.com/mozilla-mobile/firefox-ios/pull/9673
+-      - https://github.com/mozilla-mobile/firefox-ios/pull/12334
+-      - https://github.com/mozilla-mobile/firefox-ios/pull/14102
+-    notification_emails:
+-      - fx-ios-data-stewards@mozilla.com
+-    expires: never
+-
+ # Reading List metrics
+ reading_list:
+   add:
+diff --git a/firefox-ios/Client/Glean/probes/toolbar.yaml b/firefox-ios/Client/Glean/probes/toolbar.yaml
+index e3b2ffd12cd5f..7a43d9eb587c3 100644
+--- a/firefox-ios/Client/Glean/probes/toolbar.yaml
++++ b/firefox-ios/Client/Glean/probes/toolbar.yaml
+@@ -22,22 +22,6 @@ $tags:
+ # Add your new metrics and/or events here.
+ # Toolbar related metrics
+ toolbar:
+-  qr_scan_button_tapped:
+-    type: event
+-    description: |
+-        Counts the number of times a user taps the qr code scan button
+-        in the address toolbar
+-    extra_keys:
+-      is_private:
+-        description: Whether the user is in private mode or not
+-        type: boolean
+-    bugs:
+-      - https://github.com/mozilla-mobile/firefox-ios/issues/19327
+-    data_reviews:
+-      - https://github.com/mozilla-mobile/firefox-ios/pull/22325
+-    notification_emails:
+-      - fx-ios-data-stewards@mozilla.com
+-    expires: never
+   clear_search_button_tapped:
+     type: event
+     description: |
+diff --git a/firefox-ios/Client/Telemetry/TelemetryWrapper.swift b/firefox-ios/Client/Telemetry/TelemetryWrapper.swift
+index af51991a491df..352e249f67794 100644
+--- a/firefox-ios/Client/Telemetry/TelemetryWrapper.swift
++++ b/firefox-ios/Client/Telemetry/TelemetryWrapper.swift
+@@ -432,8 +432,6 @@ extension TelemetryWrapper {
+         case showPullRefreshEasterEgg = "show-pull-refresh-easter-egg"
+         case keyCommand = "key-command"
+         case messaging = "messaging"
+-        case qrCodeText = "qr-code-text"
+-        case qrCodeURL = "qr-code-url"
+         case readerModeCloseButton = "reader-mode-close-button"
+         case readerModeOpenButton = "reader-mode-open-button"
+         case readingListItem = "reading-list-item"
+@@ -824,11 +822,6 @@ extension TelemetryWrapper {
+         case (.action, .change, .setting, _, _):
+             assertionFailure("Please record telemetry for settings using the SettingsTelemetry().changedSetting() method")
+ 
+-        // MARK: - QR Codes
+-        case (.action, .scan, .qrCodeText, _, _),
+-             (.action, .scan, .qrCodeURL, _, _):
+-            GleanMetrics.QrCode.scanned.add()
+-
+         // MARK: Tabs
+         case (.action, .press, .tabToolbar, .tabView, _):
+             GleanMetrics.Tabs.pressTabToolbar.record()
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/BrowserCoordinatorTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/BrowserCoordinatorTests.swift
+index 013536348de35..856474113fd20 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/BrowserCoordinatorTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/BrowserCoordinatorTests.swift
+@@ -1090,20 +1090,6 @@ final class BrowserCoordinatorTests: XCTestCase, FeatureFlaggable {
+ 
+     // MARK: - App action route
+ 
+-    func testHandleHandleQRCode_returnsTrue() {
+-        // Given
+-        let subject = createSubject()
+-        subject.browserViewController = browserViewController
+-        subject.browserHasLoaded()
+-
+-        // When
+-        let result = testCanHandleAndHandle(subject, route: .action(action: .showQRCode))
+-
+-        // Then
+-        XCTAssertTrue(result)
+-        XCTAssertEqual(browserViewController.qrCodeCount, 1)
+-    }
+-
+     func testHandleClosePrivateTabs_returnsTrue() {
+         // Given
+         let subject = createSubject()
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/ShortcutRouteTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/ShortcutRouteTests.swift
+index 877246f619475..3b42cfc3d8dd0 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/ShortcutRouteTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Coordinators/ShortcutRouteTests.swift
+@@ -77,19 +77,6 @@ final class ShortcutRouteTests: XCTestCase {
+         XCTAssertNil(route)
+     }
+ 
+-    func testQRCodeShortcut() {
+-        let subject = createSubject()
+-        let shortcutItem = UIApplicationShortcutItem(type: "com.example.app.QRCode",
+-                                                     localizedTitle: "QR Code")
+-        let route = subject.makeRoute(shortcutItem: shortcutItem, tabSetting: .blankPage)
+-        switch route {
+-        case .action(let action):
+-            XCTAssertEqual(action, .showQRCode)
+-        default:
+-            XCTFail("Expected .action(.showQRCode)")
+-        }
+-    }
+-
+     func testInvalidShortcut() {
+         let subject = createSubject()
+         let shortcutItem = UIApplicationShortcutItem(type: "invalid shortcut",
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Mocks/MockBrowserViewController.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Mocks/MockBrowserViewController.swift
+index 9e9bee54bd46d..11586c1541604 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Mocks/MockBrowserViewController.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Mocks/MockBrowserViewController.swift
+@@ -38,7 +38,6 @@ class MockBrowserViewController: BrowserViewController {
+     var presentSignInReferringPage: ReferringPage?
+     var presentSignInCount = 0
+ 
+-    var qrCodeCount = 0
+     var closePrivateTabsWidgetAction = 0
+ 
+     var embedContentCalled = 0
+@@ -119,10 +118,6 @@ class MockBrowserViewController: BrowserViewController {
+         return Tab(profile: MockProfile(), windowUUID: windowUUID)
+     }
+ 
+-    override func handleQRCode() {
+-        qrCodeCount += 1
+-    }
+-
+     override func closeAllPrivateTabs() {
+         closePrivateTabsWidgetAction += 1
+     }
+diff --git a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Toolbar/ToolbarMiddlewareTests.swift b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Toolbar/ToolbarMiddlewareTests.swift
+index 112f29f4b667d..b1122adc8f8a9 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/ClientTests/Toolbar/ToolbarMiddlewareTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/ClientTests/Toolbar/ToolbarMiddlewareTests.swift
+@@ -308,61 +308,6 @@ final class ToolbarMiddlewareTests: XCTestCase, StoreTestUtility {
+         XCTAssertEqual(savedExtras.isPrivate, false)
+     }
+ 
+-    func testDidTapButton_tapOnQrCodeButton_dispatchesAddNewTab() throws {
+-        try didTapButton(buttonType: .qrCode, expectedActionType: GeneralBrowserActionType.showQRcodeReader)
+-
+-        let savedMetric = try XCTUnwrap(
+-            mockGleanWrapper.savedEvents.first as? EventMetricType<GleanMetrics.Toolbar.QrScanButtonTappedExtra>
+-        )
+-        let savedExtras = try XCTUnwrap(
+-            mockGleanWrapper.savedExtras.first as? GleanMetrics.Toolbar.QrScanButtonTappedExtra
+-        )
+-        let expectedMetricType = type(of: GleanMetrics.Toolbar.qrScanButtonTapped)
+-        let resultMetricType = type(of: savedMetric)
+-        let debugMessage = TelemetryDebugMessage(expectedMetric: expectedMetricType, resultMetric: resultMetricType)
+-
+-        XCTAssertEqual(mockGleanWrapper.recordEventCalled, 1)
+-        XCTAssert(resultMetricType == expectedMetricType, debugMessage.text)
+-        XCTAssertEqual(savedExtras.isPrivate, false)
+-    }
+-
+-    func testDidTapButton_tapOnQrCodeButton_whenInEditMode_dispatchesCancelEditAndAddNewTab() throws {
+-        mockStore = MockStoreForMiddleware(state: setupEditingAppState())
+-        StoreTestUtilityHelper.setupStore(with: mockStore)
+-
+-        let subject = createSubject(manager: toolbarManager)
+-        let action = ToolbarMiddlewareAction(
+-            buttonType: .qrCode,
+-            gestureType: .tap,
+-            windowUUID: windowUUID,
+-            actionType: ToolbarMiddlewareActionType.didTapButton)
+-
+-        subject.toolbarProvider(mockStore.state, action)
+-
+-        let firstActionCalled = try XCTUnwrap(mockStore.dispatchedActions.first as? ToolbarAction)
+-        let firstActionType = try XCTUnwrap(firstActionCalled.actionType as? ToolbarActionType)
+-        let secondActionCalled = try XCTUnwrap(mockStore.dispatchedActions.last as? GeneralBrowserAction)
+-        let secondActionType = try XCTUnwrap(secondActionCalled.actionType as? GeneralBrowserActionType)
+-
+-        XCTAssertEqual(mockStore.dispatchedActions.count, 2)
+-        XCTAssertEqual(firstActionType, ToolbarActionType.cancelEdit)
+-        XCTAssertEqual(secondActionType, GeneralBrowserActionType.showQRcodeReader)
+-
+-        let savedMetric = try XCTUnwrap(
+-            mockGleanWrapper.savedEvents.first as? EventMetricType<GleanMetrics.Toolbar.QrScanButtonTappedExtra>
+-        )
+-        let savedExtras = try XCTUnwrap(
+-            mockGleanWrapper.savedExtras.first as? GleanMetrics.Toolbar.QrScanButtonTappedExtra
+-        )
+-        let expectedMetricType = type(of: GleanMetrics.Toolbar.qrScanButtonTapped)
+-        let resultMetricType = type(of: savedMetric)
+-        let debugMessage = TelemetryDebugMessage(expectedMetric: expectedMetricType, resultMetric: resultMetricType)
+-
+-        XCTAssertEqual(mockGleanWrapper.recordEventCalled, 1)
+-        XCTAssert(resultMetricType == expectedMetricType, debugMessage.text)
+-        XCTAssertEqual(savedExtras.isPrivate, false)
+-    }
+-
+     func testDidTapButton_tapOnBackButton_dispatchesNavigateBack() throws {
+         try didTapButton(buttonType: .back, expectedActionType: GeneralBrowserActionType.navigateBack)
+ 

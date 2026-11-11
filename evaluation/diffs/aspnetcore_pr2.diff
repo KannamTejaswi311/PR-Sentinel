@@ -1,0 +1,280 @@
+diff --git a/eng/Version.Details.xml b/eng/Version.Details.xml
+index 688226d11cdf..2f4be6953098 100644
+--- a/eng/Version.Details.xml
++++ b/eng/Version.Details.xml
+@@ -388,31 +388,31 @@
+       <Uri>https://github.com/dotnet/winforms</Uri>
+       <Sha>9b822fd70005bf5632d12fe76811b97b3dd044e4</Sha>
+     </Dependency>
+-    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="9.0.0-beta.25562.4">
++    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="9.0.0-beta.25626.6">
+       <Uri>https://github.com/dotnet/arcade</Uri>
+-      <Sha>6e2d8e204cebac7d3989c1996f96e5a9ed63fa80</Sha>
++      <Sha>ab5773ac30dce73227fa1dff6bf1a21eea67cbd0</Sha>
+     </Dependency>
+     <!-- Intermediate is necessary for source build. -->
+-    <Dependency Name="Microsoft.SourceBuild.Intermediate.arcade" Version="9.0.0-beta.25562.4">
++    <Dependency Name="Microsoft.SourceBuild.Intermediate.arcade" Version="9.0.0-beta.25626.6">
+       <Uri>https://github.com/dotnet/arcade</Uri>
+-      <Sha>6e2d8e204cebac7d3989c1996f96e5a9ed63fa80</Sha>
++      <Sha>ab5773ac30dce73227fa1dff6bf1a21eea67cbd0</Sha>
+       <SourceBuild RepoName="arcade" ManagedOnly="true" />
+     </Dependency>
+-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="9.0.0-beta.25562.4">
++    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="9.0.0-beta.25626.6">
+       <Uri>https://github.com/dotnet/arcade</Uri>
+-      <Sha>6e2d8e204cebac7d3989c1996f96e5a9ed63fa80</Sha>
++      <Sha>ab5773ac30dce73227fa1dff6bf1a21eea67cbd0</Sha>
+     </Dependency>
+-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Templating" Version="9.0.0-beta.25562.4">
++    <Dependency Name="Microsoft.DotNet.Build.Tasks.Templating" Version="9.0.0-beta.25626.6">
+       <Uri>https://github.com/dotnet/arcade</Uri>
+-      <Sha>6e2d8e204cebac7d3989c1996f96e5a9ed63fa80</Sha>
++      <Sha>ab5773ac30dce73227fa1dff6bf1a21eea67cbd0</Sha>
+     </Dependency>
+-    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="9.0.0-beta.25562.4">
++    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="9.0.0-beta.25626.6">
+       <Uri>https://github.com/dotnet/arcade</Uri>
+-      <Sha>6e2d8e204cebac7d3989c1996f96e5a9ed63fa80</Sha>
++      <Sha>ab5773ac30dce73227fa1dff6bf1a21eea67cbd0</Sha>
+     </Dependency>
+-    <Dependency Name="Microsoft.DotNet.RemoteExecutor" Version="9.0.0-beta.25562.4">
++    <Dependency Name="Microsoft.DotNet.RemoteExecutor" Version="9.0.0-beta.25626.6">
+       <Uri>https://github.com/dotnet/arcade</Uri>
+-      <Sha>6e2d8e204cebac7d3989c1996f96e5a9ed63fa80</Sha>
++      <Sha>ab5773ac30dce73227fa1dff6bf1a21eea67cbd0</Sha>
+     </Dependency>
+     <Dependency Name="Microsoft.Extensions.Diagnostics.Testing" Version="10.1.0-preview.1.25578.1">
+       <Uri>https://github.com/dotnet/extensions</Uri>
+diff --git a/eng/Versions.props b/eng/Versions.props
+index 354e770a2564..b0614b1fff8a 100644
+--- a/eng/Versions.props
++++ b/eng/Versions.props
+@@ -166,10 +166,10 @@
+     <NuGetVersioningVersion>6.2.4</NuGetVersioningVersion>
+     <NuGetFrameworksVersion>6.2.4</NuGetFrameworksVersion>
+     <!-- Packages from dotnet/arcade -->
+-    <MicrosoftDotNetBuildTasksInstallersVersion>9.0.0-beta.25562.4</MicrosoftDotNetBuildTasksInstallersVersion>
+-    <MicrosoftDotNetBuildTasksTemplatingVersion>9.0.0-beta.25562.4</MicrosoftDotNetBuildTasksTemplatingVersion>
+-    <MicrosoftDotNetRemoteExecutorVersion>9.0.0-beta.25562.4</MicrosoftDotNetRemoteExecutorVersion>
+-    <MicrosoftSourceBuildIntermediatearcadeVersion>9.0.0-beta.25562.4</MicrosoftSourceBuildIntermediatearcadeVersion>
++    <MicrosoftDotNetBuildTasksInstallersVersion>9.0.0-beta.25626.6</MicrosoftDotNetBuildTasksInstallersVersion>
++    <MicrosoftDotNetBuildTasksTemplatingVersion>9.0.0-beta.25626.6</MicrosoftDotNetBuildTasksTemplatingVersion>
++    <MicrosoftDotNetRemoteExecutorVersion>9.0.0-beta.25626.6</MicrosoftDotNetRemoteExecutorVersion>
++    <MicrosoftSourceBuildIntermediatearcadeVersion>9.0.0-beta.25626.6</MicrosoftSourceBuildIntermediatearcadeVersion>
+     <!-- Packages from dotnet/source-build-externals -->
+     <MicrosoftSourceBuildIntermediatesourcebuildexternalsVersion>9.0.0-alpha.1.24575.1</MicrosoftSourceBuildIntermediatesourcebuildexternalsVersion>
+     <!-- Packages from dotnet/source-build-reference-packages -->
+diff --git a/eng/common/core-templates/job/source-build.yml b/eng/common/core-templates/job/source-build.yml
+index 5baedac1e03d..1037ccedcb55 100644
+--- a/eng/common/core-templates/job/source-build.yml
++++ b/eng/common/core-templates/job/source-build.yml
+@@ -65,7 +65,7 @@ jobs:
+           demands: ImageOverride -equals build.ubuntu.2004.amd64
+         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+           name: $[replace(replace(eq(contains(coalesce(variables['System.PullRequest.TargetBranch'], variables['Build.SourceBranch'], 'refs/heads/main'), 'release'), 'true'), True, 'NetCore1ESPool-Svc-Internal'), False, 'NetCore1ESPool-Internal')]
+-          image: 1es-mariner-2
++          image: 1es-azurelinux-3
+           os: linux
+     ${{ else }}:
+       pool:
+diff --git a/eng/common/core-templates/job/source-index-stage1.yml b/eng/common/core-templates/job/source-index-stage1.yml
+index 662b9fcce154..ddf8c2e00d80 100644
+--- a/eng/common/core-templates/job/source-index-stage1.yml
++++ b/eng/common/core-templates/job/source-index-stage1.yml
+@@ -6,7 +6,7 @@ parameters:
+   sourceIndexBuildCommand: powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "eng/common/build.ps1 -restore -build -binarylog -ci"
+   preSteps: []
+   binlogPath: artifacts/log/Debug/Build.binlog
+-  condition: ''
++  condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+   dependsOn: ''
+   pool: ''
+   is1ESPipeline: ''
+diff --git a/eng/common/core-templates/steps/source-build.yml b/eng/common/core-templates/steps/source-build.yml
+index 0718e4ba902e..7846584d2a77 100644
+--- a/eng/common/core-templates/steps/source-build.yml
++++ b/eng/common/core-templates/steps/source-build.yml
+@@ -41,7 +41,7 @@ steps:
+     # in the default public locations.
+     internalRuntimeDownloadArgs=
+     if [ '$(dotnetbuilds-internal-container-read-token-base64)' != '$''(dotnetbuilds-internal-container-read-token-base64)' ]; then
+-      internalRuntimeDownloadArgs='/p:DotNetRuntimeSourceFeed=https://dotnetbuilds.blob.core.windows.net/internal /p:DotNetRuntimeSourceFeedKey=$(dotnetbuilds-internal-container-read-token-base64) --runtimesourcefeed https://dotnetbuilds.blob.core.windows.net/internal --runtimesourcefeedkey $(dotnetbuilds-internal-container-read-token-base64)'
++      internalRuntimeDownloadArgs='/p:DotNetRuntimeSourceFeed=https://ci.dot.net/internal /p:DotNetRuntimeSourceFeedKey=$(dotnetbuilds-internal-container-read-token-base64) --runtimesourcefeed https://ci.dot.net/internal --runtimesourcefeedkey $(dotnetbuilds-internal-container-read-token-base64)'
+     fi
+ 
+     buildConfig=Release
+diff --git a/eng/common/internal-feed-operations.ps1 b/eng/common/internal-feed-operations.ps1
+index 92b77347d990..c282d3ae403a 100644
+--- a/eng/common/internal-feed-operations.ps1
++++ b/eng/common/internal-feed-operations.ps1
+@@ -26,7 +26,7 @@ function SetupCredProvider {
+   $url = 'https://raw.githubusercontent.com/microsoft/artifacts-credprovider/master/helpers/installcredprovider.ps1'
+   
+   Write-Host "Writing the contents of 'installcredprovider.ps1' locally..."
+-  Invoke-WebRequest $url -OutFile installcredprovider.ps1
++  Invoke-WebRequest $url -UseBasicParsing -OutFile installcredprovider.ps1
+   
+   Write-Host 'Installing plugin...'
+   .\installcredprovider.ps1 -Force
+diff --git a/eng/common/post-build/nuget-verification.ps1 b/eng/common/post-build/nuget-verification.ps1
+index ac5c69ffcac5..eea88e653c91 100644
+--- a/eng/common/post-build/nuget-verification.ps1
++++ b/eng/common/post-build/nuget-verification.ps1
+@@ -65,7 +65,7 @@ if ($NuGetExePath) {
+         Write-Host "Downloading nuget.exe from $nugetExeUrl..."
+         $ProgressPreference = 'SilentlyContinue'
+         try {
+-            Invoke-WebRequest $nugetExeUrl -OutFile $downloadedNuGetExe
++            Invoke-WebRequest $nugetExeUrl -UseBasicParsing -OutFile $downloadedNuGetExe
+             $ProgressPreference = 'Continue'
+         } catch {
+             $ProgressPreference = 'Continue'
+diff --git a/eng/common/tools.ps1 b/eng/common/tools.ps1
+index 9b3ad8840fdb..a06513a59407 100644
+--- a/eng/common/tools.ps1
++++ b/eng/common/tools.ps1
+@@ -266,7 +266,7 @@ function GetDotNetInstallScript([string] $dotnetRoot) {
+ 
+     Retry({
+       Write-Host "GET $uri"
+-      Invoke-WebRequest $uri -OutFile $installScript
++      Invoke-WebRequest $uri -UseBasicParsing -OutFile $installScript
+     })
+   }
+ 
+@@ -499,7 +499,7 @@ function InitializeXCopyMSBuild([string]$packageVersion, [bool]$install) {
+     Write-Host "Downloading $packageName $packageVersion"
+     $ProgressPreference = 'SilentlyContinue' # Don't display the console progress UI - it's a huge perf hit
+     Retry({
+-      Invoke-WebRequest "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-eng/nuget/v3/flat2/$packageName/$packageVersion/$packageName.$packageVersion.nupkg" -OutFile $packagePath
++      Invoke-WebRequest "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-eng/nuget/v3/flat2/$packageName/$packageVersion/$packageName.$packageVersion.nupkg" -UseBasicParsing -OutFile $packagePath
+     })
+ 
+     if (!(Test-Path $packagePath)) {
+@@ -543,23 +543,30 @@ function LocateVisualStudio([object]$vsRequirements = $null){
+     Create-Directory $vsWhereDir
+     Write-Host 'Downloading vswhere'
+     Retry({
+-      Invoke-WebRequest "https://netcorenativeassets.blob.core.windows.net/resource-packages/external/windows/vswhere/$vswhereVersion/vswhere.exe" -OutFile $vswhereExe
++      Invoke-WebRequest "https://netcorenativeassets.blob.core.windows.net/resource-packages/external/windows/vswhere/$vswhereVersion/vswhere.exe" -UseBasicParsing -OutFile $vswhereExe
+     })
+   }
+ 
+-  if (!$vsRequirements) { $vsRequirements = $GlobalJson.tools.vs }
++  if (!$vsRequirements) {
++    if (Get-Member -InputObject $GlobalJson.tools -Name 'vs' -ErrorAction SilentlyContinue) {
++      $vsRequirements = $GlobalJson.tools.vs
++    } else {
++      $vsRequirements = $null
++    }
++  }
++
+   $args = @('-latest', '-format', 'json', '-requires', 'Microsoft.Component.MSBuild', '-products', '*')
+ 
+   if (!$excludePrereleaseVS) {
+     $args += '-prerelease'
+   }
+ 
+-  if (Get-Member -InputObject $vsRequirements -Name 'version') {
++  if ($vsRequirements -and (Get-Member -InputObject $vsRequirements -Name 'version' -ErrorAction SilentlyContinue)) {
+     $args += '-version'
+     $args += $vsRequirements.version
+   }
+ 
+-  if (Get-Member -InputObject $vsRequirements -Name 'components') {
++  if ($vsRequirements -and (Get-Member -InputObject $vsRequirements -Name 'components' -ErrorAction SilentlyContinue)) {
+     foreach ($component in $vsRequirements.components) {
+       $args += '-requires'
+       $args += $component
+diff --git a/global.json b/global.json
+index 4feb3327cfa8..52c2efaac147 100644
+--- a/global.json
++++ b/global.json
+@@ -27,7 +27,7 @@
+     "jdk": "latest"
+   },
+   "msbuild-sdks": {
+-    "Microsoft.DotNet.Arcade.Sdk": "9.0.0-beta.25562.4",
+-    "Microsoft.DotNet.Helix.Sdk": "9.0.0-beta.25562.4"
++    "Microsoft.DotNet.Arcade.Sdk": "9.0.0-beta.25626.6",
++    "Microsoft.DotNet.Helix.Sdk": "9.0.0-beta.25626.6"
+   }
+ }
+diff --git a/src/Components/test/E2ETest/ServerExecutionTests/WebSocketCompressionTests.cs b/src/Components/test/E2ETest/ServerExecutionTests/WebSocketCompressionTests.cs
+index 25812209add8..7df86ae44c1b 100644
+--- a/src/Components/test/E2ETest/ServerExecutionTests/WebSocketCompressionTests.cs
++++ b/src/Components/test/E2ETest/ServerExecutionTests/WebSocketCompressionTests.cs
+@@ -104,11 +104,17 @@ public void EmbeddingServerAppInsideIframe_WithCompressionEnabled_Fails()
+ 
+         Assert.True(logs.Count > 0);
+ 
+-        Assert.Matches(ParseErrorMessage(), logs[0].Message);
++        Assert.True(
++            ParseErrorMessageRegexOld.IsMatch(logs[0].Message) &&
++            ParseErrorMessageRegexNew.IsMatch(logs[0].Message),
++            $"Expected log message to match one of the CSP error patterns: {ParseErrorMessageRegexOld} or {ParseErrorMessageRegexNew}. Actual: {logs[0].Message}");
+     }
+ 
+     [GeneratedRegex(@"security - Refused to frame 'http://\d+\.\d+\.\d+\.\d+:\d+/' because an ancestor violates the following Content Security Policy directive: ""frame-ancestors 'none'"".")]
+-    private static partial Regex ParseErrorMessage();
++    private static partial Regex ParseErrorMessageRegexOld { get; }
++
++    [GeneratedRegex(@"security - Framing 'http://\d+\.\d+\.\d+\.\d+:\d+/' violates the following Content Security Policy directive: ""frame-ancestors 'none'"".")]
++    private static partial Regex ParseErrorMessageRegexNew { get; }
+ }
+ 
+ public partial class DefaultConfigurationWebSocketCompressionTests : AllowedWebSocketCompressionTests
+diff --git a/src/SignalR/server/StackExchangeRedis/test/RedisEndToEnd.cs b/src/SignalR/server/StackExchangeRedis/test/RedisEndToEnd.cs
+index f3501fb69c1e..9dd7b3993f81 100644
+--- a/src/SignalR/server/StackExchangeRedis/test/RedisEndToEnd.cs
++++ b/src/SignalR/server/StackExchangeRedis/test/RedisEndToEnd.cs
+@@ -89,6 +89,7 @@ public async Task HubConnectionCanSendAndReceiveGroupMessages(HttpTransportType
+     [ConditionalTheory]
+     [SkipIfDockerNotPresent]
+     [MemberData(nameof(TransportTypesAndProtocolTypes))]
++    [QuarantinedTest("https://github.com/dotnet/aspnetcore/issues/59991")]
+     public async Task CanSendAndReceiveUserMessagesFromMultipleConnectionsWithSameUser(HttpTransportType transportType, string protocolName)
+     {
+         using (StartVerifiableLog())
+@@ -184,6 +185,7 @@ public async Task HubConnectionCanSendAndReceiveGroupMessagesGroupNameWithPatter
+     [ConditionalTheory]
+     [SkipIfDockerNotPresent]
+     [MemberData(nameof(TransportTypesAndProtocolTypes))]
++    [QuarantinedTest("https://github.com/dotnet/aspnetcore/issues/63582")]
+     public async Task CanSendAndReceiveUserMessagesUserNameWithPatternIsTreatedAsLiteral(HttpTransportType transportType, string protocolName)
+     {
+         using (StartVerifiableLog())
+@@ -208,8 +210,8 @@ public async Task CanSendAndReceiveUserMessagesUserNameWithPatternIsTreatedAsLit
+             await connection.InvokeAsync("EchoUser", "*", "Hello, World!").DefaultTimeout();
+             Assert.Equal("Hello, World!", await tcs.Task.DefaultTimeout());
+ 
+-            await connection.DisposeAsync().DefaultTimeout();
+             await secondConnection.DisposeAsync().DefaultTimeout();
++            await connection.DisposeAsync().DefaultTimeout();
+         }
+     }
+ 
+@@ -357,7 +359,7 @@ public static IEnumerable<object[]> TransportTypesAndProtocolTypes
+         }
+     }
+ 
+-    internal sealed class WebSocketWrapper : WebSocket
++    internal class WebSocketWrapper : WebSocket
+     {
+         private readonly WebSocket _inner;
+         private TaskCompletionSource<(WebSocketReceiveResult, ReadOnlyMemory<byte>)> _receiveTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+@@ -404,12 +406,12 @@ public void SetReceiveResult((WebSocketReceiveResult, ReadOnlyMemory<byte>) resu
+         public override async Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
+         {
+             var res = await _receiveTcs.Task;
++            _receiveTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+             // Handle zero-byte reads
+             if (buffer.Count == 0)
+             {
+                 return res.Item1;
+             }
+-            _receiveTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+             res.Item2.CopyTo(buffer);
+             return res.Item1;
+         }

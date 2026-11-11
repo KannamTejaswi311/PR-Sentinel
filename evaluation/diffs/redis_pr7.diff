@@ -1,0 +1,324 @@
+diff --git a/redis.conf b/redis.conf
+index 62cec06de4e..b745ecad286 100644
+--- a/redis.conf
++++ b/redis.conf
+@@ -1529,6 +1529,25 @@ auto-aof-rewrite-min-size 64mb
+ # will be found.
+ aof-load-truncated yes
+ 
++# When the AOF file is corrupted in the middle (format errors), Redis can
++# attempt to automatically recover by truncating the corrupted portion if
++# it's smaller than the configured maximum size. This is more aggressive
++# than aof-load-truncated which only handles truncation at the end of files.
++#
++# The aof-load-broken-max-size setting controls the maximum size in bytes
++# of corrupted data that can be automatically truncated.
++#
++# If aof-load-broken is set to yes and the corrupted portion is smaller than
++# aof-load-broken-max-size, Redis will truncate the corrupted data and start
++# normally, logging a warning about the recovery. Otherwise, the server will
++# exit with an error and require manual intervention using "redis-check-aof".
++#
++# This option is disabled by default since automatically truncating corrupted
++# data can lead to data loss. Only enable this if you understand the risks
++# and prefer availability over data integrity in corruption scenarios.
++aof-load-broken no
++aof-load-broken-max-size 4096
++
+ # Redis can create append-only base files in either RDB or AOF formats. Using
+ # the RDB format is always faster and more efficient, and disabling it is only
+ # supported for backward compatibility purposes.
+diff --git a/src/aof.c b/src/aof.c
+index 22c64d14b60..ef968182b33 100644
+--- a/src/aof.c
++++ b/src/aof.c
+@@ -1658,7 +1658,7 @@ int loadSingleAppendOnlyFile(char *filename) {
+         /* Clean up. Command code may have changed argv/argc so we use the
+          * argv/argc of the client instead of the local variables. */
+         freeClientArgv(fakeClient);
+-        if (server.aof_load_truncated) valid_up_to = ftello(fp);
++        if (server.aof_load_truncated || server.aof_load_broken) valid_up_to = ftello(fp);
+         if (server.key_load_delay)
+             debugDelay(server.key_load_delay);
+     }
+@@ -1719,8 +1719,41 @@ int loadSingleAppendOnlyFile(char *filename) {
+     goto cleanup;
+ 
+ fmterr: /* Format error. */
+-    serverLog(LL_WARNING, "Bad file format reading the append only file %s: "
+-        "make a backup of your AOF file, then use ./redis-check-aof --fix <filename.manifest>", filename);
++    /* fmterr may be caused by accidentally machine shutdown, so if the broken tail
++     * is less than a specified size, try to recover it automatically */
++    if (server.aof_load_broken) {
++        if (valid_up_to == -1) {
++            serverLog(LL_WARNING,"Last valid command offset is invalid");
++        } else if ((size_t)(sb.st_size - valid_up_to) < (size_t)server.aof_load_broken_max_size) {
++            if (truncate(aof_filepath,valid_up_to) == -1) {
++                serverLog(LL_WARNING,"Error truncating the AOF file: %s",
++                    strerror(errno));
++            } else {
++                /* Make sure the AOF file descriptor points to the end of the
++                 * file after the truncate call. */
++                if (server.aof_fd != -1 && lseek(server.aof_fd,0,SEEK_END) == -1) {
++                    serverLog(LL_WARNING,"Can't seek the end of the AOF file: %s",
++                        strerror(errno));
++                } else {
++                    serverLog(LL_WARNING,
++                        "AOF loaded anyway because aof-load-broken is enabled and "
++                        "broken size '%lld' is less than aof-load-broken-max-size '%lld'",
++                        (long long)(sb.st_size - valid_up_to), (long long)(server.aof_load_broken_max_size));
++                    ret = AOF_BROKEN_RECOVERED;
++                    goto loaded_ok;
++                }
++            }
++        } else { /* The size of the corrupted portion exceeds the configured limit. */
++            serverLog(LL_WARNING,
++                 "AOF was not loaded because the size of the corrupted portion "
++                 "exceeds the configured limit. aof-load-broken is enabled and broken size '%lld' "
++                 "is bigger than aof-load-broken-max-size '%lld'",
++                 (long long)(sb.st_size - valid_up_to), (long long)(server.aof_load_broken_max_size));
++        }
++    } else {
++        serverLog(LL_WARNING, "Bad file format reading the append only file %s: "
++            "make a backup of your AOF file, then use ./redis-check-aof --fix <filename.manifest>", filename);
++    }
+     ret = AOF_FAILED;
+     /* fall through to cleanup. */
+ 
+@@ -1794,18 +1827,18 @@ int loadAppendOnlyFiles(aofManifest *am) {
+         last_file = ++aof_num == total_num;
+         start = ustime();
+         ret = loadSingleAppendOnlyFile(aof_name);
+-        if (ret == AOF_OK || (ret == AOF_TRUNCATED && last_file)) {
++        if (ret == AOF_OK || ((ret == AOF_TRUNCATED || ret == AOF_BROKEN_RECOVERED) && last_file)) {
+             serverLog(LL_NOTICE, "DB loaded from base file %s: %.3f seconds",
+                 aof_name, (float)(ustime()-start)/1000000);
+         }
+ 
+         /* If the truncated file is not the last file, we consider this to be a fatal error. */
+-        if (ret == AOF_TRUNCATED && !last_file) {
++        if ((ret == AOF_TRUNCATED || ret == AOF_BROKEN_RECOVERED) && !last_file) {
+             ret = AOF_FAILED;
+             serverLog(LL_WARNING, "Fatal error: the truncated file is not the last file");
+         }
+ 
+-        if (ret == AOF_OPEN_ERR || ret == AOF_FAILED) {
++        if (ret == AOF_OPEN_ERR || ret == AOF_FAILED || ret == AOF_BROKEN_RECOVERED) {
+             goto cleanup;
+         }
+     }
+@@ -1824,7 +1857,7 @@ int loadAppendOnlyFiles(aofManifest *am) {
+             last_file = ++aof_num == total_num;
+             start = ustime();
+             ret = loadSingleAppendOnlyFile(aof_name);
+-            if (ret == AOF_OK || (ret == AOF_TRUNCATED && last_file)) {
++            if (ret == AOF_OK || ((ret == AOF_TRUNCATED || ret == AOF_BROKEN_RECOVERED) && last_file)) {
+                 serverLog(LL_NOTICE, "DB loaded from incr file %s: %.3f seconds",
+                     aof_name, (float)(ustime()-start)/1000000);
+             }
+@@ -1834,7 +1867,7 @@ int loadAppendOnlyFiles(aofManifest *am) {
+             if (ret == AOF_EMPTY) ret = AOF_OK;
+ 
+             /* If the truncated file is not the last file, we consider this to be a fatal error. */
+-            if (ret == AOF_TRUNCATED && !last_file) {
++            if ((ret == AOF_TRUNCATED || ret == AOF_BROKEN_RECOVERED) && !last_file) {
+                 ret = AOF_FAILED;
+                 serverLog(LL_WARNING, "Fatal error: the truncated file is not the last file");
+             }
+diff --git a/src/config.c b/src/config.c
+index 673cf60c162..27b5c44a06e 100644
+--- a/src/config.c
++++ b/src/config.c
+@@ -3090,6 +3090,7 @@ standardConfig static_configs[] = {
+     createBoolConfig("cluster-require-full-coverage", NULL, MODIFIABLE_CONFIG, server.cluster_require_full_coverage, 1, NULL, NULL),
+     createBoolConfig("rdb-save-incremental-fsync", NULL, MODIFIABLE_CONFIG, server.rdb_save_incremental_fsync, 1, NULL, NULL),
+     createBoolConfig("aof-load-truncated", NULL, MODIFIABLE_CONFIG, server.aof_load_truncated, 1, NULL, NULL),
++    createBoolConfig("aof-load-broken", NULL, MODIFIABLE_CONFIG, server.aof_load_broken, 0, NULL, NULL),
+     createBoolConfig("aof-use-rdb-preamble", NULL, MODIFIABLE_CONFIG, server.aof_use_rdb_preamble, 1, NULL, NULL),
+     createBoolConfig("aof-timestamp-enabled", NULL, MODIFIABLE_CONFIG, server.aof_timestamp_enabled, 0, NULL, NULL),
+     createBoolConfig("cluster-replica-no-failover", "cluster-slave-no-failover", MODIFIABLE_CONFIG, server.cluster_slave_no_failover, 0, NULL, updateClusterFlags), /* Failover by default. */
+@@ -3254,6 +3255,7 @@ standardConfig static_configs[] = {
+     createTimeTConfig("repl-backlog-ttl", NULL, MODIFIABLE_CONFIG, 0, LONG_MAX, server.repl_backlog_time_limit, 60*60, INTEGER_CONFIG, NULL, NULL), /* Default: 1 hour */
+     createOffTConfig("auto-aof-rewrite-min-size", NULL, MODIFIABLE_CONFIG, 0, LLONG_MAX, server.aof_rewrite_min_size, 64*1024*1024, MEMORY_CONFIG, NULL, NULL),
+     createOffTConfig("loading-process-events-interval-bytes", NULL, MODIFIABLE_CONFIG | HIDDEN_CONFIG, 1024, INT_MAX, server.loading_process_events_interval_bytes, 1024*512, INTEGER_CONFIG, NULL, NULL),
++    createOffTConfig("aof-load-broken-max-size", NULL, MODIFIABLE_CONFIG, 0, LONG_MAX, server.aof_load_broken_max_size, 4*1024, INTEGER_CONFIG, NULL, NULL),
+ 
+     createIntConfig("tls-port", NULL, MODIFIABLE_CONFIG, 0, 65535, server.tls_port, 0, INTEGER_CONFIG, NULL, applyTLSPort), /* TCP port. */
+     createIntConfig("tls-session-cache-size", NULL, MODIFIABLE_CONFIG, 0, INT_MAX, server.tls_ctx_config.session_cache_size, 20*1024, INTEGER_CONFIG, NULL, applyTlsCfg),
+diff --git a/src/server.h b/src/server.h
+index 07b784d59e5..66e42ce15b5 100644
+--- a/src/server.h
++++ b/src/server.h
+@@ -12,8 +12,8 @@
+  * Portions of this file are available under BSD3 terms; see REDISCONTRIBUTIONS for more information.
+  */
+ 
+-#ifndef __REDIS_H
+-#define __REDIS_H
++#ifndef _REDIS_H
++#define _REDIS_H
+ 
+ #include "fmacros.h"
+ #include "config.h"
+@@ -345,6 +345,7 @@ extern int configOOMScoreAdjValuesDefaults[CONFIG_OOM_COUNT];
+ #define AOF_OPEN_ERR 3
+ #define AOF_FAILED 4
+ #define AOF_TRUNCATED 5
++#define AOF_BROKEN_RECOVERED 6
+ 
+ /* RDB return values for rdbLoad. */
+ #define RDB_OK 0
+@@ -2006,6 +2007,8 @@ struct redisServer {
+     int aof_last_write_status;      /* C_OK or C_ERR */
+     int aof_last_write_errno;       /* Valid if aof write/fsync status is ERR */
+     int aof_load_truncated;         /* Don't stop on unexpected AOF EOF. */
++    int aof_load_broken;            /* Don't stop on bad fmt. */
++    off_t aof_load_broken_max_size; /* The max size of broken AOF tail than can be ignored. */
+     int aof_use_rdb_preamble;       /* Specify base AOF to use RDB encoding on AOF rewrites. */
+     redisAtomic int aof_bio_fsync_status; /* Status of AOF fsync in bio job. */
+     redisAtomic int aof_bio_fsync_errno;  /* Errno of AOF fsync in bio job. */
+diff --git a/tests/integration/aof.tcl b/tests/integration/aof.tcl
+index d4a556e3bc5..71555586f05 100644
+--- a/tests/integration/aof.tcl
++++ b/tests/integration/aof.tcl
+@@ -701,4 +701,140 @@ tags {"aof external:skip"} {
+             assert_equal {1} [r get t]
+         }
+     }
++
++    # Check AOF load broken behavior
++    # Corrupted base AOF, existing AOF files
++    create_aof $aof_dirpath $aof_base_file {
++        append_to_aof [formatCommand set param ok]
++        append_to_aof "corruption"
++    }
++    create_aof $aof_dirpath $aof_file {
++        append_to_aof [formatCommand set foo hello]
++    }
++    start_server_aof_ex [list dir $server_path aof-load-broken yes] [list wait_ready false] {
++        test "Log should mention truncated file is not last" {
++            wait_for_log_messages 0 {
++                {*AOF loaded anyway because aof-load-broken is enabled*}
++                {*Fatal error: the truncated file is not the last file*}
++            } 0 10 1000
++        }
++    }
++
++    # Remove all incr AOF files to make the base file being the last file
++    exec rm -f $aof_dirpath/appendonly.aof.*
++    start_server_aof [list dir $server_path aof-load-broken yes] {
++        test "Corrupted base AOF (last file): should recover" {
++            assert_equal 1 [is_alive [srv pid]]
++        }
++
++        test "param should be 'ok'" {
++            set client [redis [srv host] [srv port] 0 $::tls]
++            wait_done_loading $client
++            assert {[$client get param] eq "ok"}
++        }
++    }
++
++    # Should also start with broken incr AOF.
++    create_aof $aof_dirpath $aof_file {
++        append_to_aof [formatCommand set foo 1]
++        append_to_aof [formatCommand incr foo]
++        append_to_aof [formatCommand incr foo]
++        append_to_aof [formatCommand incr foo]
++        append_to_aof [formatCommand incr foo]
++        append_to_aof "corruption"
++    }
++
++    start_server_aof [list dir $server_path aof-load-broken yes] {
++        test "Short read: Server should start if aof-load-broken is yes" {
++            assert_equal 1 [is_alive [srv pid]]
++        }
++
++        # The AOF file is expected to be correct because default value for aof-load-broken-max-size is 4096,
++        # so the AOF will reload without the corruption
++        test "Broken AOF loaded: we expect foo to be equal to 5" {
++            set client [redis [srv host] [srv port] 0 $::tls]
++            wait_done_loading $client
++            assert {[$client get foo] eq "5"}
++        }
++
++        test "Append a new command after loading an incomplete AOF" {
++            $client incr foo
++        }
++    }
++
++    start_server_aof [list dir $server_path aof-load-broken yes] {
++        test "Short read + command: Server should start" {
++            assert_equal 1 [is_alive [srv pid]]
++        }
++
++        test "Broken AOF loaded: we expect foo to be equal to 6 now" {
++            set client [redis [srv host] [srv port] 0 $::tls]
++            wait_done_loading $client
++            assert {[$client get foo] eq "6"}
++        }
++    }
++
++    # Test that the server exits when the AOF contains a format error
++    create_aof $aof_dirpath $aof_file {
++        append_to_aof [formatCommand set foo hello]
++        append_to_aof [string range [formatCommand incr foo] 0 end-3]
++        append_to_aof "corruption"
++    }
++
++    # We set the maximum allowed corrupted size to 2 bytes, but the actual corrupted portion is larger,
++    # so the AOF file will not be reloaded.
++    start_server_aof_ex [list dir $server_path aof-load-broken yes aof-load-broken-max-size 2] [list wait_ready false] {
++        test "Bad format: Server should have logged an error" {
++            wait_for_log_messages 0 {"*AOF was not loaded because the size*"} 0 10 1000
++        }
++    }
++
++    create_aof_manifest $aof_dirpath $aof_manifest_file {
++        append_to_manifest "file appendonly.aof.1.base.aof seq 1 type b\n"
++        append_to_manifest "file appendonly.aof.1.incr.aof seq 1 type i\n"
++        append_to_manifest "file appendonly.aof.2.incr.aof seq 2 type i\n"
++    }
++    # Create base AOF file
++    set base_aof_file "$aof_dirpath/appendonly.aof.1.base.aof"
++    create_aof $aof_dirpath $base_aof_file {
++        append_to_aof [formatCommand set fo base]
++    }
++
++    # Create middle incr AOF file with corruption
++    set mid_aof_file "$aof_dirpath/appendonly.aof.1.incr.aof"
++    create_aof $aof_dirpath $mid_aof_file {
++        append_to_aof [formatCommand set fo mid]
++        append_to_aof "CORRUPTION"
++    }
++
++    # Create last incr AOF file (valid)
++    set last_aof_file "$aof_dirpath/appendonly.aof.2.incr.aof"
++    create_aof $aof_dirpath $last_aof_file {
++        append_to_aof [formatCommand set fo last]
++    }
++
++    # Check that Redis fails to load because corruption is in the middle file
++    start_server_aof_ex [list dir $server_path aof-load-broken yes] [list wait_ready false] {
++        test "Intermediate AOF is broken: should log fatal and not start" {
++            wait_for_log_messages 0 {
++                {*Fatal error: the truncated file is not the last file*}
++            } 0 10 1000
++        }
++    }
++
++    # Swap mid and last files
++    set tmp_file "$aof_dirpath/temp.aof"
++    file rename -force $mid_aof_file $tmp_file
++    file rename -force $last_aof_file $mid_aof_file
++    file rename -force $tmp_file $last_aof_file
++
++    # Should now start successfully since corruption is in last AOF file
++    start_server_aof [list dir $server_path aof-load-broken yes] {
++        test "Corrupted last AOF file: Server should still start and recover" {
++            assert_equal 1 [is_alive [srv pid]]
++            set client [redis [srv host] [srv port] 0 $::tls]
++            wait_done_loading $client
++            assert {[$client get fo] eq "mid"}
++        }
++    }
+ }

@@ -1,0 +1,390 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 314f6f88b849..92544f4960dd 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1083,7 +1083,7 @@ dependencies = [
+  "serde_json",
+  "textwrap",
+  "thiserror 2.0.12",
+- "toml 0.9.0",
++ "toml 0.9.4",
+  "ureq",
+  "which 8.0.0",
+  "windows 0.61.1",
+@@ -1115,12 +1115,12 @@ dependencies = [
+ 
+ [[package]]
+ name = "cargo_toml"
+-version = "0.22.1"
++version = "0.22.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "02260d489095346e5cafd04dea8e8cb54d1d74fcd759022a9b72986ebe9a1257"
++checksum = "374b7c592d9c00c1f4972ea58390ac6b18cbb6ab79011f3bdc90a0b82ca06b77"
+ dependencies = [
+  "serde",
+- "toml 0.8.19",
++ "toml 0.9.4",
+ ]
+ 
+ [[package]]
+@@ -2217,16 +2217,16 @@ dependencies = [
+ 
+ [[package]]
+ name = "embed-resource"
+-version = "3.0.1"
++version = "3.0.5"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "4762ce03154ba57ebaeee60cc631901ceae4f18219cbb874e464347471594742"
++checksum = "4c6d81016d6c977deefb2ef8d8290da019e27cc26167e102185da528e6c0ab38"
+ dependencies = [
+  "cc",
+  "memchr",
+  "rustc_version",
+- "toml 0.8.19",
++ "toml 0.9.4",
+  "vswhom",
+- "winreg 0.52.0",
++ "winreg 0.55.0",
+ ]
+ 
+ [[package]]
+@@ -2448,7 +2448,7 @@ dependencies = [
+  "atomic",
+  "pear",
+  "serde",
+- "toml 0.8.19",
++ "toml 0.8.20",
+  "uncased",
+  "version_check",
+ ]
+@@ -6180,7 +6180,7 @@ version = "3.2.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "8ecf48c7ca261d60b74ab1a7b20da18bede46776b2e55535cb958eb595c5fa7b"
+ dependencies = [
+- "toml_edit 0.22.22",
++ "toml_edit 0.22.24",
+ ]
+ 
+ [[package]]
+@@ -7490,9 +7490,9 @@ checksum = "a3f0bf26fd526d2a95683cd0f87bf103b8539e2ca1ef48ce002d67aad59aa0b4"
+ 
+ [[package]]
+ name = "serde"
+-version = "1.0.217"
++version = "1.0.219"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "02fc4265df13d6fa1d00ecff087228cc0a2b5f3c0e87e258d8b94a156e984c70"
++checksum = "5f0e2c6ed6606019b4e29e69dbaba95b11854410e5347d525002456dbbb786b6"
+ dependencies = [
+  "serde_derive",
+ ]
+@@ -7543,9 +7543,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "serde_derive"
+-version = "1.0.217"
++version = "1.0.219"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "5a9bf7cf98d04a2b28aead066b7496853d4779c9cc183c440dbac457641e19a0"
++checksum = "5b0276cf7f2c73365f7157c8123c21cd9a50fbbd844757af28ca1f5925fc2a00"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -8376,7 +8376,7 @@ dependencies = [
+  "cfg-expr",
+  "heck 0.5.0",
+  "pkg-config",
+- "toml 0.8.19",
++ "toml 0.8.20",
+  "version-compare",
+ ]
+ 
+@@ -8531,7 +8531,7 @@ dependencies = [
+  "tauri-codegen",
+  "tauri-utils",
+  "tauri-winres",
+- "toml 0.8.19",
++ "toml 0.9.4",
+  "walkdir",
+ ]
+ 
+@@ -8651,8 +8651,8 @@ dependencies = [
+  "tauri-utils",
+  "tempfile",
+  "tokio",
+- "toml 0.8.19",
+- "toml_edit 0.22.22",
++ "toml 0.9.4",
++ "toml_edit 0.23.2",
+  "ureq",
+  "url",
+  "uuid",
+@@ -8780,7 +8780,7 @@ dependencies = [
+  "serde",
+  "serde_json",
+  "tauri-utils",
+- "toml 0.8.19",
++ "toml 0.9.4",
+  "walkdir",
+ ]
+ 
+@@ -8922,7 +8922,7 @@ dependencies = [
+  "serialize-to-javascript",
+  "swift-rs",
+  "thiserror 2.0.12",
+- "toml 0.8.19",
++ "toml 0.9.4",
+  "url",
+  "urlpattern",
+  "uuid",
+@@ -8931,12 +8931,13 @@ dependencies = [
+ 
+ [[package]]
+ name = "tauri-winres"
+-version = "0.3.0"
++version = "0.3.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "56eaa45f707bedf34d19312c26d350bc0f3c59a47e58e8adbeecdc850d2c13a0"
++checksum = "7c6d9028d41d4de835e3c482c677a8cb88137ac435d6ff9a71f392d4421576c9"
+ dependencies = [
+  "embed-resource",
+- "toml 0.8.19",
++ "indexmap 2.7.0",
++ "toml 0.9.4",
+ ]
+ 
+ [[package]]
+@@ -9253,21 +9254,21 @@ dependencies = [
+ 
+ [[package]]
+ name = "toml"
+-version = "0.8.19"
++version = "0.8.20"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a1ed1f98e3fdc28d6d910e6737ae6ab1a93bf1985935a1193e68f93eeb68d24e"
++checksum = "cd87a5cdd6ffab733b2f74bc4fd7ee5fff6634124999ac278c35fc78c6120148"
+ dependencies = [
+  "serde",
+  "serde_spanned 0.6.8",
+  "toml_datetime 0.6.8",
+- "toml_edit 0.22.22",
++ "toml_edit 0.22.24",
+ ]
+ 
+ [[package]]
+ name = "toml"
+-version = "0.9.0"
++version = "0.9.4"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "f271e09bde39ab52250160a67e88577e0559ad77e9085de6e9051a2c4353f8f8"
++checksum = "41ae868b5a0f67631c14589f7e250c1ea2c574ee5ba21c6c8dd4b1485705a5a1"
+ dependencies = [
+  "indexmap 2.7.0",
+  "serde",
+@@ -9320,31 +9321,46 @@ dependencies = [
+ 
+ [[package]]
+ name = "toml_edit"
+-version = "0.22.22"
++version = "0.22.24"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "4ae48d6208a266e853d946088ed816055e556cc6028c5e8e2b84d9fa5dd7c7f5"
++checksum = "17b4795ff5edd201c7cd6dca065ae59972ce77d1b80fa0a84d94950ece7d1474"
+ dependencies = [
+  "indexmap 2.7.0",
+  "serde",
+  "serde_spanned 0.6.8",
+  "toml_datetime 0.6.8",
+- "winnow 0.6.22",
++ "winnow 0.7.11",
++]
++
++[[package]]
++name = "toml_edit"
++version = "0.23.2"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "d1dee9dc43ac2aaf7d3b774e2fba5148212bf2bd9374f4e50152ebe9afd03d42"
++dependencies = [
++ "indexmap 2.7.0",
++ "serde",
++ "serde_spanned 1.0.0",
++ "toml_datetime 0.7.0",
++ "toml_parser",
++ "toml_writer",
++ "winnow 0.7.11",
+ ]
+ 
+ [[package]]
+ name = "toml_parser"
+-version = "1.0.0"
++version = "1.0.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "b5c1c469eda89749d2230d8156a5969a69ffe0d6d01200581cdc6110674d293e"
++checksum = "97200572db069e74c512a14117b296ba0a80a30123fbbb5aa1f4a348f639ca30"
+ dependencies = [
+  "winnow 0.7.11",
+ ]
+ 
+ [[package]]
+ name = "toml_writer"
+-version = "1.0.0"
++version = "1.0.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "b679217f2848de74cabd3e8fc5e6d66f40b7da40f8e1954d92054d9010690fd5"
++checksum = "fcc842091f2def52017664b53082ecbbeb5c7731092bad69d2c63050401dfd64"
+ 
+ [[package]]
+ name = "tower"
+@@ -10774,19 +10790,13 @@ dependencies = [
+ 
+ [[package]]
+ name = "winnow"
+-version = "0.6.22"
++version = "0.7.11"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "39281189af81c07ec09db316b302a3e67bf9bd7cbf6c820b50e35fee9c2fa980"
++checksum = "74c7b26e3480b707944fc872477815d29a8e429d2f93a1ce000f5fa84a15cbcd"
+ dependencies = [
+  "memchr",
+ ]
+ 
+-[[package]]
+-name = "winnow"
+-version = "0.7.11"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "74c7b26e3480b707944fc872477815d29a8e429d2f93a1ce000f5fa84a15cbcd"
+-
+ [[package]]
+ name = "winreg"
+ version = "0.50.0"
+@@ -10799,12 +10809,12 @@ dependencies = [
+ 
+ [[package]]
+ name = "winreg"
+-version = "0.52.0"
++version = "0.55.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a277a57398d4bfa075df44f501a17cfdf8542d224f0d36095a2adc7aee4ef0a5"
++checksum = "cb5a765337c50e9ec252c2069be9bf91c7df47afb103b642ba3a53bf8101be97"
+ dependencies = [
+  "cfg-if",
+- "windows-sys 0.48.0",
++ "windows-sys 0.59.0",
+ ]
+ 
+ [[package]]
+diff --git a/crates/tauri-build/Cargo.toml b/crates/tauri-build/Cargo.toml
+index d6a22d66e77e..4294dcb69d0c 100644
+--- a/crates/tauri-build/Cargo.toml
++++ b/crates/tauri-build/Cargo.toml
+@@ -43,7 +43,7 @@ tauri-winres = "0.3"
+ semver = "1"
+ dirs = "6"
+ glob = "0.3"
+-toml = "0.8"
++toml = "0.9"
+ # Our code requires at least 0.8.21 so don't simplify this to 0.8
+ schemars = { version = "0.8.21", features = ["preserve_order"] }
+ 
+diff --git a/crates/tauri-cli/Cargo.toml b/crates/tauri-cli/Cargo.toml
+index 098640b28b34..a2600f390a94 100644
+--- a/crates/tauri-cli/Cargo.toml
++++ b/crates/tauri-cli/Cargo.toml
+@@ -56,7 +56,7 @@ notify = "8"
+ notify-debouncer-full = "0.5"
+ shared_child = "1"
+ duct = "1.0"
+-toml_edit = { version = "0.22", features = ["serde"] }
++toml_edit = { version = "0.23", features = ["serde"] }
+ json-patch = "3"
+ tauri-utils = { version = "2.6.0", path = "../tauri-utils", features = [
+   "isolation",
+@@ -65,7 +65,7 @@ tauri-utils = { version = "2.6.0", path = "../tauri-utils", features = [
+   "config-toml",
+   "html-manipulation",
+ ] }
+-toml = "0.8"
++toml = "0.9"
+ jsonschema = "0.32"
+ handlebars = "6"
+ include_dir = "0.7"
+diff --git a/crates/tauri-plugin/Cargo.toml b/crates/tauri-plugin/Cargo.toml
+index 9ab3969b7104..799fd67a52c0 100644
+--- a/crates/tauri-plugin/Cargo.toml
++++ b/crates/tauri-plugin/Cargo.toml
+@@ -35,7 +35,7 @@ tauri-utils = { version = "2.6.0", default-features = false, features = [
+ ], path = "../tauri-utils" }
+ serde_json = { version = "1", optional = true }
+ glob = { version = "0.3", optional = true }
+-toml = { version = "0.8", optional = true }
++toml = { version = "0.9", optional = true }
+ # Our code requires at least 0.8.21 so don't simplify this to 0.8
+ schemars = { version = "0.8.21", features = ["preserve_order"] }
+ walkdir = { version = "2", optional = true }
+diff --git a/crates/tauri-utils/Cargo.toml b/crates/tauri-utils/Cargo.toml
+index 1179392b5f4f..a3cf41c99cbb 100644
+--- a/crates/tauri-utils/Cargo.toml
++++ b/crates/tauri-utils/Cargo.toml
+@@ -34,7 +34,7 @@ getrandom = { version = "0.3", optional = true, features = ["std"] }
+ serialize-to-javascript = { version = "=0.1.1", optional = true }
+ ctor = "0.2"
+ json5 = { version = "0.4", optional = true }
+-toml = { version = "0.8", features = ["parse"] }
++toml = { version = "0.9", features = ["parse"] }
+ json-patch = "3.0"
+ # Our code requires at least 0.3.1
+ glob = "0.3.1"
+diff --git a/crates/tauri-utils/src/config.rs b/crates/tauri-utils/src/config.rs
+index 87c002828c3b..0fd665f92b57 100644
+--- a/crates/tauri-utils/src/config.rs
++++ b/crates/tauri-utils/src/config.rs
+@@ -144,6 +144,8 @@ pub enum BundleType {
+   App,
+   /// The Apple Disk Image bundle (.dmg).
+   Dmg,
++  /// The Flatpak bundle (.flatpak).
++  Flatpak,
+ }
+ 
+ impl BundleType {
+@@ -157,6 +159,7 @@ impl BundleType {
+       BundleType::Nsis,
+       BundleType::App,
+       BundleType::Dmg,
++      BundleType::Flatpak,
+     ]
+   }
+ }
+@@ -174,6 +177,7 @@ impl Display for BundleType {
+         Self::Nsis => "nsis",
+         Self::App => "app",
+         Self::Dmg => "dmg",
++        Self::Flatpak => "Flatpak",
+       }
+     )
+   }
+@@ -202,6 +206,7 @@ impl<'de> Deserialize<'de> for BundleType {
+       "nsis" => Ok(Self::Nsis),
+       "app" => Ok(Self::App),
+       "dmg" => Ok(Self::Dmg),
++      "flatpak" => Ok(Self::Flatpak),
+       _ => Err(DeError::custom(format!("unknown bundle target '{s}'"))),
+     }
+   }
+diff --git a/crates/tauri-utils/src/config/parse.rs b/crates/tauri-utils/src/config/parse.rs
+index f904d5f2546c..23de90820d6c 100644
+--- a/crates/tauri-utils/src/config/parse.rs
++++ b/crates/tauri-utils/src/config/parse.rs
+@@ -383,9 +383,10 @@ fn do_parse_json5<D: DeserializeOwned>(raw: &str, path: &Path) -> Result<D, Conf
+ 
+ #[cfg(feature = "config-toml")]
+ fn do_parse_toml<D: DeserializeOwned>(raw: &str, path: &Path) -> Result<D, ConfigError> {
+-  ::toml::from_str(raw).map_err(|error| ConfigError::FormatToml {
++  // Parse using toml 0.9's from_str which returns different error types
++  ::toml::from_str(raw).map_err(|error| ConfigError::FormatJson {
+     path: path.into(),
+-    error: Box::new(error),
++    error: serde_json::Error::custom(error.to_string()),
+   })
+ }
+ 

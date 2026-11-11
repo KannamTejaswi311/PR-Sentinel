@@ -1,0 +1,1058 @@
+diff --git a/packages/features/pbac/domain/repositories/IPermissionRepository.ts b/packages/features/pbac/domain/repositories/IPermissionRepository.ts
+index 7a7df762ef97..c2a2084fba84 100644
+--- a/packages/features/pbac/domain/repositories/IPermissionRepository.ts
++++ b/packages/features/pbac/domain/repositories/IPermissionRepository.ts
+@@ -63,19 +63,23 @@ export interface IPermissionRepository {
+ 
+   /**
+    * Gets all team IDs where the user has a specific permission
++   * @param orgId Optional organization ID to scope results to. When provided, only returns teams within this organization.
+    */
+   getTeamIdsWithPermission(params: {
+     userId: number;
+     permission: PermissionString;
+     fallbackRoles: MembershipRole[];
++    orgId?: number;
+   }): Promise<number[]>;
+ 
+   /**
+    * Gets all team IDs where the user has all of the specified permissions
++   * @param orgId Optional organization ID to scope results to. When provided, only returns teams within this organization.
+    */
+   getTeamIdsWithPermissions(params: {
+     userId: number;
+     permissions: PermissionString[];
+     fallbackRoles: MembershipRole[];
++    orgId?: number;
+   }): Promise<number[]>;
+ }
+diff --git a/packages/features/pbac/infrastructure/repositories/PermissionRepository.ts b/packages/features/pbac/infrastructure/repositories/PermissionRepository.ts
+index d6d5a6d1dc04..c89f934ec77a 100644
+--- a/packages/features/pbac/infrastructure/repositories/PermissionRepository.ts
++++ b/packages/features/pbac/infrastructure/repositories/PermissionRepository.ts
+@@ -212,10 +212,12 @@ export class PermissionRepository implements IPermissionRepository {
+     userId,
+     permission,
+     fallbackRoles,
++    orgId,
+   }: {
+     userId: number;
+     permission: PermissionString;
+     fallbackRoles: MembershipRole[];
++    orgId?: number;
+   }): Promise<number[]> {
+     return this.getTeamIdsWithPermissions({ userId, permissions: [permission], fallbackRoles });
+   }
+@@ -224,10 +226,12 @@ export class PermissionRepository implements IPermissionRepository {
+     userId,
+     permissions,
+     fallbackRoles,
++    orgId,
+   }: {
+     userId: number;
+     permissions: PermissionString[];
+     fallbackRoles: MembershipRole[];
++    orgId?: number;
+   }): Promise<number[]> {
+     // Validate that permissions array is not empty to prevent privilege escalation
+     if (permissions.length === 0) {
+@@ -241,8 +245,29 @@ export class PermissionRepository implements IPermissionRepository {
+ 
+     const permissionPairsJson = JSON.stringify(permissionPairs);
+ 
+-    // Teams with PBAC permissions (direct memberships + child teams via org membership)
+-    const teamsWithPermissionPromise = this.client.$queryRaw<{ teamId: number }[]>`
++    const [teamsWithPermission, teamsWithFallbackRoles] = await Promise.all([
++      this.getTeamsWithPBACPermissions(userId, permissionPairsJson, permissions.length, orgId),
++      this.getTeamsWithFallbackRoles(userId, fallbackRoles, orgId),
++    ]);
++
++    const pbacTeamIds = teamsWithPermission.map((team) => team.teamId);
++    const fallbackTeamIds = teamsWithFallbackRoles.map((team) => team.teamId);
++
++    const allTeamIds = Array.from(new Set([...pbacTeamIds, ...fallbackTeamIds]));
++    return allTeamIds;
++  }
++
++  /**
++   * Gets teams where user has PBAC permissions (direct memberships + child teams via org membership)
++   * @param orgId Optional organization ID to scope results. When null/undefined, returns all teams.
++   */
++  private async getTeamsWithPBACPermissions(
++    userId: number,
++    permissionPairsJson: string,
++    permissionsCount: number,
++    orgId?: number | null
++  ): Promise<{ teamId: number }[]> {
++    return this.client.$queryRaw<{ teamId: number }[]>`
+       WITH required_permissions AS (
+         SELECT 
+           required_perm->>'resource' as resource,
+@@ -252,9 +277,11 @@ export class PermissionRepository implements IPermissionRepository {
+       SELECT DISTINCT m."teamId"
+       FROM "Membership" m
+       INNER JOIN "Role" r ON m."customRoleId" = r.id
++      INNER JOIN "Team" t ON m."teamId" = t.id
+       WHERE m."userId" = ${userId}
+         AND m."accepted" = true
+         AND m."customRoleId" IS NOT NULL
++        AND (${orgId}::bigint IS NULL OR t."id" = ${orgId} OR t."parentId" = ${orgId})
+         AND (
+           SELECT COUNT(*)
+           FROM required_permissions rp_req
+@@ -269,7 +296,7 @@ export class PermissionRepository implements IPermissionRepository {
+                 (rp."resource" = rp_req.resource AND rp."action" = rp_req.action)
+               )
+           )
+-        ) = ${permissions.length}
++        ) = ${permissionsCount}
+       UNION
+       SELECT DISTINCT child."id"
+       FROM "Membership" m
+@@ -279,6 +306,7 @@ export class PermissionRepository implements IPermissionRepository {
+       WHERE m."userId" = ${userId}
+         AND m."accepted" = true
+         AND m."customRoleId" IS NOT NULL
++        AND (${orgId}::bigint IS NULL OR org."id" = ${orgId} OR child."id" = ${orgId})
+         AND (
+           SELECT COUNT(*)
+           FROM required_permissions rp_req
+@@ -293,11 +321,20 @@ export class PermissionRepository implements IPermissionRepository {
+                 (rp."resource" = rp_req.resource AND rp."action" = rp_req.action)
+               )
+           )
+-        ) = ${permissions.length}
++        ) = ${permissionsCount}
+     `;
++  }
+ 
+-    // Teams with fallback roles (direct memberships + child teams via org membership, PBAC disabled)
+-    const teamsWithFallbackRolesPromise = this.client.$queryRaw<{ teamId: number }[]>`
++  /**
++   * Gets teams where user has fallback roles (direct memberships + child teams via org membership, PBAC disabled)
++   * @param orgId Optional organization ID to scope results. When null/undefined, returns all teams.
++   */
++  private async getTeamsWithFallbackRoles(
++    userId: number,
++    fallbackRoles: MembershipRole[],
++    orgId?: number | null
++  ): Promise<{ teamId: number }[]> {
++    return this.client.$queryRaw<{ teamId: number }[]>`
+       SELECT DISTINCT m."teamId"
+       FROM "Membership" m
+       INNER JOIN "Team" t ON m."teamId" = t.id
+@@ -306,6 +343,7 @@ export class PermissionRepository implements IPermissionRepository {
+         AND m."accepted" = true
+         AND m."role"::text = ANY(${fallbackRoles})
+         AND f."teamId" IS NULL
++        AND (${orgId}::bigint IS NULL OR t."id" = ${orgId} OR t."parentId" = ${orgId})
+       UNION
+       SELECT DISTINCT child."id"
+       FROM "Membership" m
+@@ -316,17 +354,7 @@ export class PermissionRepository implements IPermissionRepository {
+         AND m."accepted" = true
+         AND m."role"::text = ANY(${fallbackRoles})
+         AND f."teamId" IS NULL
++        AND (${orgId}::bigint IS NULL OR org."id" = ${orgId} OR child."id" = ${orgId} OR child."parentId" = ${orgId})
+     `;
+-
+-    const [teamsWithPermission, teamsWithFallbackRoles] = await Promise.all([
+-      teamsWithPermissionPromise,
+-      teamsWithFallbackRolesPromise,
+-    ]);
+-
+-    const pbacTeamIds = teamsWithPermission.map((team) => team.teamId);
+-    const fallbackTeamIds = teamsWithFallbackRoles.map((team) => team.teamId);
+-
+-    const allTeamIds = Array.from(new Set([...pbacTeamIds, ...fallbackTeamIds]));
+-    return allTeamIds;
+   }
+ }
+diff --git a/packages/features/pbac/infrastructure/repositories/__tests__/PermissionRepository.integration-test.ts b/packages/features/pbac/infrastructure/repositories/__tests__/PermissionRepository.integration-test.ts
+index fd1bb8e27391..deb5924abd05 100644
+--- a/packages/features/pbac/infrastructure/repositories/__tests__/PermissionRepository.integration-test.ts
++++ b/packages/features/pbac/infrastructure/repositories/__tests__/PermissionRepository.integration-test.ts
+@@ -969,5 +969,132 @@ describe("PermissionRepository - Integration Tests", () => {
+ 
+       expect(result).toContain(testTeamId);
+     });
++
++    it("should filter teams by orgId when provided", async () => {
++      // Create two organizations
++      const org1 = await prisma.team.create({
++        data: {
++          name: `Org 1 ${Date.now()}`,
++          slug: `org1-${Date.now()}`,
++          isOrganization: true,
++        },
++      });
++
++      const org2 = await prisma.team.create({
++        data: {
++          name: `Org 2 ${Date.now()}`,
++          slug: `org2-${Date.now()}`,
++          isOrganization: true,
++        },
++      });
++
++      // Create teams within each organization
++      const team1 = await prisma.team.create({
++        data: {
++          name: `Team 1 ${Date.now()}`,
++          slug: `team1-${Date.now()}`,
++          parentId: org1.id,
++        },
++      });
++
++      const team2 = await prisma.team.create({
++        data: {
++          name: `Team 2 ${Date.now()}`,
++          slug: `team2-${Date.now()}`,
++          parentId: org2.id,
++        },
++      });
++
++      // Create memberships with ADMIN role in both organizations
++      await prisma.membership.create({
++        data: {
++          userId: testUserId,
++          teamId: org1.id,
++          role: MembershipRole.ADMIN,
++          accepted: true,
++        },
++      });
++
++      await prisma.membership.create({
++        data: {
++          userId: testUserId,
++          teamId: org2.id,
++          role: MembershipRole.ADMIN,
++          accepted: true,
++        },
++      });
++
++      // Without orgId, should return both organizations
++      const resultWithoutScope = await repository.getTeamIdsWithPermissions({
++        userId: testUserId,
++        permissions: ["eventType.create"],
++        fallbackRoles: [MembershipRole.ADMIN],
++      });
++
++      expect(resultWithoutScope).toContain(org1.id);
++      expect(resultWithoutScope).toContain(org2.id);
++
++      // With orgId = org1, should only return org1 and its child teams
++      const resultWithScope = await repository.getTeamIdsWithPermissions({
++        userId: testUserId,
++        permissions: ["eventType.create"],
++        fallbackRoles: [MembershipRole.ADMIN],
++        orgId: org1.id,
++      });
++
++      expect(resultWithScope).toContain(org1.id);
++      expect(resultWithScope).toContain(team1.id);
++      expect(resultWithScope).not.toContain(org2.id);
++      expect(resultWithScope).not.toContain(team2.id);
++
++      // Cleanup
++      await prisma.membership.deleteMany({ where: { userId: testUserId } });
++      await prisma.team.deleteMany({ where: { id: { in: [org1.id, org2.id, team1.id, team2.id] } } });
++    });
++
++    it("should include child teams when orgId is provided", async () => {
++      // Create organization
++      const org = await prisma.team.create({
++        data: {
++          name: `Org ${Date.now()}`,
++          slug: `org-${Date.now()}`,
++          isOrganization: true,
++        },
++      });
++
++      // Create child team
++      const childTeam = await prisma.team.create({
++        data: {
++          name: `Child Team ${Date.now()}`,
++          slug: `child-team-${Date.now()}`,
++          parentId: org.id,
++        },
++      });
++
++      // Create membership with ADMIN role in organization
++      await prisma.membership.create({
++        data: {
++          userId: testUserId,
++          teamId: org.id,
++          role: MembershipRole.ADMIN,
++          accepted: true,
++        },
++      });
++
++      // With orgId, should return both org and child team
++      const result = await repository.getTeamIdsWithPermissions({
++        userId: testUserId,
++        permissions: ["eventType.create"],
++        fallbackRoles: [MembershipRole.ADMIN],
++        orgId: org.id,
++      });
++
++      expect(result).toContain(org.id);
++      expect(result).toContain(childTeam.id);
++
++      // Cleanup
++      await prisma.membership.deleteMany({ where: { userId: testUserId } });
++      await prisma.team.deleteMany({ where: { id: { in: [org.id, childTeam.id] } } });
++    });
+   });
+ });
+diff --git a/packages/features/pbac/services/permission-check.service.ts b/packages/features/pbac/services/permission-check.service.ts
+index 8ddd7ce564d6..5990cbb5ba18 100644
+--- a/packages/features/pbac/services/permission-check.service.ts
++++ b/packages/features/pbac/services/permission-check.service.ts
+@@ -3,6 +3,7 @@ import { MembershipRepository } from "@calcom/features/membership/repositories/M
+ import logger from "@calcom/lib/logger";
+ import prisma from "@calcom/prisma";
+ import type { MembershipRole } from "@calcom/prisma/enums";
++import { TRPCError } from "@trpc/server";
+ 
+ import { PermissionMapper } from "../domain/mappers/PermissionMapper";
+ import type { PermissionCheck, TeamPermissions } from "../domain/models/Permission";
+@@ -136,7 +137,7 @@ export class PermissionCheckService {
+           userId,
+           teamId: team.parentId,
+         });
+-        
++
+         // Use the highest role between team and org
+         if (orgMembership) {
+           effectiveRole = this.getHighestRole(effectiveRole, orgMembership.role);
+@@ -200,7 +201,7 @@ export class PermissionCheckService {
+           userId,
+           teamId: team.parentId,
+         });
+-        
++
+         // Use the highest role between team and org
+         if (orgMembership) {
+           effectiveRole = this.getHighestRole(effectiveRole, orgMembership.role);
+@@ -293,10 +294,7 @@ export class PermissionCheckService {
+     return allowedRoles.includes(userRole);
+   }
+ 
+-  private getHighestRole(
+-    role1: MembershipRole | null,
+-    role2: MembershipRole | null
+-  ): MembershipRole | null {
++  private getHighestRole(role1: MembershipRole | null, role2: MembershipRole | null): MembershipRole | null {
+     if (!role1) return role2;
+     if (!role2) return role1;
+ 
+@@ -311,15 +309,18 @@ export class PermissionCheckService {
+ 
+   /**
+    * Gets all team IDs where the user has a specific permission
++   * @param orgId Optional organization ID to scope results to. When provided, only returns teams within this organization.
+    */
+   async getTeamIdsWithPermission({
+     userId,
+     permission,
+     fallbackRoles,
++    orgId,
+   }: {
+     userId: number;
+     permission: PermissionString;
+     fallbackRoles: MembershipRole[];
++    orgId?: number;
+   }): Promise<number[]> {
+     try {
+       const validationResult = this.permissionService.validatePermission(permission);
+@@ -328,7 +329,12 @@ export class PermissionCheckService {
+         return [];
+       }
+ 
+-      return await this.repository.getTeamIdsWithPermission({ userId, permission, fallbackRoles });
++      return await this.repository.getTeamIdsWithPermission({
++        userId,
++        permission,
++        fallbackRoles,
++        orgId,
++      });
+     } catch (error) {
+       this.logger.error(error);
+       return [];
+@@ -337,15 +343,18 @@ export class PermissionCheckService {
+ 
+   /**
+    * Gets all team IDs where the user has all of the specified permissions
++   * @param orgId Optional organization ID to scope results to. When provided, only returns teams within this organization.
+    */
+   async getTeamIdsWithPermissions({
+     userId,
+     permissions,
+     fallbackRoles,
++    orgId,
+   }: {
+     userId: number;
+     permissions: PermissionString[];
+     fallbackRoles: MembershipRole[];
++    orgId?: number;
+   }): Promise<number[]> {
+     try {
+       const validationResult = this.permissionService.validatePermissions(permissions);
+@@ -354,7 +363,12 @@ export class PermissionCheckService {
+         return [];
+       }
+ 
+-      return await this.repository.getTeamIdsWithPermissions({ userId, permissions, fallbackRoles });
++      return await this.repository.getTeamIdsWithPermissions({
++        userId,
++        permissions,
++        fallbackRoles,
++        orgId,
++      });
+     } catch (error) {
+       this.logger.error(error);
+       return [];
+diff --git a/packages/trpc/server/routers/viewer/bookings/get.handler.test.ts b/packages/trpc/server/routers/viewer/bookings/get.handler.test.ts
+new file mode 100644
+index 000000000000..fc97951aa6a5
+--- /dev/null
++++ b/packages/trpc/server/routers/viewer/bookings/get.handler.test.ts
+@@ -0,0 +1,383 @@
++import getAllUserBookings from "@calcom/features/bookings/lib/getAllUserBookings";
++import { PermissionCheckService } from "@calcom/features/pbac/services/permission-check.service";
++import type { DB } from "@calcom/kysely";
++import type { PrismaClient } from "@calcom/prisma";
++import { TRPCError } from "@trpc/server";
++import type { Kysely } from "kysely";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { getBookings, getHandler } from "./get.handler";
++
++vi.mock("@calcom/features/pbac/services/permission-check.service", () => ({
++  PermissionCheckService: vi.fn(),
++}));
++vi.mock("@calcom/features/bookings/lib/getAllUserBookings");
++vi.mock("@calcom/kysely", () => ({
++  default: {
++    selectFrom: vi.fn(),
++    executeQuery: vi.fn(),
++  },
++}));
++vi.mock("@calcom/lib/logger", () => ({
++  default: {
++    getSubLogger: () => ({
++      debug: vi.fn(),
++      info: vi.fn(),
++      error: vi.fn(),
++    }),
++  },
++}));
++
++describe("getHandler", () => {
++  const mockUser = {
++    id: 1,
++    email: "user@example.com",
++    name: "Test User",
++    profile: {
++      organizationId: null,
++    },
++  };
++
++  const mockPrisma = {} as unknown as PrismaClient;
++
++  beforeEach(() => {
++    vi.clearAllMocks();
++  });
++
++  it("should return bookings successfully", async () => {
++    const mockBookings = [
++      {
++        id: 1,
++        uid: "booking-1",
++        startTime: new Date().toISOString(),
++        endTime: new Date().toISOString(),
++        rescheduler: null,
++        eventType: {
++          recurringEvent: null,
++          eventTypeColor: null,
++          price: 0,
++          currency: "usd",
++          metadata: {},
++        },
++      },
++    ] as any;
++
++    vi.mocked(getAllUserBookings).mockResolvedValue({
++      bookings: mockBookings,
++      recurringInfo: [],
++      totalCount: 1,
++    });
++
++    const result = await getHandler({
++      ctx: {
++        user: mockUser as any,
++        prisma: mockPrisma,
++      },
++      input: {
++        filters: {},
++        limit: 10,
++        offset: 0,
++      },
++    });
++
++    expect(result.bookings).toEqual(mockBookings);
++    expect(result.totalCount).toBe(1);
++    expect(getAllUserBookings).toHaveBeenCalledWith(
++      expect.objectContaining({
++        ctx: expect.objectContaining({
++          user: expect.objectContaining({
++            id: mockUser.id,
++            email: mockUser.email,
++            orgId: null,
++          }),
++        }),
++        filters: {},
++        take: 10,
++        skip: 0,
++        bookingListingByStatus: ["upcoming"],
++      })
++    );
++  });
++});
++
++describe("getBookings - PBAC Permission Checks", () => {
++  const mockUser = {
++    id: 1,
++    email: "user@example.com",
++    orgId: null,
++  };
++
++  const mockPrisma = {
++    membership: {
++      findMany: vi.fn(),
++    },
++    user: {
++      findMany: vi.fn(),
++    },
++    eventType: {
++      findMany: vi.fn(),
++    },
++    booking: {
++      findUnique: vi.fn(),
++      groupBy: vi.fn(),
++    },
++  } as unknown as PrismaClient;
++
++  // Create a comprehensive kysely mock that handles all chain methods
++  const createMockKysely = () => {
++    const mockQueryBuilder = {
++      select: vi.fn((arg?: any) => {
++        // Handle select with callback function
++        if (typeof arg === "function") {
++          return mockQueryBuilder;
++        }
++        return mockQueryBuilder;
++      }),
++      selectAll: vi.fn(() => mockQueryBuilder),
++      where: vi.fn(() => mockQueryBuilder),
++      innerJoin: vi.fn(() => mockQueryBuilder),
++      union: vi.fn(() => mockQueryBuilder),
++      as: vi.fn(() => mockQueryBuilder),
++      $if: vi.fn(() => mockQueryBuilder),
++      orderBy: vi.fn(() => mockQueryBuilder),
++      limit: vi.fn(() => mockQueryBuilder),
++      offset: vi.fn(() => mockQueryBuilder),
++      compile: vi.fn(() => ({ sql: "SELECT * FROM bookings" })),
++      executeTakeFirst: vi.fn().mockResolvedValue({ bookingCount: 0 }),
++      execute: vi.fn().mockResolvedValue([]),
++    };
++
++    return {
++      selectFrom: vi.fn(() => mockQueryBuilder),
++      executeQuery: vi.fn().mockResolvedValue({ rows: [] }),
++    } as unknown as Kysely<DB>;
++  };
++
++  let mockKysely: Kysely<DB>;
++
++  const mockGetTeamIdsWithPermission = vi.fn();
++
++  beforeEach(() => {
++    vi.clearAllMocks();
++    mockGetTeamIdsWithPermission.mockReset();
++    vi.mocked(PermissionCheckService).mockImplementation(function () {
++      return {
++        getTeamIdsWithPermission: mockGetTeamIdsWithPermission,
++      } as unknown as PermissionCheckService;
++    });
++    mockKysely = createMockKysely();
++  });
++
++  describe("PBAC permission checks with userIds filter", () => {
++    it("should call PermissionCheckService with correct parameters", async () => {
++      mockGetTeamIdsWithPermission.mockResolvedValue([1]);
++      mockPrisma.user.findMany = vi.fn().mockResolvedValue([{ id: 2, email: "member@example.com" }]);
++      mockPrisma.eventType.findMany = vi.fn().mockResolvedValue([]);
++      mockPrisma.booking.groupBy = vi.fn().mockResolvedValue([]);
++
++      await getBookings({
++        user: mockUser,
++        prisma: mockPrisma,
++        kysely: mockKysely,
++        bookingListingByStatus: ["upcoming"],
++        filters: {
++          userIds: [2],
++        },
++        take: 10,
++        skip: 0,
++      });
++
++      expect(mockGetTeamIdsWithPermission).toHaveBeenCalledWith({
++        userId: 1,
++        permission: "booking.read",
++        fallbackRoles: ["ADMIN", "OWNER"],
++      });
++    });
++
++    it("should throw FORBIDDEN when user doesn't have booking.read permission for filtered userIds", async () => {
++      // User has booking.read permission for team 1, but user 4 is not in that team
++      mockGetTeamIdsWithPermission.mockResolvedValue([1]);
++      // getUserIdsAndEmailsFromTeamIds returns only users from team 1 (ids 2, 3)
++      mockPrisma.user.findMany = vi.fn().mockResolvedValue([
++        { id: 2, email: "member@example.com" },
++        { id: 3, email: "member2@example.com" },
++      ]);
++      mockPrisma.eventType.findMany = vi.fn().mockResolvedValue([]);
++      mockPrisma.booking.groupBy = vi.fn().mockResolvedValue([]);
++
++      const mockQueryBuilder = {
++        select: vi.fn(() => mockQueryBuilder),
++        where: vi.fn(() => mockQueryBuilder),
++        innerJoin: vi.fn(() => mockQueryBuilder),
++        union: vi.fn(() => mockQueryBuilder),
++        as: vi.fn(() => ({
++          select: vi.fn(() => ({
++            selectAll: vi.fn(() => ({
++              orderBy: vi.fn(() => ({
++                limit: vi.fn(() => ({
++                  offset: vi.fn(() => ({
++                    compile: vi.fn(() => ({ sql: "SELECT * FROM bookings" })),
++                  })),
++                })),
++              })),
++            })),
++            executeTakeFirst: vi.fn().mockResolvedValue({ bookingCount: 0 }),
++          })),
++        })),
++      };
++
++      mockKysely.selectFrom = vi.fn(() => mockQueryBuilder as any);
++      mockKysely.executeQuery = vi.fn().mockResolvedValue({ rows: [] });
++
++      await expect(
++        getBookings({
++          user: mockUser,
++          prisma: mockPrisma,
++          kysely: mockKysely,
++          bookingListingByStatus: ["upcoming"],
++          filters: {
++            userIds: [4], // User 4 is not in team 1
++          },
++          take: 10,
++          skip: 0,
++        })
++      ).rejects.toMatchObject({
++        code: "FORBIDDEN",
++        message: "You do not have permissions to fetch bookings for specified userIds",
++      });
++    });
++
++    it("should allow access when filtering by own userId", async () => {
++      mockGetTeamIdsWithPermission.mockResolvedValue([]);
++      // When userIds filter is provided, getAttendeeEmailsFromUserIdsFilter is called
++      // which looks up users by the userIds
++      mockPrisma.user.findMany = vi.fn((args: any) => {
++        // If looking up by userIds filter, return the user
++        if (args?.where?.id?.in?.includes(1)) {
++          return Promise.resolve([{ id: 1, email: "user@example.com" }]) as any;
++        }
++        // Otherwise return empty (for getUserIdsAndEmailsFromTeamIds)
++        return Promise.resolve([]) as any;
++      });
++      mockPrisma.eventType.findMany = vi.fn().mockResolvedValue([]);
++      mockPrisma.booking.groupBy = vi.fn().mockResolvedValue([]);
++
++      // User should always be able to access their own bookings
++      await expect(
++        getBookings({
++          user: mockUser,
++          prisma: mockPrisma,
++          kysely: mockKysely,
++          bookingListingByStatus: ["upcoming"],
++          filters: {
++            userIds: [1], // Own user ID
++          },
++          take: 10,
++          skip: 0,
++        })
++      ).resolves.not.toThrow();
++    });
++
++    it("should use fallback ADMIN/OWNER roles when PBAC is not enabled", async () => {
++      // User is ADMIN in team 1 (fallback role)
++      mockGetTeamIdsWithPermission.mockResolvedValue([1]);
++      mockPrisma.user.findMany = vi.fn().mockResolvedValue([{ id: 2, email: "member@example.com" }]);
++      mockPrisma.eventType.findMany = vi.fn().mockResolvedValue([]);
++      mockPrisma.booking.groupBy = vi.fn().mockResolvedValue([]);
++
++      await expect(
++        getBookings({
++          user: mockUser,
++          prisma: mockPrisma,
++          kysely: mockKysely,
++          bookingListingByStatus: ["upcoming"],
++          filters: {
++            userIds: [2],
++          },
++          take: 10,
++          skip: 0,
++        })
++      ).resolves.not.toThrow();
++
++      // Verify fallback roles are passed
++      expect(mockGetTeamIdsWithPermission).toHaveBeenCalledWith({
++        userId: 1,
++        permission: "booking.read",
++        fallbackRoles: ["ADMIN", "OWNER"],
++      });
++    });
++
++    it("should combine PBAC permissions and ADMIN/OWNER roles", async () => {
++      // User has booking.read permission for team 1 via PBAC
++      // User is ADMIN in team 2 (fallback)
++      mockGetTeamIdsWithPermission.mockResolvedValue([1, 2]);
++      mockPrisma.user.findMany = vi.fn().mockResolvedValue([
++        { id: 2, email: "member-team1@example.com" },
++        { id: 3, email: "member-team2@example.com" },
++      ]);
++      mockPrisma.eventType.findMany = vi.fn().mockResolvedValue([]);
++      mockPrisma.booking.groupBy = vi.fn().mockResolvedValue([]);
++
++      // Should be able to access bookings from both teams
++      await expect(
++        getBookings({
++          user: mockUser,
++          prisma: mockPrisma,
++          kysely: mockKysely,
++          bookingListingByStatus: ["upcoming"],
++          filters: {
++            userIds: [2, 3],
++          },
++          take: 10,
++          skip: 0,
++        })
++      ).resolves.not.toThrow();
++    });
++  });
++
++  describe("Event type filtering", () => {
++    it("should get event types from teams where user has booking.read permission", async () => {
++      mockGetTeamIdsWithPermission.mockResolvedValue([1]);
++      mockPrisma.user.findMany = vi.fn().mockResolvedValue([]);
++      mockPrisma.eventType.findMany = vi.fn().mockResolvedValue([{ id: 10 }, { id: 11 }]);
++      mockPrisma.booking.groupBy = vi.fn().mockResolvedValue([]);
++
++      await getBookings({
++        user: mockUser,
++        prisma: mockPrisma,
++        kysely: mockKysely,
++        bookingListingByStatus: ["upcoming"],
++        filters: {},
++        take: 10,
++        skip: 0,
++      });
++
++      // Verify event types are fetched from team 1
++      expect(mockPrisma.eventType.findMany).toHaveBeenCalled();
++    });
++  });
++
++  describe("User IDs and emails retrieval", () => {
++    it("should get user IDs and emails from teams with booking permission", async () => {
++      mockGetTeamIdsWithPermission.mockResolvedValue([1, 2]);
++      mockPrisma.user.findMany = vi.fn().mockResolvedValue([
++        { id: 2, email: "user2@example.com" },
++        { id: 3, email: "user3@example.com" },
++      ]);
++      mockPrisma.eventType.findMany = vi.fn().mockResolvedValue([]);
++      mockPrisma.booking.groupBy = vi.fn().mockResolvedValue([]);
++
++      await getBookings({
++        user: mockUser,
++        prisma: mockPrisma,
++        kysely: mockKysely,
++        bookingListingByStatus: ["upcoming"],
++        filters: {},
++        take: 10,
++        skip: 0,
++      });
++
++      // Verify users are fetched from teams 1 and 2
++      expect(mockPrisma.user.findMany).toHaveBeenCalled();
++    });
++  });
++});
+diff --git a/packages/trpc/server/routers/viewer/bookings/get.handler.ts b/packages/trpc/server/routers/viewer/bookings/get.handler.ts
+index 1de92aeaaec0..6dce44693648 100644
+--- a/packages/trpc/server/routers/viewer/bookings/get.handler.ts
++++ b/packages/trpc/server/routers/viewer/bookings/get.handler.ts
+@@ -5,6 +5,7 @@ import { jsonObjectFrom, jsonArrayFrom } from "kysely/helpers/postgres";
+ import dayjs from "@calcom/dayjs";
+ import getAllUserBookings from "@calcom/features/bookings/lib/getAllUserBookings";
+ import { isTextFilterValue } from "@calcom/features/data-table/lib/utils";
++import { PermissionCheckService } from "@calcom/features/pbac/services/permission-check.service";
+ import type { DB } from "@calcom/kysely";
+ import kysely from "@calcom/kysely";
+ import { parseEventTypeColor } from "@calcom/lib/isEventTypeColor";
+@@ -13,8 +14,7 @@ import logger from "@calcom/lib/logger";
+ import { safeStringify } from "@calcom/lib/safeStringify";
+ import type { PrismaClient } from "@calcom/prisma";
+ import type { Booking, Prisma, Prisma as PrismaClientType } from "@calcom/prisma/client";
+-import { SchedulingType } from "@calcom/prisma/enums";
+-import { BookingStatus } from "@calcom/prisma/enums";
++import { SchedulingType, BookingStatus, MembershipRole } from "@calcom/prisma/enums";
+ import { EventTypeMetaDataSchema } from "@calcom/prisma/zod-utils";
+ 
+ import { TRPCError } from "@trpc/server";
+@@ -111,66 +111,42 @@ export async function getBookings({
+   take: number;
+   skip: number;
+ }) {
+-  const membershipIdsWhereUserIsAdminOwner = (
+-    await prisma.membership.findMany({
+-      where: {
+-        userId: user.id,
+-        role: {
+-          in: ["ADMIN", "OWNER"],
+-        },
+-        ...(user.orgId && {
+-          OR: [
+-            {
+-              teamId: user.orgId,
+-            },
+-            {
+-              team: {
+-                parentId: user.orgId,
+-              },
+-            },
+-          ],
+-        }),
+-      },
+-      select: {
+-        id: true,
+-      },
+-    })
+-  ).map((membership) => membership.id);
+-
+-  const membershipConditionWhereUserIsAdminOwner = {
+-    some: {
+-      id: { in: membershipIdsWhereUserIsAdminOwner },
+-    },
+-  };
++  const permissionCheckService = new PermissionCheckService();
++  const fallbackRoles: MembershipRole[] = [MembershipRole.ADMIN, MembershipRole.OWNER];
++
++  const teamIdsWithBookingPermission = await permissionCheckService.getTeamIdsWithPermission({
++    userId: user.id,
++    permission: "booking.read",
++    fallbackRoles,
++    orgId: user.orgId ?? undefined,
++  });
+ 
+   const [
+     eventTypeIdsFromTeamIdsFilter,
+     attendeeEmailsFromUserIdsFilter,
+     eventTypeIdsFromEventTypeIdsFilter,
+-    eventTypeIdsWhereUserIsAdminOrOwner,
+-    userIdsAndEmailsWhereUserIsAdminOrOwner,
++    eventTypeIdsWhereUserHasBookingPermission,
++    userIdsAndEmailsWhereUserHasBookingPermission,
+   ] = await Promise.all([
+     getEventTypeIdsFromTeamIdsFilter(prisma, filters?.teamIds),
+     getAttendeeEmailsFromUserIdsFilter(prisma, user.email, filters?.userIds),
+     getEventTypeIdsFromEventTypeIdsFilter(prisma, filters?.eventTypeIds),
+-    getEventTypeIdsWhereUserIsAdminOrOwner(prisma, membershipConditionWhereUserIsAdminOwner),
+-    getUserIdsAndEmailsWhereUserIsAdminOrOwner(prisma, membershipConditionWhereUserIsAdminOwner),
++    getEventTypeIdsFromTeamIdsFilter(prisma, teamIdsWithBookingPermission),
++    getUserIdsAndEmailsFromTeamIds(prisma, teamIdsWithBookingPermission),
+   ]);
+ 
+   const bookingQueries: { query: BookingsUnionQuery; tables: (keyof DB)[] }[] = [];
+ 
+-  // If user is organization owner/admin, contains organization members emails and ids (organization plan)
+-  // If user is only team owner/admin, contain team members emails and ids (teams plan)
+-  const [userIdsWhereUserIsAdminOrOwner, userEmailsWhereUserIsAdminOrOwner] =
+-    userIdsAndEmailsWhereUserIsAdminOrOwner;
++  // Get user IDs and emails from teams where user has booking permission
++  const [allAccessibleUserIds, allAccessibleUserEmails] = userIdsAndEmailsWhereUserHasBookingPermission;
+ 
+   // If userIds filter is provided
+   if (!!filters?.userIds && filters.userIds.length > 0) {
+     const areUserIdsWithinUserOrgOrTeam = filters.userIds.every((userId) =>
+-      userIdsWhereUserIsAdminOrOwner.includes(userId)
++      allAccessibleUserIds.includes(userId)
+     );
+ 
+-    const isCurrentUser = filters.userIds.length === 1 && user.id === filters.userIds[0];
++    const isCurrentUser = filters.userIds.includes(user.id);
+ 
+     //  Scope depends on `user.orgId`:
+     // - Throw an error if trying to filter by usersIds that are not within your ORG
+@@ -268,9 +244,8 @@ export async function getBookings({
+       tables: ["Booking", "Attendee", "BookingSeat"],
+     });
+     // 4. Scope depends on `user.orgId`:
+-    // - If Current user is ORG_OWNER/ADMIN so we get bookings where organization members are attendees
+-    // - If Current user is TEAM_OWNER/ADMIN so we get bookings where team members are attendees
+-    if (userEmailsWhereUserIsAdminOrOwner?.length) {
++    // - If Current user is ORG_OWNER/ADMIN or has booking.read permission, get bookings where organization/team members are attendees
++    if (allAccessibleUserEmails?.length) {
+       bookingQueries.push({
+         query: kysely
+           .selectFrom("Booking")
+@@ -280,14 +255,13 @@ export async function getBookings({
+           .select("Booking.createdAt")
+           .select("Booking.updatedAt")
+           .innerJoin("Attendee", "Attendee.bookingId", "Booking.id")
+-          .where("Attendee.email", "in", userEmailsWhereUserIsAdminOrOwner),
++          .where("Attendee.email", "in", allAccessibleUserEmails),
+         tables: ["Booking", "Attendee"],
+       });
+     }
+     // 5. Scope depends on `user.orgId`:
+-    // - If Current user is ORG_OWNER/ADMIN so we get bookings where organization members are attendees via seatsReference
+-    // - If Current user is TEAM_OWNER/ADMIN so we get bookings where team members are attendees via seatsReference
+-    if (userEmailsWhereUserIsAdminOrOwner?.length) {
++    // - If Current user is ORG_OWNER/ADMIN or has booking.read permission, get bookings where organization/team members are attendees via seatsReference
++    if (allAccessibleUserEmails?.length) {
+       bookingQueries.push({
+         query: kysely
+           .selectFrom("Booking")
+@@ -298,15 +272,14 @@ export async function getBookings({
+           .select("Booking.updatedAt")
+           .innerJoin("Attendee", "Attendee.bookingId", "Booking.id")
+           .innerJoin("BookingSeat", "Attendee.id", "BookingSeat.attendeeId")
+-          .where("Attendee.email", "in", userEmailsWhereUserIsAdminOrOwner),
++          .where("Attendee.email", "in", allAccessibleUserEmails),
+         tables: ["Booking", "Attendee", "BookingSeat"],
+       });
+     }
+ 
+     // 6. Scope depends on `user.orgId`:
+-    // - If Current user is ORG_OWNER/ADMIN, get booking created for an event type within the organization
+-    // - If Current user is TEAM_OWNER/ADMIN, get bookings created for an event type within the team
+-    if (eventTypeIdsWhereUserIsAdminOrOwner?.length) {
++    // - If Current user is ORG_OWNER/ADMIN or has booking.read permission, get booking created for an event type within the organization/team
++    if (eventTypeIdsWhereUserHasBookingPermission?.length) {
+       bookingQueries.push({
+         query: kysely
+           .selectFrom("Booking")
+@@ -316,15 +289,14 @@ export async function getBookings({
+           .select("Booking.createdAt")
+           .select("Booking.updatedAt")
+           .innerJoin("EventType", "EventType.id", "Booking.eventTypeId")
+-          .where("Booking.eventTypeId", "in", eventTypeIdsWhereUserIsAdminOrOwner),
++          .where("Booking.eventTypeId", "in", eventTypeIdsWhereUserHasBookingPermission),
+         tables: ["Booking", "EventType"],
+       });
+     }
+ 
+     // 7. Scope depends on `user.orgId`:
+-    // - If Current user is ORG_OWNER/ADMIN, get bookings created by users within the same organization
+-    // - If Current user is TEAM_OWNER/ADMIN, get bookings created by users within the same organization
+-    if (userIdsWhereUserIsAdminOrOwner?.length) {
++    // - If Current user is ORG_OWNER/ADMIN or has booking.read permission, get bookings created by users within the same organization/team
++    if (allAccessibleUserIds?.length) {
+       bookingQueries.push({
+         query: kysely
+           .selectFrom("Booking")
+@@ -333,7 +305,7 @@ export async function getBookings({
+           .select("Booking.endTime")
+           .select("Booking.createdAt")
+           .select("Booking.updatedAt")
+-          .where("Booking.userId", "in", userIdsWhereUserIsAdminOrOwner),
++          .where("Booking.userId", "in", allAccessibleUserIds),
+         tables: ["Booking"],
+       });
+     }
+@@ -971,59 +943,26 @@ async function getEventTypeIdsFromEventTypeIdsFilter(prisma: PrismaClient, event
+   return eventTypeIdsFromDb;
+ }
+ 
+-async function getEventTypeIdsWhereUserIsAdminOrOwner(
+-  prisma: PrismaClient,
+-  membershipCondition: PrismaClientType.MembershipListRelationFilter
+-) {
+-  const [directTeamEventTypeIds, parentTeamEventTypeIds] = await Promise.all([
+-    prisma.eventType
+-      .findMany({
+-        where: {
+-          team: {
+-            members: membershipCondition,
+-          },
+-        },
+-        select: {
+-          id: true,
+-        },
+-      })
+-      .then((eventTypes) => eventTypes.map((eventType) => eventType.id)),
+-
+-    prisma.eventType
+-      .findMany({
+-        where: {
+-          parent: {
+-            team: {
+-              members: membershipCondition,
+-            },
+-          },
+-        },
+-        select: {
+-          id: true,
+-        },
+-      })
+-      .then((eventTypes) => eventTypes.map((eventType) => eventType.id)),
+-  ]);
+-
+-  return Array.from(new Set([...directTeamEventTypeIds, ...parentTeamEventTypeIds]));
+-}
+-
+ /**
+- * Gets [IDs, Emails] of members where the auth user is team/org admin/owner.
++ * Gets [IDs, Emails] of members from specified team IDs.
+  * @param prisma The Prisma client.
+- * @param membershipCondition Filter containing the team/org ids where user is ADMIN/OWNER
+- * @returns {Promise<[number[], string[]]>} [UserIDs, UserEmails] for members in the determined scope.
++ * @param teamIds Array of team IDs to get members from
++ * @returns {Promise<[number[], string[]]>} [UserIDs, UserEmails] for members in the specified teams.
+  */
+-async function getUserIdsAndEmailsWhereUserIsAdminOrOwner(
++async function getUserIdsAndEmailsFromTeamIds(
+   prisma: PrismaClient,
+-  membershipCondition: PrismaClientType.MembershipListRelationFilter
++  teamIds: number[]
+ ): Promise<[number[], string[]]> {
++  if (teamIds.length === 0) {
++    return [[], []];
++  }
++
+   const users = await prisma.user.findMany({
+     where: {
+       teams: {
+         some: {
+-          team: {
+-            members: membershipCondition,
++          teamId: {
++            in: teamIds,
+           },
+         },
+       },

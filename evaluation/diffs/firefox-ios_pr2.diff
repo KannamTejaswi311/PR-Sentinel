@@ -1,0 +1,1145 @@
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/A11yOnboardingTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/A11yOnboardingTests.swift
+index d3c7f616da3df..b270bd8a17278 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/A11yOnboardingTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/A11yOnboardingTests.swift
+@@ -11,17 +11,17 @@ class A11yOnboardingTests: BaseTestCase {
+         return "\(AccessibilityIdentifiers.Onboarding.onboarding)\(currentScreen)"
+     }
+ 
+-    override func setUp() {
++    override func setUp() async throws {
+         launchArguments = [LaunchArguments.ClearProfile,
+                            LaunchArguments.DisableAnimations,
+                            LaunchArguments.SkipSplashScreenExperiment]
+         currentScreen = 0
+-        super.setUp()
++        try await super.setUp()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         app.terminate()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     func testA11yFirstRunTour() throws {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/A11yUtils.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/A11yUtils.swift
+index a6fe771d330da..b784ff44bcbbb 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/A11yUtils.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/A11yUtils.swift
+@@ -1,9 +1,6 @@
+-// This Source Code Form is subject to the terms of the Mozilla Public
+-// License, v. 2.0. If a copy of the MPL was not distributed with this
+-// file, You can obtain one at http://mozilla.org/MPL/2.0/
+-
+ import XCTest
+ 
++@MainActor
+ class A11yUtils: XCTestCase {
+     public struct MissingAccessibilityElement {
+         public let elementType: String
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/ActivityStreamTest.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/ActivityStreamTest.swift
+index bfbe0204369f7..e2ea0f4ed8354 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/ActivityStreamTest.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/ActivityStreamTest.swift
+@@ -27,7 +27,8 @@ class ActivityStreamTest: FeatureFlaggedTestBase {
+     let testWithDB = ["testTopSites2Add", "testTopSitesRemoveAllExceptDefaultClearPrivateData"]
+     // Using the DDDBBs created for these tests containing enough entries for the tests that used them listed above
+     let pagesVisited = "browserActivityStreamPages-places.db"
+-    override func setUp() {
++
++    override func setUp() async throws {
+         // Test name looks like: "[Class testFunc]", parse out the function name
+         let parts = name.replacingOccurrences(of: "]", with: "").split(separator: " ")
+         let key = String(parts[1])
+@@ -41,16 +42,17 @@ class ActivityStreamTest: FeatureFlaggedTestBase {
+         }
+         launchArguments.append(LaunchArguments.SkipAddingGoogleTopSite)
+         launchArguments.append(LaunchArguments.SkipSponsoredShortcuts)
+-        super.setUp()
++        try await super.setUp()
+         topSites = TopSitesScreen(app: app)
+         contextMenu = ContextMenuScreen(app: app)
+         tabTray = TabTrayScreen(app: app)
+         browser = BrowserScreen(app: app)
+         toolbar = ToolbarScreen(app: app)
+     }
+-    override func tearDown() {
++
++    override func tearDown() async throws {
+         XCUIDevice.shared.orientation = .portrait
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     // https://mozilla.testrail.io/index.php?/cases/view/2273342
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/BaseTestCase.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/BaseTestCase.swift
+index 21a453790f409..eacfb8f8ede1b 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/BaseTestCase.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/BaseTestCase.swift
+@@ -10,7 +10,9 @@ import Shared
+ let page1 = "http://localhost:\(serverPort)/test-fixture/find-in-page-test.html"
+ let page2 = "http://localhost:\(serverPort)/test-fixture/test-example.html"
+ let serverPort = ProcessInfo.processInfo.environment["WEBSERVER_PORT"] ?? "\(Int.random(in: 1025..<65000))"
++@MainActor
+ let urlBarAddress = XCUIApplication().textFields[AccessibilityIdentifiers.Browser.AddressToolbar.searchTextField]
++@MainActor
+ let homepageSearchBar = XCUIApplication().cells[AccessibilityIdentifiers.FirefoxHomepage.SearchBar.itemCell]
+ 
+ func path(forTestPage page: String) -> String {
+@@ -107,16 +109,16 @@ class BaseTestCase: XCTestCase {
+         }
+     }
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         continueAfterFailure = false
+         setUpApp()
+         setUpScreenGraph()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         app.terminate()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     var skipPlatform: Bool {
+@@ -503,19 +505,19 @@ class BaseTestCase: XCTestCase {
+ }
+ 
+ class IpadOnlyTestCase: BaseTestCase {
+-    override func setUp() {
++    override func setUp() async throws {
+         specificForPlatform = .pad
+         if iPad() {
+-            super.setUp()
++            await super.setUp()
+         }
+     }
+ }
+ 
+ class IphoneOnlyTestCase: BaseTestCase {
+-    override func setUp() {
++    override func setUp() async throws {
+         specificForPlatform = .phone
+         if !iPad() {
+-            super.setUp()
++            try await super.setUp()
+         }
+     }
+ }
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/BookmarksTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/BookmarksTests.swift
+index 0b247ac449c05..2c178cf6cf668 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/BookmarksTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/BookmarksTests.swift
+@@ -18,8 +18,8 @@ class BookmarksTests: FeatureFlaggedTestBase {
+     private var homepageSettingsScreen: HomepageSettingsScreen!
+     private var firefoxHomeScreen: FirefoxHomePageScreen!
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         topSitesScreen = TopSitesScreen(app: app)
+         browserScreen = BrowserScreen(app: app)
+         toolbarScreen = ToolbarScreen(app: app)
+@@ -28,9 +28,9 @@ class BookmarksTests: FeatureFlaggedTestBase {
+         firefoxHomeScreen = FirefoxHomePageScreen(app: app)
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         XCUIDevice.shared.orientation = .portrait
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     private func checkBookmarked() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/BrowsingPDFTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/BrowsingPDFTests.swift
+index 0cbbca348a794..b902ffd4d9ec6 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/BrowsingPDFTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/BrowsingPDFTests.swift
+@@ -21,9 +21,9 @@ class BrowsingPDFTests: BaseTestCase {
+     private var contextMenu: ContextMenuScreen!
+     private var library: LibraryScreen!
+ 
+-    override func setUp() {
++    override func setUp() async throws {
+         // Test name looks like: "[Class testFunc]", parse out the function name
+-        super.setUp()
++        try await super.setUp()
+         topSites = TopSitesScreen(app: app)
+         contextMenu = ContextMenuScreen(app: app)
+         pdf = PDFScreen(app: app)
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/C_AddressesTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/C_AddressesTests.swift
+index 70c521f77cd27..60587a9387086 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/C_AddressesTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/C_AddressesTests.swift
+@@ -13,8 +13,9 @@ class O_AddressesTests: BaseTestCase {
+     private var settingsScreen: SettingScreen!
+     private var browserScreen: BrowserScreen!
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
++
+         if #available(iOS 16, *) {
+             if !name.contains("testAddressOptionIsAvailableInSettingsMenu") {
+                 navigator.nowAt(NewTabScreen)
+@@ -34,13 +35,13 @@ class O_AddressesTests: BaseTestCase {
+         browserScreen = BrowserScreen(app: app)
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         if name.contains("testAddressOptionIsAvailableInSettingsMenu") {
+             switchThemeToDarkOrLight(theme: "Light")
+             XCUIDevice.shared.orientation = .portrait
+         }
+         app.terminate()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     // https://mozilla.testrail.io/index.php?/cases/view/2618637
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/CookiePersistenceTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/CookiePersistenceTests.swift
+index 443d471c775fa..59ed0233a71d3 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/CookiePersistenceTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/CookiePersistenceTests.swift
+@@ -8,7 +8,7 @@ final class CookiePersistenceTests: BaseTestCase {
+     let cookieSiteURL = "http://localhost:\(serverPort)/test-fixture/test-cookie-store.html"
+     let topSitesTitle = ["Facebook", "YouTube", "Wikipedia"]
+ 
+-    override func setUp() {
++    override func setUp() async throws {
+         // Fresh install the app
+         // removeApp() does not work on iOS 15 and 16 intermittently
+         if #available(iOS 17, *) {
+@@ -16,7 +16,7 @@ final class CookiePersistenceTests: BaseTestCase {
+         }
+ 
+         // The app is correctly installed
+-        super.setUp()
++        try await super.setUp()
+     }
+ 
+     func testCookiePersistenceBasic() {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/DatabaseFixtureTest.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/DatabaseFixtureTest.swift
+index 2be776f94a75d..494107c6b9333 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/DatabaseFixtureTest.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/DatabaseFixtureTest.swift
+@@ -11,7 +11,7 @@ class DatabaseFixtureTest: BaseTestCase {
+         "testHistoryDatabaseFixture": "testHistoryDatabase100-places.db"
+     ]
+ 
+-    override func setUp() {
++    override func setUp() async throws {
+         // Test name looks like: "[Class testFunc]", parse out the function name
+         let parts = name.replacingOccurrences(of: "]", with: "").split(separator: " ")
+         let key = String(parts[1])
+@@ -21,7 +21,7 @@ class DatabaseFixtureTest: BaseTestCase {
+                            LaunchArguments.LoadDatabasePrefix + fixtures[key]!,
+                            LaunchArguments.SkipContextualHints,
+                            LaunchArguments.DisableAnimations]
+-        super.setUp()
++        try await super.setUp()
+     }
+ 
+     // https://mozilla.testrail.io/index.php?/cases/view/2458579
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/DesktopModeTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/DesktopModeTests.swift
+index cd1e34bea7131..a7b1b2354af7d 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/DesktopModeTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/DesktopModeTests.swift
+@@ -93,10 +93,10 @@ class DesktopModeTestsIphone: BaseTestCase {
+     var toolbarScreen: ToolbarScreen!
+     var mainMenuScreen: MainMenuScreen!
+ 
+-    override func setUp() {
++    override func setUp() async throws {
+         specificForPlatform = .phone
+         if !iPad() {
+-            super.setUp()
++            try await super.setUp()
+         }
+         browserScreen = BrowserScreen(app: app)
+         toolbarScreen = ToolbarScreen(app: app)
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/DisplaySettingsTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/DisplaySettingsTests.swift
+index 18fdee524eeb7..7674bab3af98f 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/DisplaySettingsTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/DisplaySettingsTests.swift
+@@ -5,7 +5,7 @@
+ import XCTest
+ 
+ class DisplaySettingTests: BaseTestCase {
+-    override func setUp() {
++    override func setUp() async throws {
+         // Fresh install the app
+         // removeApp() does not work on iOS 15 and 16 intermittently
+         if name.contains("testCheckDisplaySettingsDefault") {
+@@ -14,7 +14,7 @@ class DisplaySettingTests: BaseTestCase {
+             }
+         }
+         // The app is correctly installed
+-        super.setUp()
++        try await super.setUp()
+     }
+ 
+     // https://mozilla.testrail.io/index.php?/cases/view/2337485
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/DomainAutocompleteTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/DomainAutocompleteTests.swift
+index a466163d43cec..e93f13df133bb 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/DomainAutocompleteTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/DomainAutocompleteTests.swift
+@@ -28,7 +28,7 @@ class DomainAutocompleteTests: BaseTestCase {
+     // This DB contains 3 entries mozilla.com/github.com/git.es
+     let historyDB = "browserAutocomplete-places.db"
+ 
+-    override func setUp() {
++    override func setUp() async throws {
+         // Test name looks like: "[Class testFunc]", parse out the function name
+         let parts = name.replacingOccurrences(of: "]", with: "").split(separator: " ")
+         let key = String(parts[1])
+@@ -41,7 +41,7 @@ class DomainAutocompleteTests: BaseTestCase {
+                                LaunchArguments.SkipContextualHints,
+                                LaunchArguments.DisableAnimations]
+         }
+-        super.setUp()
++        try await super.setUp()
+     }
+ 
+     // https://mozilla.testrail.io/index.php?/cases/view/2334558
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/DragAndDropTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/DragAndDropTests.swift
+index e1e3f1533f1c8..41f298f7245b1 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/DragAndDropTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/DragAndDropTests.swift
+@@ -291,7 +291,7 @@ class DragAndDropTestIpad: IpadOnlyTestCase {
+         // This DDBB contains those 4 websites listed in the name
+     let historyAndBookmarksDB = "browserYoutubeTwitterMozillaExample-places.db"
+ 
+-    override func setUp() {
++    override func setUp() async throws {
+         // Test name looks like: "[Class testFunc]", parse out the function name
+         let parts = name.replacingOccurrences(of: "]", with: "").split(separator: " ")
+         let key = String(parts[1])
+@@ -304,12 +304,12 @@ class DragAndDropTestIpad: IpadOnlyTestCase {
+                                    LaunchArguments.SkipContextualHints,
+                                    LaunchArguments.DisableAnimations]
+         }
+-        super.setUp()
++        try await super.setUp()
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         XCUIDevice.shared.orientation = UIDeviceOrientation.portrait
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     // https://mozilla.testrail.io/index.php?/cases/view/2307024
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/EngagementNotificationTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/EngagementNotificationTests.swift
+index 6a7f7822a2782..18aa9773d6ba5 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/EngagementNotificationTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/EngagementNotificationTests.swift
+@@ -5,14 +5,14 @@
+ import XCTest
+ 
+ class EngagementNotificationTests: BaseTestCase {
+-    override func setUp() {
++    override func setUp() async throws {
+         // Fresh install the app
+         // removeApp() does not work on iOS 15 and 16 intermittently
+         if #available(iOS 17, *) {
+             removeApp()
+         }
+         // The app is correctly installed
+-        super.setUp()
++        try await super.setUp()
+     }
+ 
+     // https://mozilla.testrail.io/index.php?/cases/view/2307101
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/FeatureFlaggedTestBase.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/FeatureFlaggedTestBase.swift
+index e4a51e6185cff..2413a3fa0a4b1 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/FeatureFlaggedTestBase.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/FeatureFlaggedTestBase.swift
+@@ -43,10 +43,10 @@ class FeatureFlaggedTestSuite: FeatureFlaggedTestBase {
+         addLaunchArgument(jsonFileName: jsonFileName, featureName: featureName)
+     }
+ 
+-    override func setUp() {
++    override func setUp() async throws {
+         continueAfterFailure = false
+-        setUpExperimentVariables()
+         setUpApp()
++        setUpExperimentVariables()
+         setUpLaunchArguments()
+         setUpScreenGraph()
+     }
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/FxScreenGraph.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/FxScreenGraph.swift
+index e755ea479d0d0..9fc60f936e4aa 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/FxScreenGraph.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/FxScreenGraph.swift
+@@ -7,6 +7,7 @@ import Foundation
+ import MappaMundi
+ import XCTest
+ 
++@MainActor
+ func createScreenGraph(for test: XCTestCase, with app: XCUIApplication) -> MMScreenGraph<FxUserState> {
+     let map = MMScreenGraph(for: test, with: FxUserState.self)
+ 
+@@ -123,31 +124,38 @@ let allHomePanels = [
+     LibraryPanel_Downloads
+ ]
+ 
++@MainActor
+ let iOS_Settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
++@MainActor
+ let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+ 
++@MainActor
+ func navigationControllerBackAction(for app: XCUIApplication) -> () -> Void {
+     return {
+         app.navigationBars.element(boundBy: 0).buttons.element(boundBy: 0).waitAndTap()
+     }
+ }
+ 
++@MainActor
+ func cancelBackAction(for app: XCUIApplication) -> () -> Void {
+     return {
+         app.otherElements["PopoverDismissRegion"].waitAndTap()
+     }
+ }
+ 
++@MainActor
+ func dismissContextMenuAction(app: XCUIApplication) -> () -> Void {
+     return {
+         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25)).tap()
+     }
+ }
+ 
++@MainActor
+ func select(rows: Int, in app: XCUIApplication) {
+     app.staticTexts[String(rows)].firstMatch.waitAndTap()
+ }
+ 
++@MainActor
+ func type(text: String, in app: XCUIApplication) {
+      text.forEach { char in
+          app.keys[String(char)].waitAndTap()
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/HistoryTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/HistoryTests.swift
+index 1c2540cfa26d8..a369d2576b3d4 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/HistoryTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/HistoryTests.swift
+@@ -43,7 +43,7 @@ class HistoryTests: BaseTestCase {
+     var browserScreen: BrowserScreen!
+     var historyScreen: HistoryScreen!
+ 
+-    override func setUp() {
++    override func setUp() async throws {
+         // Test name looks like: "[Class testFunc]", parse out the function name
+         let parts = name.replacingOccurrences(of: "]", with: "").split(separator: " ")
+         let key = String(parts[1])
+@@ -57,7 +57,7 @@ class HistoryTests: BaseTestCase {
+                                LaunchArguments.SkipContextualHints,
+                                LaunchArguments.DisableAnimations]
+         }
+-        super.setUp()
++        try await super.setUp()
+         toolbarScreen = ToolbarScreen(app: app)
+         settingScreen = SettingScreen(app: app)
+         browserScreen = BrowserScreen(app: app)
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/HomePageSettingsUITest.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/HomePageSettingsUITest.swift
+index 75d33b5ba679b..461104521ebb3 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/HomePageSettingsUITest.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/HomePageSettingsUITest.swift
+@@ -22,7 +22,7 @@ class HomePageSettingsUITests: FeatureFlaggedTestBase {
+     let testWithDB = ["testTopSitesCustomNumberOfRows"]
+     let prefilledTopSites = "testBookmarksDatabase1000-browser.db"
+ 
+-    override func setUp() {
++    override func setUp() async throws {
+         // Test name looks like: "[Class testFunc]", parse out the function name
+         let parts = name.replacingOccurrences(of: "]", with: "").split(separator: " ")
+         let key = String(parts[1])
+@@ -35,7 +35,7 @@ class HomePageSettingsUITests: FeatureFlaggedTestBase {
+                                LaunchArguments.SkipContextualHints,
+                                LaunchArguments.DisableAnimations]
+         }
+-        super.setUp()
++        try await super.setUp()
+     }
+ 
+     // https://mozilla.testrail.io/index.php?/cases/view/2339256
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/InactiveTabsTest.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/InactiveTabsTest.swift
+index c354717dfa235..e05b3b028635d 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/InactiveTabsTest.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/InactiveTabsTest.swift
+@@ -6,7 +6,7 @@ import Common
+ import XCTest
+ 
+ final class InactiveTabsTest: BaseTestCase {
+-    override func setUp() {
++    override func setUp() async throws {
+         // Load 20 tabs. 19 tabs are inactive.
+         let tabsDatabase = "tabsState20.archive"
+         launchArguments = [
+@@ -18,7 +18,7 @@ final class InactiveTabsTest: BaseTestCase {
+             LaunchArguments.DisableAnimations,
+         ]
+         launchArguments.append(LaunchArguments.LoadTabsStateArchive + tabsDatabase)
+-        super.setUp()
++        try await super.setUp()
+         app.launch()
+ 
+         // Workaround: Restart app to guarantee the tabs are loaded
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/IntegrationTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/IntegrationTests.swift
+index 687de9c95e337..c46f0ba6e33c2 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/IntegrationTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/IntegrationTests.swift
+@@ -20,28 +20,28 @@ class IntegrationTests: BaseTestCase {
+     // This DB contains 1 entry example.com
+     let historyDB = "exampleURLHistoryBookmark-places.db"
+ 
+-    override func setUp() {
+-     // Test name looks like: "[Class testFunc]", parse out the function name
+-     let parts = name.replacingOccurrences(of: "]", with: "").split(separator: " ")
+-     let key = String(parts[1])
+-     if testWithDB.contains(key) {
+-     // for the current test name, add the db fixture used
+-     launchArguments = [LaunchArguments.SkipIntro,
+-                        LaunchArguments.StageServer,
+-                        LaunchArguments.SkipWhatsNew,
+-                        LaunchArguments.SkipETPCoverSheet,
+-                        LaunchArguments.LoadDatabasePrefix + historyDB,
+-                        LaunchArguments.SkipContextualHints]
+-     } else if testFxAChinaServer.contains(key) {
+-        launchArguments = [LaunchArguments.SkipIntro,
+-                           LaunchArguments.FxAChinaServer,
+-                           LaunchArguments.SkipWhatsNew,
+-                           LaunchArguments.SkipETPCoverSheet,
+-                           LaunchArguments.SkipContextualHints]
+-     }
+-    launchArguments.append(LaunchArguments.DisableAnimations)
+-     super.setUp()
+-     }
++    override func setUp() async throws {
++        // Test name looks like: "[Class testFunc]", parse out the function name
++        let parts = name.replacingOccurrences(of: "]", with: "").split(separator: " ")
++        let key = String(parts[1])
++        if testWithDB.contains(key) {
++            // for the current test name, add the db fixture used
++            launchArguments = [LaunchArguments.SkipIntro,
++                               LaunchArguments.StageServer,
++                               LaunchArguments.SkipWhatsNew,
++                               LaunchArguments.SkipETPCoverSheet,
++                               LaunchArguments.LoadDatabasePrefix + historyDB,
++                               LaunchArguments.SkipContextualHints]
++        } else if testFxAChinaServer.contains(key) {
++            launchArguments = [LaunchArguments.SkipIntro,
++                               LaunchArguments.FxAChinaServer,
++                               LaunchArguments.SkipWhatsNew,
++                               LaunchArguments.SkipETPCoverSheet,
++                               LaunchArguments.SkipContextualHints]
++        }
++        launchArguments.append(LaunchArguments.DisableAnimations)
++        try await super.setUp()
++    }
+ 
+     func allowNotifications() {
+         addUIInterruptionMonitor(withDescription: "notifications") { (alert) -> Bool in
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/LoginsTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/LoginsTests.swift
+index ffdf77074d687..52771d328d166 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/LoginsTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/LoginsTests.swift
+@@ -33,7 +33,7 @@ class LoginTest: BaseTestCase {
+     var webFormScreen: WebFormScreen!
+     var saveLoginAlertScreen: SaveLoginAlertScreen!
+ 
+-    override func setUp() {
++    override func setUp() async throws {
+         // Fresh install the app
+         // removeApp() does not work on iOS 15 and 16 intermittently
+         if name.contains("testLoginFreshInstallMessage") {
+@@ -42,7 +42,7 @@ class LoginTest: BaseTestCase {
+             }
+         }
+         // The app is correctly installed
+-        super.setUp()
++        try await super.setUp()
+         toolBarScreen = ToolbarScreen(app: app)
+         loginSettingsScreen = LoginSettingsScreen(app: app)
+         mainMenuScreen = MainMenuScreen(app: app)
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/MicrosurveyTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/MicrosurveyTests.swift
+index 10dfd88aa7477..f5292801c3299 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/MicrosurveyTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/MicrosurveyTests.swift
+@@ -6,12 +6,12 @@ import Common
+ import XCTest
+ 
+ final class MicrosurveyTests: BaseTestCase {
+-    override func setUp() {
++    override func setUp() async throws {
+         launchArguments = [
+             LaunchArguments.SkipIntro,
+             LaunchArguments.ResetMicrosurveyExpirationCount
+         ]
+-        super.setUp()
++        try await super.setUp()
+         app.launch()
+     }
+ 
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/MultiWindowTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/MultiWindowTests.swift
+index 67fa31622904b..35cc96cb5ca55 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/MultiWindowTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/MultiWindowTests.swift
+@@ -10,19 +10,19 @@ class MultiWindowTests: IpadOnlyTestCase {
+     let splitView = springboard.buttons["top-affordance-split-view-button"]
+     let dotMenuIdentifier = springboard.buttons.matching(identifier: "top-affordance:org.mozilla.ios.Fennec")
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         super.setUpLaunchArguments()
+         if dotMenuIdentifier.element(boundBy: 1).exists {
+             closeSplitViewWindow(windowToClose: 1)
+         }
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         if dotMenuIdentifier.element(boundBy: 1).exists {
+             closeSplitViewWindow(windowToClose: 1)
+         }
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     // https://mozilla.testrail.io/index.php?/cases/view/2711015
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/NavigationRegistry.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/NavigationRegistry.swift
+index 279dabd976e3e..649b1751c4ebd 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/NavigationRegistry.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/NavigationRegistry.swift
+@@ -6,6 +6,7 @@ import XCTest
+ import MappaMundi
+ 
+ enum NavigationRegistry {
++    @MainActor
+     static func registerAll(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+         registerZoomNavigation(in: map, app: app)
+         registerToolBarNavigation(in: map, app: app)
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/OnboardingTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/OnboardingTests.swift
+index c2645a59c6388..2583d75699550 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/OnboardingTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/OnboardingTests.swift
+@@ -13,23 +13,23 @@ class OnboardingTests: BaseTestCase {
+     var onboardingScreen: OnboardingScreen!
+     var firefoxHomePageScreen: FirefoxHomePageScreen!
+ 
+-    override func setUp() {
++    override func setUp() async throws {
+         launchArguments = [LaunchArguments.ClearProfile,
+                            LaunchArguments.DisableAnimations,
+                            LaunchArguments.SkipSplashScreenExperiment,
+                            LaunchArguments.SkipTermsOfUse]
+         currentScreen = 0
+-        super.setUp()
++        try await super.setUp()
+         onboardingScreen = OnboardingScreen(app: app)
+         firefoxHomePageScreen = FirefoxHomePageScreen(app: app)
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         if #available(iOS 17.0, *) {
+             switchThemeToDarkOrLight(theme: "Light")
+         }
+         app.terminate()
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     // Smoketest
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/PerformanceTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/PerformanceTests.swift
+index 3832a32c35320..f308179ebb427 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/PerformanceTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/PerformanceTests.swift
+@@ -21,7 +21,7 @@ class PerformanceTests: BaseTestCase {
+                     "testPerfBookmarks1000openMenu": "testBookmarksDatabase1000-places.db",
+                     "testPerfBookmarks1000startUp": "testBookmarksDatabase1000-places.db"]
+ 
+-    override func setUp() {
++    override func setUp() async throws {
+         // Test name looks like: "[Class testFunc]", parse out function name
+         let parts = name.replacingOccurrences(of: "]", with: "").split(separator: " ")
+         let functionName = String(parts[1])
+@@ -39,7 +39,7 @@ class PerformanceTests: BaseTestCase {
+             launchArguments.append(LaunchArguments.LoadTabsStateArchive + fixtures[functionName]!)
+             launchArguments.append(LaunchArguments.LoadDatabasePrefix + fixtures[functionName]!)
+         }
+-        super.setUp()
++        try await super.setUp()
+     }
+ 
+     // This test run first to install the app in the device
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/PhotonActionSheetTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/PhotonActionSheetTests.swift
+index 25f3f2c14c3de..be98486508a08 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/PhotonActionSheetTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/PhotonActionSheetTests.swift
+@@ -11,8 +11,8 @@ class PhotonActionSheetTests: BaseTestCase {
+     var browserScreen: BrowserScreen!
+     var topSitesScreen: TopSitesScreen!
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         toolBarScreen = ToolbarScreen(app: app)
+         photonActionSheetScreen = PhotonActionSheetScreen(app: app)
+         browserScreen = BrowserScreen(app: app)
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/PrivateBrowsingTest.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/PrivateBrowsingTest.swift
+index a6ad4a02a1c52..b4fc912435dfa 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/PrivateBrowsingTest.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/PrivateBrowsingTest.swift
+@@ -298,10 +298,10 @@ fileprivate extension BaseTestCase {
+ }
+ 
+ class PrivateBrowsingTestIphone: BaseTestCase {
+-    override func setUp() {
++    override func setUp() async throws {
+         specificForPlatform = .phone
+         if !iPad() {
+-            super.setUp()
++            try await super.setUp()
+         }
+     }
+ 
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/ReadingListTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/ReadingListTests.swift
+index 2ae5225bd41f6..fc265309f3894 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/ReadingListTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/ReadingListTests.swift
+@@ -10,8 +10,8 @@ class ReadingListTests: FeatureFlaggedTestBase {
+     private var toolBarScreen: ToolbarScreen!
+     private var browserScreen: BrowserScreen!
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         readingListScreen = ReadingListScreen(app: app)
+         toolBarScreen = ToolbarScreen(app: app)
+         browserScreen = BrowserScreen(app: app)
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/ScreenGraphTest.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/ScreenGraphTest.swift
+index 5202ce83f980e..268b1c13f9f26 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/ScreenGraphTest.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/ScreenGraphTest.swift
+@@ -7,6 +7,7 @@ import XCTest
+ import Common
+ import Shared
+ 
++@MainActor
+ class ScreenGraphTest: XCTestCase {
+     var navigator: MMNavigator<TestUserState>!
+     var app: XCUIApplication!
+@@ -30,8 +31,8 @@ class ScreenGraphTest: XCTestCase {
+         mozWaitForElementToNotExist(progressIndicator, timeout: 90.0)
+     }
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         app = XCUIApplication()
+         navigator = createTestGraph(for: self, with: app).navigator()
+         app.terminate()
+@@ -50,6 +51,7 @@ extension XCTestCase {
+     func wait(forElement element: XCUIElement, timeout: TimeInterval) {
+         let predicate = NSPredicate(format: "exists == 1")
+         expectation(for: predicate, evaluatedWith: element)
++
+         waitForExpectations(timeout: timeout)
+     }
+ }
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/TabsTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/TabsTests.swift
+index 902de6fd371f8..f378870af189f 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/TabsTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/TabsTests.swift
+@@ -632,10 +632,10 @@ class TabsTestsIphone: BaseTestCase {
+     var newTabsScreen: NewTabsScreen!
+     var firefoxHomePageScreen: FirefoxHomePageScreen!
+ 
+-    override func setUp() {
++    override func setUp() async throws {
+         specificForPlatform = .phone
+         if !iPad() {
+-            super.setUp()
++            try await super.setUp()
+         }
+         toolBarScreen = ToolbarScreen(app: app)
+         tabTrayScreen = TabTrayScreen(app: app)
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/TodayWidgetTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/TodayWidgetTests.swift
+index db568d2ac7ad9..9ed05fe552061 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/TodayWidgetTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/TodayWidgetTests.swift
+@@ -12,22 +12,31 @@ let removeWidgetButton = "com.apple.springboardhome.application-shortcut-item.re
+ 
+ // Widget Buttons Identifier
+ // TODO FXIOS-12604 These global properties are not concurrency safe
+-nonisolated(unsafe) var goToCopiedLink = springboard.buttons["Go to Copied Link"]
+-nonisolated(unsafe) var newPrivateSearch = springboard.buttons["New Private Search"]
+-nonisolated(unsafe) var newSearch = springboard.buttons["New Search"]
+-nonisolated(unsafe) var clearPrivateTabs = springboard.buttons["Clear Private Tabs"]
++@MainActor
++var goToCopiedLink = springboard.buttons["Go to Copied Link"]
++@MainActor
++var newPrivateSearch = springboard.buttons["New Private Search"]
++@MainActor
++var newSearch = springboard.buttons["New Search"]
++@MainActor
++var clearPrivateTabs = springboard.buttons["Clear Private Tabs"]
+ 
+ // Widget coordinates
++@MainActor
+ let normalized = springboard.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0))
+ 
+ // Get the screen size
++@MainActor
+ let screenSize = springboard.windows.element(boundBy: 0).frame.size
+ 
+ // Calculate the center-right coordinate (x: right edge, y: middle of the screen)
++@MainActor
+ let centerRightX = screenSize.width * 0.95  // Adjust this value if you want slightly away from the edge
++@MainActor
+ let centerRightY = screenSize.height / 2
+ 
+ // Create the coordinate using the calculated points
++@MainActor
+ let coordinate = springboard.coordinate(withNormalizedOffset: CGVector(
+     dx: centerRightX / screenSize.width, dy: centerRightY / screenSize.height))
+ 
+@@ -37,6 +46,7 @@ enum SwipeDirection {
+     case swipeRight
+ }
+ 
++@MainActor
+ private func widgetExist() -> Bool {
+     let firefoxWidgetButton = springboard
+         .buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Firefox")).element.exists
+@@ -47,6 +57,7 @@ private func widgetExist() -> Bool {
+     return firefoxWidgetButton || firefoxWidgetSecureSearchButton || firefoxCopiedLinkWidget
+ }
+ 
++@MainActor
+ private func goToTodayWidgetPage() {
+     // Swipe right until the "Screen Time" icon appears
+     if #unavailable(iOS 16) {
+@@ -60,6 +71,7 @@ private func goToTodayWidgetPage() {
+     }
+ }
+ 
++@MainActor
+ private func checkPresenceFirefoxWidget() -> Bool {
+     let maxSwipes = 3
+     var firefoxWidgetExists = false
+@@ -83,6 +95,7 @@ private func checkPresenceFirefoxWidget() -> Bool {
+     return firefoxWidgetExists
+ }
+ 
++@MainActor
+ private func checkFirefoxShortcutsOptions() {
+     let maxSwipes = 3
+     var swipeCount = 0
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/ToolbarTest.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/ToolbarTest.swift
+index c34710412cb7a..cf705afd99376 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/ToolbarTest.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/ToolbarTest.swift
+@@ -13,14 +13,14 @@ let website1: [String: String] = [
+ let website2 = path(forTestPage: "test-example.html")
+ 
+ class ToolbarTests: FeatureFlaggedTestBase {
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         XCUIDevice.shared.orientation = UIDeviceOrientation.landscapeLeft
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         XCUIDevice.shared.orientation = UIDeviceOrientation.portrait
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     // https://mozilla.testrail.io/index.php?/cases/view/2344428
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/URLValidationTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/URLValidationTests.swift
+index aa1a69b6e9f6b..0f519bb4cb115 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/URLValidationTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/URLValidationTests.swift
+@@ -11,8 +11,8 @@ class URLValidationTests: BaseTestCase {
+     let urlField = XCUIApplication().textFields[AccessibilityIdentifiers.Browser.AddressToolbar.searchTextField]
+     var browserScreen: BrowserScreen!
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         continueAfterFailure = true
+         navigator.goto(SearchSettings)
+         app.tables.switches["Show Search Suggestions"].waitAndTap()
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/ZoomingTests.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/ZoomingTests.swift
+index de44a416cc1dc..83e56297a3f39 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/ZoomingTests.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/ZoomingTests.swift
+@@ -7,17 +7,17 @@ import XCTest
+ final class ZoomingTests: BaseTestCase {
+     private var zoomBar: ZoomBarScreen!
+ 
+-    override func setUp() {
+-        super.setUp()
++    override func setUp() async throws {
++        try await super.setUp()
+         continueAfterFailure = false
+         setUpApp() // prepares launch arguments
+         setUpScreenGraph() // builds the MappaMundi navigator
+         zoomBar = ZoomBarScreen(app: app)
+     }
+ 
+-    override func tearDown() {
++    override func tearDown() async throws {
+         XCUIDevice.shared.orientation = UIDeviceOrientation.portrait
+-        super.tearDown()
++        try await super.tearDown()
+     }
+ 
+     // https://mozilla.testrail.io/index.php?/cases/view/2306947
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerCommonNavigation.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerCommonNavigation.swift
+index 0afbff09e1d65..073087ed9c4c4 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerCommonNavigation.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerCommonNavigation.swift
+@@ -5,6 +5,7 @@
+ import XCTest
+ import MappaMundi
+ 
++@MainActor
+ func registerCommonNavigation(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+     map.addScreenState(WebPageLoading) { screenState in
+         screenState.dismissOnUse = true
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerContextMenuNavigation.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerContextMenuNavigation.swift
+index e9ce26e44bb3a..a03506fb07072 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerContextMenuNavigation.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerContextMenuNavigation.swift
+@@ -5,6 +5,7 @@
+ import XCTest
+ import MappaMundi
+ 
++@MainActor
+ func registerContextMenuNavigation(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+     map.addScreenState(HistoryPanelContextMenu) { screenState in
+         screenState.dismissOnUse = true
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerFxAccountNavigation.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerFxAccountNavigation.swift
+index 9364f21071ed7..d6bbcec08e7b3 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerFxAccountNavigation.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerFxAccountNavigation.swift
+@@ -5,6 +5,7 @@
+ import XCTest
+ import MappaMundi
+ 
++@MainActor
+ func registerFxAccountNavigation(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+     map.addScreenState(Intro_FxASignin) { screenState in
+         screenState.tap(
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerHomePanelNavigation.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerHomePanelNavigation.swift
+index 294864f6d4fb4..3c26bb2735b6c 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerHomePanelNavigation.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerHomePanelNavigation.swift
+@@ -5,6 +5,7 @@
+ import XCTest
+ import MappaMundi
+ 
++@MainActor
+ func registerHomePanelNavigation(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+     map.addScreenState(HomePanel_TopSites) { screenState in
+         let topSites = app.links[AccessibilityIdentifiers.FirefoxHomepage.TopSites.itemCell]
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerLibraryPanelNavigation.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerLibraryPanelNavigation.swift
+index 9121b31d362c7..7d7b53979343a 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerLibraryPanelNavigation.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerLibraryPanelNavigation.swift
+@@ -5,6 +5,7 @@
+ import XCTest
+ import MappaMundi
+ 
++@MainActor
+ func registerLibraryPanelNavigation(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+     let doneButton = app.buttons["Done"]
+ 
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerMiscellanousActions.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerMiscellanousActions.swift
+index 905f43eb91804..6c1ee79405cac 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerMiscellanousActions.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerMiscellanousActions.swift
+@@ -5,6 +5,7 @@
+ import XCTest
+ import MappaMundi
+ 
++@MainActor
+ func registerMiscellanousActions(in map: MMScreenGraph<FxUserState>) {
+     // URLBarOpen is dismissOnUse, which ScreenGraph interprets as "now we've done this action,
+     // then go back to the one before it" but SetURL is an action than keeps us in URLBarOpen.
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerMiscellanousNavigation.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerMiscellanousNavigation.swift
+index 9e13e6628657b..aff58e617c3ce 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerMiscellanousNavigation.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerMiscellanousNavigation.swift
+@@ -5,6 +5,7 @@
+ import XCTest
+ import MappaMundi
+ 
++@MainActor
+ func registerMiscellanousNavigation(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+     map.addScreenState(Shortcuts) { screenState in
+         let homePage = AccessibilityIdentifiers.Settings.Homepage.homePageNavigationBar
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerMobileNavigation.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerMobileNavigation.swift
+index a3ec4b7f63403..09355e4e7e90e 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerMobileNavigation.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerMobileNavigation.swift
+@@ -5,6 +5,7 @@
+ import XCTest
+ import MappaMundi
+ 
++@MainActor
+ func registerMobileNavigation(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+     map.addScreenState(MobileBookmarks) { screenState in
+         let bookmarksMenuNavigationBar = app.navigationBars["Mobile Bookmarks"]
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerOnboardingNavigation.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerOnboardingNavigation.swift
+index c7af93eb08d74..c25177153dbd0 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerOnboardingNavigation.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerOnboardingNavigation.swift
+@@ -5,6 +5,7 @@
+ import MappaMundi
+ import XCTest
+ 
++@MainActor
+ func registerOnboardingNavigation(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+     map.addScreenState(FirstRun) { screenState in
+         screenState.noop(to: BrowserTab, if: "showIntro == false && showWhatsNew == true")
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerSettingsNavigation.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerSettingsNavigation.swift
+index 5f902f53b5f5d..4c9981de69796 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerSettingsNavigation.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerSettingsNavigation.swift
+@@ -5,7 +5,7 @@
+ import XCTest
+ import MappaMundi
+ 
+-// swiftlint:disable:next function_body_length
++@MainActor // swiftlint:disable:next function_body_length
+ func registerSettingsNavigation(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+     let table = app.tables.element(boundBy: 0)
+ 
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerTabMenuNavigation.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerTabMenuNavigation.swift
+index 213a737ce088c..3d8401de19c9e 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerTabMenuNavigation.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerTabMenuNavigation.swift
+@@ -5,6 +5,7 @@
+ import XCTest
+ import MappaMundi
+ 
++@MainActor
+ func registerTabMenuNavigation(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+     map.addScreenState(BrowserTabMenuMore) { screenState in
+         screenState.tap(
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerTabTrayNavigation.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerTabTrayNavigation.swift
+index b51fd020a1b43..094cdca45a428 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerTabTrayNavigation.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerTabTrayNavigation.swift
+@@ -6,6 +6,7 @@ import XCTest
+ import MappaMundi
+ import Common
+ 
++@MainActor
+ func registerTabTrayNavigation(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+     // This menu is only available for iPhone, NOT for iPad, no menu when long tapping on tabs button
+     if !isTablet {
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerToolbarNavigation.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerToolbarNavigation.swift
+index eba9e78f4c8f5..d5e96563b81ee 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerToolbarNavigation.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerToolbarNavigation.swift
+@@ -5,6 +5,7 @@
+ import XCTest
+ import MappaMundi
+ 
++@MainActor
+ private func configureURLBarAvailable(_ screenState: MMScreenStateNode<FxUserState>, app: XCUIApplication) {
+     let textField = app.textFields[AccessibilityIdentifiers.Browser.AddressToolbar.searchTextField]
+     screenState.tap(textField, to: URLBarOpen)
+@@ -13,6 +14,7 @@ private func configureURLBarAvailable(_ screenState: MMScreenStateNode<FxUserSta
+     }
+ }
+ 
++@MainActor
+ private func configureToolBarAvailable(_ screenState: MMScreenStateNode<FxUserState>, app: XCUIApplication) {
+     let settingButton = app.buttons[AccessibilityIdentifiers.Toolbar.settingsMenuButton]
+     let tabsButton = app.buttons[AccessibilityIdentifiers.Toolbar.tabsButton]
+@@ -28,6 +30,7 @@ private func configureToolBarAvailable(_ screenState: MMScreenStateNode<FxUserSt
+     }
+ }
+ 
++@MainActor
+ func makeToolBarAvailable(_ screenState: MMScreenStateNode<FxUserState>, app: XCUIApplication) {
+     screenState.tap(app.buttons[AccessibilityIdentifiers.Toolbar.settingsMenuButton], to: BrowserTabMenu)
+     if isTablet {
+@@ -39,6 +42,7 @@ func makeToolBarAvailable(_ screenState: MMScreenStateNode<FxUserState>, app: XC
+     }
+ }
+ 
++@MainActor
+ func makeURLBarAvailable(_ screenState: MMScreenStateNode<FxUserState>, app: XCUIApplication) {
+     let addressToolbar = app.textFields[AccessibilityIdentifiers.Browser.AddressToolbar.searchTextField]
+     screenState.tap(addressToolbar, to: URLBarOpen)
+@@ -47,6 +51,7 @@ func makeURLBarAvailable(_ screenState: MMScreenStateNode<FxUserState>, app: XCU
+     }
+ }
+ 
++@MainActor
+ func registerToolBarNavigation(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+     map.addScreenState(NewTabScreen) { screenState in
+         let tabsButtonSelector = app.buttons[AccessibilityIdentifiers.Toolbar.tabsButton]
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerTrackingProtection.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerTrackingProtection.swift
+index 99892ac5848df..cef4fda1653d0 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerTrackingProtection.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerTrackingProtection.swift
+@@ -5,6 +5,7 @@
+ import XCTest
+ import MappaMundi
+ 
++@MainActor
+ func registerTrackingProtection(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+     map.addScreenState(TrackingProtectionContextMenuDetails) { screenState in
+         screenState.gesture(forAction: Action.TrackingProtectionperSiteToggle) { userState in
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerUrlBarNavigation.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerUrlBarNavigation.swift
+index 91d45978207e4..b70db0bddeb51 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerUrlBarNavigation.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerUrlBarNavigation.swift
+@@ -7,6 +7,7 @@ import MappaMundi
+ 
+ private let defaultURL = "https://www.mozilla.org/en-US/book/"
+ 
++@MainActor
+ func registerUrlBarNavigation(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+     map.addScreenState(URLBarLongPressMenu) { screenState in
+         let menu = app.tables["Context Menu"].firstMatch
+diff --git a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerZoomNavigation.swift b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerZoomNavigation.swift
+index 63702c48ee785..152afe078505d 100644
+--- a/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerZoomNavigation.swift
++++ b/firefox-ios/firefox-ios-tests/Tests/XCUITests/registerZoomNavigation.swift
+@@ -5,6 +5,7 @@
+ import XCTest
+ import MappaMundi
+ 
++@MainActor
+ func registerZoomNavigation(in map: MMScreenGraph<FxUserState>, app: XCUIApplication) {
+     map.addScreenState(PageZoom) { screenState in
+         screenState.tap(app.buttons[AccessibilityIdentifiers.ZoomPageBar.doneButton], to: BrowserTab)

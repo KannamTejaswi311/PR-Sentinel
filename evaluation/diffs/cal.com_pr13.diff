@@ -1,0 +1,342 @@
+diff --git a/packages/features/booking-audit/di/BookingAuditTaskConsumer.module.ts b/packages/features/booking-audit/di/BookingAuditTaskConsumer.module.ts
+index 0e81f0a11162..48e75d070c87 100644
+--- a/packages/features/booking-audit/di/BookingAuditTaskConsumer.module.ts
++++ b/packages/features/booking-audit/di/BookingAuditTaskConsumer.module.ts
+@@ -2,7 +2,7 @@ import { BookingAuditTaskConsumer } from "@calcom/features/booking-audit/lib/ser
+ import { BOOKING_AUDIT_DI_TOKENS } from "@calcom/features/booking-audit/di/tokens";
+ import { moduleLoader as bookingAuditRepositoryModuleLoader } from "@calcom/features/booking-audit/di/BookingAuditRepository.module";
+ import { moduleLoader as auditActorRepositoryModuleLoader } from "@calcom/features/booking-audit/di/AuditActorRepository.module";
+-import { moduleLoader as featuresRepositoryModuleLoader } from "@calcom/features/di/modules/Features";
++import { moduleLoader as featuresRepositoryModuleLoader } from "@calcom/features/di/modules/FeaturesRepository";
+ import { moduleLoader as userRepositoryModuleLoader } from "@calcom/features/di/modules/User";
+ 
+ import { createModule, bindModuleToClassOnToken } from "../../di/di";
+@@ -28,4 +28,3 @@ export const moduleLoader = {
+   token,
+   loadModule
+ };
+-
+diff --git a/packages/features/bookings/di/RegularBookingService.module.ts b/packages/features/bookings/di/RegularBookingService.module.ts
+index ac83a0c79501..de9c19b6cf00 100644
+--- a/packages/features/bookings/di/RegularBookingService.module.ts
++++ b/packages/features/bookings/di/RegularBookingService.module.ts
+@@ -3,7 +3,7 @@ import { RegularBookingService } from "@calcom/features/bookings/lib/service/Reg
+ import { bindModuleToClassOnToken, createModule, type ModuleLoader } from "@calcom/features/di/di";
+ import { moduleLoader as bookingRepositoryModuleLoader } from "@calcom/features/di/modules/Booking";
+ import { moduleLoader as checkBookingAndDurationLimitsModuleLoader } from "@calcom/features/di/modules/CheckBookingAndDurationLimits";
+-import { moduleLoader as featuresRepositoryModuleLoader } from "@calcom/features/di/modules/Features";
++import { moduleLoader as featuresRepositoryModuleLoader } from "@calcom/features/di/modules/FeaturesRepository";
+ import { moduleLoader as luckyUserServiceModuleLoader } from "@calcom/features/di/modules/LuckyUser";
+ import { moduleLoader as prismaModuleLoader } from "@calcom/features/di/modules/Prisma";
+ import { moduleLoader as userRepositoryModuleLoader } from "@calcom/features/di/modules/User";
+diff --git a/packages/features/di/containers/AvailableSlots.ts b/packages/features/di/containers/AvailableSlots.ts
+index d384567cdc7c..defc6bc46ad0 100644
+--- a/packages/features/di/containers/AvailableSlots.ts
++++ b/packages/features/di/containers/AvailableSlots.ts
+@@ -9,7 +9,7 @@ import { bookingRepositoryModule } from "../modules/Booking";
+ import { busyTimesModule } from "../modules/BusyTimes";
+ import { checkBookingLimitsModule } from "../modules/CheckBookingLimits";
+ import { eventTypeRepositoryModule } from "../modules/EventType";
+-import { featuresRepositoryModule } from "../modules/Features";
++import { featuresRepositoryModule } from "../modules/FeaturesRepository";
+ import { filterHostsModule } from "../modules/FilterHosts";
+ import { getUserAvailabilityModule } from "../modules/GetUserAvailability";
+ import { holidayRepositoryModule } from "../modules/Holiday";
+diff --git a/packages/features/di/containers/FeatureOptInService.ts b/packages/features/di/containers/FeatureOptInService.ts
+new file mode 100644
+index 000000000000..07075d597c9d
+--- /dev/null
++++ b/packages/features/di/containers/FeatureOptInService.ts
+@@ -0,0 +1,10 @@
++import type { IFeatureOptInService } from "@calcom/features/feature-opt-in/services/IFeatureOptInService";
++
++import { createContainer } from "../di";
++import { moduleLoader as featureOptInServiceModuleLoader } from "../modules/FeatureOptInService";
++
++export function getFeatureOptInService(): IFeatureOptInService {
++  const featureOptInServiceContainer = createContainer();
++  featureOptInServiceModuleLoader.loadModule(featureOptInServiceContainer);
++  return featureOptInServiceContainer.get<IFeatureOptInService>(featureOptInServiceModuleLoader.token);
++}
+diff --git a/packages/features/di/containers/FeaturesRepository.ts b/packages/features/di/containers/FeaturesRepository.ts
+new file mode 100644
+index 000000000000..c803cfe1d3f3
+--- /dev/null
++++ b/packages/features/di/containers/FeaturesRepository.ts
+@@ -0,0 +1,8 @@
++import { createContainer } from "../di";
++import { type FeaturesRepository, moduleLoader as featuresRepositoryModuleLoader } from "../modules/FeaturesRepository";
++
++export function getFeaturesRepository(): FeaturesRepository {
++  const featuresRepositoryContainer = createContainer();
++  featuresRepositoryModuleLoader.loadModule(featuresRepositoryContainer);
++  return featuresRepositoryContainer.get<FeaturesRepository>(featuresRepositoryModuleLoader.token);
++}
+diff --git a/packages/features/di/modules/FeatureOptInService.ts b/packages/features/di/modules/FeatureOptInService.ts
+new file mode 100644
+index 000000000000..da26b07e3b28
+--- /dev/null
++++ b/packages/features/di/modules/FeatureOptInService.ts
+@@ -0,0 +1,24 @@
++import { FEATURE_OPT_IN_DI_TOKENS } from "@calcom/features/feature-opt-in/di/tokens";
++import { FeatureOptInService } from "@calcom/features/feature-opt-in/services/FeatureOptInService";
++
++import { bindModuleToClassOnToken, createModule, type ModuleLoader } from "../di";
++import { moduleLoader as featuresRepositoryModuleLoader } from "./FeaturesRepository";
++
++const thisModule = createModule();
++const token = FEATURE_OPT_IN_DI_TOKENS.FEATURE_OPT_IN_SERVICE;
++const moduleToken = FEATURE_OPT_IN_DI_TOKENS.FEATURE_OPT_IN_SERVICE_MODULE;
++
++const loadModule = bindModuleToClassOnToken({
++  module: thisModule,
++  moduleToken,
++  token,
++  classs: FeatureOptInService,
++  dep: featuresRepositoryModuleLoader,
++});
++
++export const moduleLoader: ModuleLoader = {
++  token,
++  loadModule,
++};
++
++export type { FeatureOptInService };
+diff --git a/packages/features/di/modules/Features.ts b/packages/features/di/modules/Features.ts
+deleted file mode 100644
+index f902098e5295..000000000000
+--- a/packages/features/di/modules/Features.ts
++++ /dev/null
+@@ -1,16 +0,0 @@
+-import { DI_TOKENS } from "@calcom/features/di/tokens";
+-import { FeaturesRepository } from "@calcom/features/flags/features.repository";
+-
+-import { type Container, createModule } from "../di";
+-
+-export const featuresRepositoryModule = createModule();
+-const token = DI_TOKENS.FEATURES_REPOSITORY;
+-const moduleToken = DI_TOKENS.FEATURES_REPOSITORY_MODULE;
+-featuresRepositoryModule.bind(token).toClass(FeaturesRepository, [DI_TOKENS.PRISMA_CLIENT]);
+-
+-export const moduleLoader = {
+-  token,
+-  loadModule: (container: Container) => {
+-    container.load(moduleToken, featuresRepositoryModule);
+-  },
+-};
+diff --git a/packages/features/di/modules/FeaturesRepository.ts b/packages/features/di/modules/FeaturesRepository.ts
+new file mode 100644
+index 000000000000..cc386d1f7db1
+--- /dev/null
++++ b/packages/features/di/modules/FeaturesRepository.ts
+@@ -0,0 +1,24 @@
++import { FLAGS_DI_TOKENS } from "@calcom/features/flags/di/tokens";
++import { FeaturesRepository } from "@calcom/features/flags/features.repository";
++
++import { bindModuleToClassOnToken, createModule, type ModuleLoader } from "../di";
++import { moduleLoader as prismaModuleLoader } from "./Prisma";
++
++export const featuresRepositoryModule = createModule();
++const token = FLAGS_DI_TOKENS.FEATURES_REPOSITORY;
++const moduleToken = FLAGS_DI_TOKENS.FEATURES_REPOSITORY_MODULE;
++
++const loadModule = bindModuleToClassOnToken({
++  module: featuresRepositoryModule,
++  moduleToken,
++  token,
++  classs: FeaturesRepository,
++  dep: prismaModuleLoader,
++});
++
++export const moduleLoader: ModuleLoader = {
++  token: moduleToken,
++  loadModule,
++};
++
++export type { FeaturesRepository };
+diff --git a/packages/features/di/tokens.ts b/packages/features/di/tokens.ts
+index 0e4168827095..310741a27331 100644
+--- a/packages/features/di/tokens.ts
++++ b/packages/features/di/tokens.ts
+@@ -1,5 +1,7 @@
+ import { BOOKING_DI_TOKENS } from "@calcom/features/bookings/di/tokens";
+ import { BOOKING_AUDIT_DI_TOKENS } from "@calcom/features/booking-audit/di/tokens";
++import { FEATURE_OPT_IN_DI_TOKENS } from "@calcom/features/feature-opt-in/di/tokens";
++import { FLAGS_DI_TOKENS } from "@calcom/features/flags/di/tokens";
+ import { HASHED_LINK_DI_TOKENS } from "@calcom/features/hashedLink/di/tokens";
+ import { OAUTH_DI_TOKENS } from "@calcom/features/oauth/di/tokens";
+ import { ORGANIZATION_DI_TOKENS } from "@calcom/features/ee/organizations/di/tokens";
+@@ -34,8 +36,8 @@ export const DI_TOKENS = {
+   INSIGHTS_ROUTING_SERVICE_MODULE: Symbol("InsightsRoutingServiceModule"),
+   INSIGHTS_BOOKING_SERVICE: Symbol("InsightsBookingService"),
+   INSIGHTS_BOOKING_SERVICE_MODULE: Symbol("InsightsBookingServiceModule"),
+-  FEATURES_REPOSITORY: Symbol("FeaturesRepository"),
+-  FEATURES_REPOSITORY_MODULE: Symbol("FeaturesRepositoryModule"),
++  ...FLAGS_DI_TOKENS,
++  ...FEATURE_OPT_IN_DI_TOKENS,
+   CHECK_BOOKING_LIMITS_SERVICE: Symbol("CheckBookingLimitsService"),
+   CHECK_BOOKING_LIMITS_SERVICE_MODULE: Symbol("CheckBookingLimitsServiceModule"),
+   CHECK_BOOKING_AND_DURATION_LIMITS_SERVICE: Symbol("CheckBookingAndDurationLimitsService"),
+diff --git a/packages/features/feature-opt-in/di/tokens.ts b/packages/features/feature-opt-in/di/tokens.ts
+new file mode 100644
+index 000000000000..d9eaf425a6b5
+--- /dev/null
++++ b/packages/features/feature-opt-in/di/tokens.ts
+@@ -0,0 +1,4 @@
++export const FEATURE_OPT_IN_DI_TOKENS = {
++  FEATURE_OPT_IN_SERVICE: Symbol("FeatureOptInService"),
++  FEATURE_OPT_IN_SERVICE_MODULE: Symbol("FeatureOptInServiceModule"),
++};
+diff --git a/packages/features/feature-opt-in/services/FeatureOptInService.integration-test.ts b/packages/features/feature-opt-in/services/FeatureOptInService.integration-test.ts
+index cad5c0bac313..f0b33c5ecc28 100644
+--- a/packages/features/feature-opt-in/services/FeatureOptInService.integration-test.ts
++++ b/packages/features/feature-opt-in/services/FeatureOptInService.integration-test.ts
+@@ -1,10 +1,12 @@
+ import { afterEach, describe, expect, it } from "vitest";
+ 
++import { getFeatureOptInService } from "@calcom/features/di/containers/FeatureOptInService";
++import { getFeaturesRepository } from "@calcom/features/di/containers/FeaturesRepository";
+ import type { FeatureId } from "@calcom/features/flags/config";
+-import { FeaturesRepository } from "@calcom/features/flags/features.repository";
++import type { FeaturesRepository } from "@calcom/features/flags/features.repository";
+ import { prisma } from "@calcom/prisma";
+ 
+-import { FeatureOptInService } from "./FeatureOptInService";
++import type { IFeatureOptInService } from "./IFeatureOptInService";
+ 
+ // Helper to generate unique identifiers per test
+ const uniqueId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+@@ -30,7 +32,7 @@ interface TestEntities {
+   team: { id: number };
+   team2: { id: number };
+   featuresRepository: FeaturesRepository;
+-  service: FeatureOptInService;
++  service: IFeatureOptInService;
+   createdFeatures: string[];
+   setupFeature: (enabled?: boolean) => Promise<FeatureId>;
+ }
+@@ -77,8 +79,8 @@ async function setup(): Promise<TestEntities> {
+     },
+   });
+ 
+-  const featuresRepository = new FeaturesRepository(prisma);
+-  const service = new FeatureOptInService(featuresRepository);
++  const featuresRepository = getFeaturesRepository();
++  const service = getFeatureOptInService();
+ 
+   // Helper to create a feature for a test and track it for cleanup
+   const setupFeature = async (enabled = true): Promise<FeatureId> => {
+diff --git a/packages/features/feature-opt-in/services/FeatureOptInService.ts b/packages/features/feature-opt-in/services/FeatureOptInService.ts
+index bcc8f5937930..60df32741911 100644
+--- a/packages/features/feature-opt-in/services/FeatureOptInService.ts
++++ b/packages/features/feature-opt-in/services/FeatureOptInService.ts
+@@ -4,25 +4,13 @@ import type { FeaturesRepository } from "@calcom/features/flags/features.reposit
+ import { OPT_IN_FEATURES } from "../config";
+ import { applyAutoOptIn } from "../lib/applyAutoOptIn";
+ import { computeEffectiveStateAcrossTeams } from "../lib/computeEffectiveState";
+-
+-type ResolvedFeatureState = {
+-  featureId: FeatureId;
+-  globalEnabled: boolean;
+-  orgState: FeatureState; // Raw state (before auto-opt-in transform)
+-  teamStates: FeatureState[]; // Raw states
+-  userState: FeatureState | undefined; // Raw state
+-  effectiveEnabled: boolean;
+-  // Auto-opt-in flags for UI to show checkbox state
+-  orgAutoOptIn: boolean;
+-  teamAutoOptIns: boolean[];
+-  userAutoOptIn: boolean;
+-};
++import type { IFeatureOptInService, ResolvedFeatureState } from "./IFeatureOptInService";
+ 
+ /**
+  * Service class for managing feature opt-in logic.
+  * Computes effective states based on global, org, team, and user settings.
+  */
+-export class FeatureOptInService {
++export class FeatureOptInService implements IFeatureOptInService {
+   constructor(private featuresRepository: FeaturesRepository) {}
+ 
+   /**
+diff --git a/packages/features/feature-opt-in/services/IFeatureOptInService.ts b/packages/features/feature-opt-in/services/IFeatureOptInService.ts
+new file mode 100644
+index 000000000000..879fbd474fe2
+--- /dev/null
++++ b/packages/features/feature-opt-in/services/IFeatureOptInService.ts
+@@ -0,0 +1,39 @@
++import type { FeatureId, FeatureState } from "@calcom/features/flags/config";
++
++export type ResolvedFeatureState = {
++  featureId: FeatureId;
++  globalEnabled: boolean;
++  orgState: FeatureState; // Raw state (before auto-opt-in transform)
++  teamStates: FeatureState[]; // Raw states
++  userState: FeatureState | undefined; // Raw state
++  effectiveEnabled: boolean;
++  // Auto-opt-in flags for UI to show checkbox state
++  orgAutoOptIn: boolean;   
++  teamAutoOptIns: boolean[];
++  userAutoOptIn: boolean;
++};
++
++export interface IFeatureOptInService {
++  resolveFeatureStatesAcrossTeams(input: {
++    userId: number;
++    orgId: number | null;
++    teamIds: number[];
++    featureIds: FeatureId[];
++  }): Promise<Record<string, ResolvedFeatureState>>;
++  listFeaturesForUser(input: { userId: number; orgId: number | null; teamIds: number[] }): Promise<
++    ResolvedFeatureState[]
++  >;
++  listFeaturesForTeam(
++    input: { teamId: number }
++  ): Promise<{ featureId: FeatureId; globalEnabled: boolean; teamState: FeatureState }[]>;
++  setUserFeatureState(
++    input:
++      | { userId: number; featureId: FeatureId; state: "enabled" | "disabled"; assignedBy: number }
++      | { userId: number; featureId: FeatureId; state: "inherit" }
++  ): Promise<void>;
++  setTeamFeatureState(
++    input:
++      | { teamId: number; featureId: FeatureId; state: "enabled" | "disabled"; assignedBy: number }
++      | { teamId: number; featureId: FeatureId; state: "inherit" }
++  ): Promise<void>;
++}
+diff --git a/packages/features/flags/di/tokens.ts b/packages/features/flags/di/tokens.ts
+new file mode 100644
+index 000000000000..63ce604c1beb
+--- /dev/null
++++ b/packages/features/flags/di/tokens.ts
+@@ -0,0 +1,4 @@
++export const FLAGS_DI_TOKENS = {
++  FEATURES_REPOSITORY: Symbol("FeaturesRepository"),
++  FEATURES_REPOSITORY_MODULE: Symbol("FeaturesRepositoryModule"),
++};
+diff --git a/packages/trpc/server/routers/viewer/featureOptIn/_router.ts b/packages/trpc/server/routers/viewer/featureOptIn/_router.ts
+index 6ce702528d55..e821d36081a6 100644
+--- a/packages/trpc/server/routers/viewer/featureOptIn/_router.ts
++++ b/packages/trpc/server/routers/viewer/featureOptIn/_router.ts
+@@ -1,11 +1,9 @@
+ import { z } from "zod";
+ 
++import { getFeatureOptInService } from "@calcom/features/di/containers/FeatureOptInService";
+ import { isOptInFeature } from "@calcom/features/feature-opt-in/config";
+-import { FeatureOptInService } from "@calcom/features/feature-opt-in/services/FeatureOptInService";
+-import { FeaturesRepository } from "@calcom/features/flags/features.repository";
+ import { MembershipRepository } from "@calcom/features/membership/repositories/MembershipRepository";
+ import { PermissionCheckService } from "@calcom/features/pbac/services/permission-check.service";
+-import { prisma } from "@calcom/prisma";
+ import { MembershipRole } from "@calcom/prisma/enums";
+ 
+ import { TRPCError } from "@trpc/server";
+@@ -15,8 +13,7 @@ import { router } from "../../../trpc";
+ 
+ const featureStateSchema = z.enum(["enabled", "disabled", "inherit"]);
+ 
+-const featuresRepository = new FeaturesRepository(prisma);
+-const featureOptInService = new FeatureOptInService(featuresRepository);
++const featureOptInService = getFeatureOptInService();
+ 
+ /**
+  * Helper to get user's org and team IDs from their memberships.

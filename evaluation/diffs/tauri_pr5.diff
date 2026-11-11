@@ -1,0 +1,3351 @@
+diff --git a/.changes/reduce-internal-statics.md b/.changes/reduce-internal-statics.md
+new file mode 100644
+index 000000000000..bc20780b1f0f
+--- /dev/null
++++ b/.changes/reduce-internal-statics.md
+@@ -0,0 +1,6 @@
++---
++"@tauri-apps/cli": patch:changes
++"tauri-cli": patch:changes
++---
++
++Refactored internal use of static on config and directory resolvings, no user facing changes, please report any regressions if you encounter any
+diff --git a/crates/tauri-cli/src/acl/capability/new.rs b/crates/tauri-cli/src/acl/capability/new.rs
+index aceddc05d029..14324be1865d 100644
+--- a/crates/tauri-cli/src/acl/capability/new.rs
++++ b/crates/tauri-cli/src/acl/capability/new.rs
+@@ -7,12 +7,7 @@ use std::{collections::HashSet, path::PathBuf};
+ use clap::Parser;
+ use tauri_utils::acl::capability::{Capability, PermissionEntry};
+ 
+-use crate::{
+-  acl::FileFormat,
+-  error::ErrorExt,
+-  helpers::{app_paths::tauri_dir, prompts},
+-  Result,
+-};
++use crate::{acl::FileFormat, error::ErrorExt, helpers::prompts, Result};
+ 
+ #[derive(Debug, Parser)]
+ #[clap(about = "Create a new permission file")]
+@@ -37,7 +32,7 @@ pub struct Options {
+ }
+ 
+ pub fn command(options: Options) -> Result<()> {
+-  crate::helpers::app_paths::resolve();
++  let dirs = crate::helpers::app_paths::resolve_dirs();
+ 
+   let identifier = match options.identifier {
+     Some(i) => i,
+@@ -111,8 +106,7 @@ pub fn command(options: Options) -> Result<()> {
+       .canonicalize()
+       .fs_context("failed to canonicalize capability file path", o.clone())?,
+     None => {
+-      let dir = tauri_dir();
+-      let capabilities_dir = dir.join("capabilities");
++      let capabilities_dir = dirs.tauri.join("capabilities");
+       capabilities_dir.join(format!(
+         "{}.{}",
+         capability.identifier,
+diff --git a/crates/tauri-cli/src/acl/permission/ls.rs b/crates/tauri-cli/src/acl/permission/ls.rs
+index 1265c3c243c6..ccebfebf02ca 100644
+--- a/crates/tauri-cli/src/acl/permission/ls.rs
++++ b/crates/tauri-cli/src/acl/permission/ls.rs
+@@ -6,7 +6,6 @@ use clap::Parser;
+ 
+ use crate::{
+   error::{Context, ErrorExt},
+-  helpers::app_paths::tauri_dir,
+   Result,
+ };
+ use colored::Colorize;
+@@ -25,9 +24,10 @@ pub struct Options {
+ }
+ 
+ pub fn command(options: Options) -> Result<()> {
+-  crate::helpers::app_paths::resolve();
++  let dirs = crate::helpers::app_paths::resolve_dirs();
+ 
+-  let acl_manifests_path = tauri_dir()
++  let acl_manifests_path = dirs
++    .tauri
+     .join("gen")
+     .join("schemas")
+     .join("acl-manifests.json");
+diff --git a/crates/tauri-cli/src/add.rs b/crates/tauri-cli/src/add.rs
+index 8a45c0880c05..074b0e3b25a6 100644
+--- a/crates/tauri-cli/src/add.rs
++++ b/crates/tauri-cli/src/add.rs
+@@ -10,7 +10,7 @@ use crate::{
+   acl,
+   error::ErrorExt,
+   helpers::{
+-    app_paths::{resolve_frontend_dir, tauri_dir},
++    app_paths::{resolve_frontend_dir, Dirs},
+     cargo,
+     npm::PackageManager,
+   },
+@@ -39,11 +39,11 @@ pub struct Options {
+ }
+ 
+ pub fn command(options: Options) -> Result<()> {
+-  crate::helpers::app_paths::resolve();
+-  run(options)
++  let dirs = crate::helpers::app_paths::resolve_dirs();
++  run(options, &dirs)
+ }
+ 
+-pub fn run(options: Options) -> Result<()> {
++pub fn run(options: Options, dirs: &Dirs) -> Result<()> {
+   let (plugin, version) = options
+     .plugin
+     .split_once('@')
+@@ -71,7 +71,6 @@ pub fn run(options: Options) -> Result<()> {
+   }
+ 
+   let frontend_dir = resolve_frontend_dir();
+-  let tauri_dir = tauri_dir();
+ 
+   let target_str = metadata
+     .desktop_only
+@@ -90,7 +89,7 @@ pub fn run(options: Options) -> Result<()> {
+     branch: options.branch.as_deref(),
+     rev: options.rev.as_deref(),
+     tag: options.tag.as_deref(),
+-    cwd: Some(tauri_dir),
++    cwd: Some(dirs.tauri),
+     target: target_str,
+   })?;
+ 
+@@ -117,7 +116,7 @@ pub fn run(options: Options) -> Result<()> {
+         (None, None, None, None) => npm_name,
+         _ => crate::error::bail!("Only one of --tag, --rev and --branch can be specified"),
+       };
+-      manager.install(&[npm_spec], tauri_dir)?;
++      manager.install(&[npm_spec], dirs.tauri)?;
+     }
+ 
+     let _ = acl::permission::add::command(acl::permission::add::Options {
+@@ -143,7 +142,10 @@ pub fn run(options: Options) -> Result<()> {
+   let plugin_init = format!(".plugin(tauri_plugin_{plugin_snake_case}::{plugin_init_fn})");
+ 
+   let re = Regex::new(r"(tauri\s*::\s*Builder\s*::\s*default\(\))(\s*)").unwrap();
+-  for file in [tauri_dir.join("src/main.rs"), tauri_dir.join("src/lib.rs")] {
++  for file in [
++    dirs.tauri.join("src/main.rs"),
++    dirs.tauri.join("src/lib.rs"),
++  ] {
+     let contents =
+       std::fs::read_to_string(&file).fs_context("failed to read Rust entry point", file.clone())?;
+ 
+@@ -166,7 +168,7 @@ pub fn run(options: Options) -> Result<()> {
+         log::info!("Running `cargo fmt`...");
+         let _ = Command::new("cargo")
+           .arg("fmt")
+-          .current_dir(tauri_dir)
++          .current_dir(dirs.tauri)
+           .status();
+       }
+ 
+diff --git a/crates/tauri-cli/src/build.rs b/crates/tauri-cli/src/build.rs
+index 0bd5a5320ad0..754b1793e33e 100644
+--- a/crates/tauri-cli/src/build.rs
++++ b/crates/tauri-cli/src/build.rs
+@@ -7,8 +7,8 @@ use crate::{
+   error::{Context, ErrorExt},
+   helpers::{
+     self,
+-    app_paths::{frontend_dir, tauri_dir},
+-    config::{get as get_config, ConfigMetadata, FrontendDist},
++    app_paths::Dirs,
++    config::{get_config, ConfigMetadata, FrontendDist},
+   },
+   info::plugins::check_mismatched_packages,
+   interface::{rust::get_cargo_target_dir, AppInterface, Interface},
+@@ -82,7 +82,7 @@ pub struct Options {
+ }
+ 
+ pub fn command(mut options: Options, verbosity: u8) -> Result<()> {
+-  crate::helpers::app_paths::resolve();
++  let dirs = crate::helpers::app_paths::resolve_dirs();
+ 
+   if options.no_sign {
+     log::warn!("--no-sign flag detected: Signing will be skipped.");
+@@ -99,42 +99,38 @@ pub fn command(mut options: Options, verbosity: u8) -> Result<()> {
+   let config = get_config(
+     target,
+     &options.config.iter().map(|c| &c.0).collect::<Vec<_>>(),
++    dirs.tauri,
+   )?;
+ 
+-  let mut interface = AppInterface::new(
+-    config.lock().unwrap().as_ref().unwrap(),
+-    options.target.clone(),
+-  )?;
+-
+-  let config_guard = config.lock().unwrap();
+-  let config_ = config_guard.as_ref().unwrap();
++  let mut interface = AppInterface::new(&config, options.target.clone(), dirs.tauri)?;
+ 
+-  setup(&interface, &mut options, config_, false)?;
++  setup(&interface, &mut options, &config, false, &dirs)?;
+ 
+-  if let Some(minimum_system_version) = &config_.bundle.macos.minimum_system_version {
++  if let Some(minimum_system_version) = &config.bundle.macos.minimum_system_version {
+     std::env::set_var("MACOSX_DEPLOYMENT_TARGET", minimum_system_version);
+   }
+ 
+   let app_settings = interface.app_settings();
+   let interface_options = options.clone().into();
+ 
+-  let out_dir = app_settings.out_dir(&interface_options)?;
++  let out_dir = app_settings.out_dir(&interface_options, dirs.tauri)?;
+ 
+-  let bin_path = interface.build(interface_options)?;
++  let bin_path = interface.build(interface_options, &dirs)?;
+ 
+   log::info!(action ="Built"; "application at: {}", tauri_utils::display_path(bin_path));
+ 
+   let app_settings = interface.app_settings();
+ 
+-  if !options.no_bundle && (config_.bundle.active || options.bundles.is_some()) {
++  if !options.no_bundle && (config.bundle.active || options.bundles.is_some()) {
+     crate::bundle::bundle(
+       &options.into(),
+       verbosity,
+       ci,
+       &interface,
+       &*app_settings,
+-      config_,
++      &config,
+       &out_dir,
++      &dirs,
+     )?;
+   }
+ 
+@@ -146,13 +142,12 @@ pub fn setup(
+   options: &mut Options,
+   config: &ConfigMetadata,
+   mobile: bool,
++  dirs: &Dirs,
+ ) -> Result<()> {
+-  let tauri_path = tauri_dir();
+-
+   // TODO: Maybe optimize this to run in parallel in the future
+   // see https://github.com/tauri-apps/tauri/pull/13993#discussion_r2280697117
+   log::info!("Looking up installed tauri packages to check mismatched versions...");
+-  if let Err(error) = check_mismatched_packages(frontend_dir(), tauri_path) {
++  if let Err(error) = check_mismatched_packages(dirs.frontend, dirs.tauri) {
+     if options.ignore_version_mismatches {
+       log::error!("{error}");
+     } else {
+@@ -160,7 +155,7 @@ pub fn setup(
+     }
+   }
+ 
+-  set_current_dir(tauri_path).context("failed to set current directory")?;
++  set_current_dir(dirs.tauri).context("failed to set current directory")?;
+ 
+   let bundle_identifier_source = config
+     .find_bundle_identifier_overwriter()
+@@ -191,7 +186,13 @@ pub fn setup(
+   }
+ 
+   if let Some(before_build) = config.build.before_build_command.clone() {
+-    helpers::run_hook("beforeBuildCommand", before_build, interface, options.debug)?;
++    helpers::run_hook(
++      "beforeBuildCommand",
++      before_build,
++      interface,
++      options.debug,
++      dirs.frontend,
++    )?;
+   }
+ 
+   if let Some(FrontendDist::Directory(web_asset_path)) = &config.build.frontend_dist {
+@@ -219,7 +220,7 @@ pub fn setup(
+ 
+     // Issue #13287 - Allow the use of target dir inside frontendDist/distDir
+     // https://github.com/tauri-apps/tauri/issues/13287
+-    let target_path = get_cargo_target_dir(&options.args)?;
++    let target_path = get_cargo_target_dir(&options.args, dirs.tauri)?;
+     let mut out_folders = Vec::new();
+     if let Ok(web_asset_canonical) = dunce::canonicalize(web_asset_path) {
+       if let Ok(relative_path) = target_path.strip_prefix(&web_asset_canonical) {
+diff --git a/crates/tauri-cli/src/bundle.rs b/crates/tauri-cli/src/bundle.rs
+index 8c1f320b57ee..57e4a6f385eb 100644
+--- a/crates/tauri-cli/src/bundle.rs
++++ b/crates/tauri-cli/src/bundle.rs
+@@ -16,8 +16,8 @@ use crate::{
+   error::{Context, ErrorExt},
+   helpers::{
+     self,
+-    app_paths::tauri_dir,
+-    config::{get as get_config, ConfigMetadata},
++    app_paths::Dirs,
++    config::{get_config, ConfigMetadata},
+     updater_signature,
+   },
+   interface::{AppInterface, AppSettings, Interface},
+@@ -118,7 +118,7 @@ impl From<crate::build::Options> for Options {
+ }
+ 
+ pub fn command(options: Options, verbosity: u8) -> crate::Result<()> {
+-  crate::helpers::app_paths::resolve();
++  let dirs = crate::helpers::app_paths::resolve_dirs();
+ 
+   let ci = options.ci;
+ 
+@@ -131,27 +131,21 @@ pub fn command(options: Options, verbosity: u8) -> crate::Result<()> {
+   let config = get_config(
+     target,
+     &options.config.iter().map(|c| &c.0).collect::<Vec<_>>(),
++    dirs.tauri,
+   )?;
+ 
+-  let interface = AppInterface::new(
+-    config.lock().unwrap().as_ref().unwrap(),
+-    options.target.clone(),
+-  )?;
+-
+-  let tauri_path = tauri_dir();
+-  std::env::set_current_dir(tauri_path).context("failed to set current directory")?;
++  let interface = AppInterface::new(&config, options.target.clone(), dirs.tauri)?;
+ 
+-  let config_guard = config.lock().unwrap();
+-  let config_ = config_guard.as_ref().unwrap();
++  std::env::set_current_dir(dirs.tauri).context("failed to set current directory")?;
+ 
+-  if let Some(minimum_system_version) = &config_.bundle.macos.minimum_system_version {
++  if let Some(minimum_system_version) = &config.bundle.macos.minimum_system_version {
+     std::env::set_var("MACOSX_DEPLOYMENT_TARGET", minimum_system_version);
+   }
+ 
+   let app_settings = interface.app_settings();
+   let interface_options = options.clone().into();
+ 
+-  let out_dir = app_settings.out_dir(&interface_options)?;
++  let out_dir = app_settings.out_dir(&interface_options, dirs.tauri)?;
+ 
+   bundle(
+     &options,
+@@ -159,8 +153,9 @@ pub fn command(options: Options, verbosity: u8) -> crate::Result<()> {
+     ci,
+     &interface,
+     &*app_settings,
+-    config_,
++    &config,
+     &out_dir,
++    &dirs,
+   )
+ }
+ 
+@@ -173,6 +168,7 @@ pub fn bundle<A: AppSettings>(
+   app_settings: &A,
+   config: &ConfigMetadata,
+   out_dir: &Path,
++  dirs: &Dirs,
+ ) -> crate::Result<()> {
+   let package_types: Vec<PackageType> = if let Some(bundles) = &options.bundles {
+     bundles.iter().map(|bundle| bundle.0).collect::<Vec<_>>()
+@@ -198,12 +194,19 @@ pub fn bundle<A: AppSettings>(
+         before_bundle,
+         interface,
+         options.debug,
++        dirs.frontend,
+       )?;
+     }
+   }
+ 
+   let mut settings = app_settings
+-    .get_bundler_settings(options.clone().into(), config, out_dir, package_types)
++    .get_bundler_settings(
++      options.clone().into(),
++      config,
++      out_dir,
++      package_types,
++      dirs.tauri,
++    )
+     .with_context(|| "failed to build bundler settings")?;
+   settings.set_no_sign(options.no_sign);
+ 
+diff --git a/crates/tauri-cli/src/dev.rs b/crates/tauri-cli/src/dev.rs
+index e2ac61fce2b4..5bf62ef10b80 100644
+--- a/crates/tauri-cli/src/dev.rs
++++ b/crates/tauri-cli/src/dev.rs
+@@ -5,11 +5,9 @@
+ use crate::{
+   error::{Context, ErrorExt},
+   helpers::{
+-    app_paths::{frontend_dir, tauri_dir},
++    app_paths::Dirs,
+     command_env,
+-    config::{
+-      get as get_config, reload as reload_config, BeforeDevCommand, ConfigHandle, FrontendDist,
+-    },
++    config::{get_config, reload_config, BeforeDevCommand, ConfigMetadata, FrontendDist},
+   },
+   info::plugins::check_mismatched_packages,
+   interface::{AppInterface, ExitReason, Interface},
+@@ -99,61 +97,59 @@ pub struct Options {
+ }
+ 
+ pub fn command(options: Options) -> Result<()> {
+-  crate::helpers::app_paths::resolve();
++  let dirs = crate::helpers::app_paths::resolve_dirs();
+ 
+-  let r = command_internal(options);
++  let r = command_internal(options, dirs);
+   if r.is_err() {
+     kill_before_dev_process();
+   }
+   r
+ }
+ 
+-fn command_internal(mut options: Options) -> Result<()> {
++fn command_internal(mut options: Options, dirs: Dirs) -> Result<()> {
+   let target = options
+     .target
+     .as_deref()
+     .map(Target::from_triple)
+     .unwrap_or_else(Target::current);
+ 
+-  let config = get_config(
++  let mut cfg = get_config(
+     target,
+     &options.config.iter().map(|c| &c.0).collect::<Vec<_>>(),
++    dirs.tauri,
+   )?;
+ 
+-  let mut interface = AppInterface::new(
+-    config.lock().unwrap().as_ref().unwrap(),
+-    options.target.clone(),
+-  )?;
++  let mut interface = AppInterface::new(&cfg, options.target.clone(), dirs.tauri)?;
++
++  setup(&interface, &mut options, &mut cfg, &dirs)?;
+ 
+-  setup(&interface, &mut options, config)?;
++  let config = Mutex::new(cfg);
+ 
+   let exit_on_panic = options.exit_on_panic;
+   let no_watch = options.no_watch;
+-  interface.dev(options.into(), move |status, reason| {
+-    on_app_exit(status, reason, exit_on_panic, no_watch)
+-  })
++  interface.dev(
++    &config,
++    options.into(),
++    move |status, reason| on_app_exit(status, reason, exit_on_panic, no_watch),
++    &dirs,
++  )
+ }
+ 
+-pub fn setup(interface: &AppInterface, options: &mut Options, config: ConfigHandle) -> Result<()> {
+-  let tauri_path = tauri_dir();
+-
++pub fn setup(
++  interface: &AppInterface,
++  options: &mut Options,
++  config: &mut ConfigMetadata,
++  dirs: &Dirs,
++) -> Result<()> {
+   std::thread::spawn(|| {
+-    if let Err(error) = check_mismatched_packages(frontend_dir(), tauri_path) {
++    if let Err(error) = check_mismatched_packages(dirs.frontend, dirs.tauri) {
+       log::error!("{error}");
+     }
+   });
+ 
+-  set_current_dir(tauri_path).context("failed to set current directory")?;
++  set_current_dir(dirs.tauri).context("failed to set current directory")?;
+ 
+-  if let Some(before_dev) = config
+-    .lock()
+-    .unwrap()
+-    .as_ref()
+-    .unwrap()
+-    .build
+-    .before_dev_command
+-    .clone()
+-  {
++  if let Some(before_dev) = config.build.before_dev_command.clone() {
+     let (script, script_cwd, wait) = match before_dev {
+       BeforeDevCommand::Script(s) if s.is_empty() => (None, None, false),
+       BeforeDevCommand::Script(s) => (Some(s), None, false),
+@@ -161,7 +157,7 @@ pub fn setup(interface: &AppInterface, options: &mut Options, config: ConfigHand
+         (Some(script), cwd.map(Into::into), wait)
+       }
+     };
+-    let cwd = script_cwd.unwrap_or_else(|| frontend_dir().clone());
++    let cwd = script_cwd.unwrap_or_else(|| dirs.frontend.to_owned());
+     if let Some(before_dev) = script {
+       log::info!(action = "Running"; "BeforeDevCommand (`{}`)", before_dev);
+       let mut env = command_env(true);
+@@ -235,43 +231,14 @@ pub fn setup(interface: &AppInterface, options: &mut Options, config: ConfigHand
+   }
+ 
+   if options.runner.is_none() {
+-    options.runner = config
+-      .lock()
+-      .unwrap()
+-      .as_ref()
+-      .unwrap()
+-      .build
+-      .runner
+-      .clone();
++    options.runner = config.build.runner.clone();
+   }
+ 
+-  let mut cargo_features = config
+-    .lock()
+-    .unwrap()
+-    .as_ref()
+-    .unwrap()
+-    .build
+-    .features
+-    .clone()
+-    .unwrap_or_default();
++  let mut cargo_features = config.build.features.clone().unwrap_or_default();
+   cargo_features.extend(options.features.clone());
+ 
+-  let mut dev_url = config
+-    .lock()
+-    .unwrap()
+-    .as_ref()
+-    .unwrap()
+-    .build
+-    .dev_url
+-    .clone();
+-  let frontend_dist = config
+-    .lock()
+-    .unwrap()
+-    .as_ref()
+-    .unwrap()
+-    .build
+-    .frontend_dist
+-    .clone();
++  let mut dev_url = config.build.dev_url.clone();
++  let frontend_dist = config.build.frontend_dist.clone();
+   if !options.no_dev_server && dev_url.is_none() {
+     if let Some(FrontendDist::Directory(path)) = &frontend_dist {
+       if path.exists() {
+@@ -294,7 +261,11 @@ pub fn setup(interface: &AppInterface, options: &mut Options, config: ConfigHand
+           }
+         })));
+ 
+-        reload_config(&options.config.iter().map(|c| &c.0).collect::<Vec<_>>())?;
++        reload_config(
++          config,
++          &options.config.iter().map(|c| &c.0).collect::<Vec<_>>(),
++          dirs.tauri,
++        )?;
+       }
+     }
+   }
+@@ -347,16 +318,9 @@ pub fn setup(interface: &AppInterface, options: &mut Options, config: ConfigHand
+   }
+ 
+   if options.additional_watch_folders.is_empty() {
+-    options.additional_watch_folders.extend(
+-      config
+-        .lock()
+-        .unwrap()
+-        .as_ref()
+-        .unwrap()
+-        .build
+-        .additional_watch_folders
+-        .clone(),
+-    );
++    options
++      .additional_watch_folders
++      .extend(config.build.additional_watch_folders.clone());
+   }
+ 
+   Ok(())
+diff --git a/crates/tauri-cli/src/helpers/app_paths.rs b/crates/tauri-cli/src/helpers/app_paths.rs
+index 3c728f5baa3c..5b3e0d91af65 100644
+--- a/crates/tauri-cli/src/helpers/app_paths.rs
++++ b/crates/tauri-cli/src/helpers/app_paths.rs
+@@ -23,6 +23,11 @@ const ENV_TAURI_APP_PATH: &str = "TAURI_APP_PATH";
+ // path to the frontend app directory, usually `<project>/`
+ const ENV_TAURI_FRONTEND_PATH: &str = "TAURI_FRONTEND_PATH";
+ 
++pub struct Dirs {
++  pub tauri: &'static Path,
++  pub frontend: &'static Path,
++}
++
+ static FRONTEND_DIR: OnceLock<PathBuf> = OnceLock::new();
+ static TAURI_DIR: OnceLock<PathBuf> = OnceLock::new();
+ 
+@@ -122,8 +127,8 @@ pub fn resolve_tauri_dir() -> Option<PathBuf> {
+   })
+ }
+ 
+-pub fn resolve() {
+-  TAURI_DIR.set(resolve_tauri_dir().unwrap_or_else(|| {
++pub fn resolve_dirs() -> Dirs {
++  let tauri = TAURI_DIR.get_or_init(|| resolve_tauri_dir().unwrap_or_else(|| {
+     let env_var_name = env_tauri_app_path().is_some().then(|| format!("`{ENV_TAURI_APP_PATH}`"));
+     panic!("Couldn't recognize the {} folder as a Tauri project. It must contain a `{}`, `{}` or `{}` file in any subfolder.",
+       env_var_name.as_deref().unwrap_or("current"),
+@@ -131,16 +136,11 @@ pub fn resolve() {
+       ConfigFormat::Json5.into_file_name(),
+       ConfigFormat::Toml.into_file_name()
+     )
+-  })).expect("tauri dir already resolved");
+-  FRONTEND_DIR
+-    .set(resolve_frontend_dir().unwrap_or_else(|| tauri_dir().parent().unwrap().to_path_buf()))
+-    .expect("app dir already resolved");
+-}
+-
+-pub fn tauri_dir() -> &'static PathBuf {
+-  TAURI_DIR
+-    .get()
+-    .expect("app paths not initialized, this is a Tauri CLI bug")
++  }));
++  let frontend = FRONTEND_DIR.get_or_init(|| {
++    resolve_frontend_dir().unwrap_or_else(|| tauri.parent().unwrap().to_path_buf())
++  });
++  Dirs { tauri, frontend }
+ }
+ 
+ pub fn resolve_frontend_dir() -> Option<PathBuf> {
+@@ -165,9 +165,3 @@ pub fn resolve_frontend_dir() -> Option<PathBuf> {
+   })
+   .map(|p| p.parent().unwrap().to_path_buf())
+ }
+-
+-pub fn frontend_dir() -> &'static PathBuf {
+-  FRONTEND_DIR
+-    .get()
+-    .expect("app paths not initialized, this is a Tauri CLI bug")
+-}
+diff --git a/crates/tauri-cli/src/helpers/cargo_manifest.rs b/crates/tauri-cli/src/helpers/cargo_manifest.rs
+index 0ccf7179077d..b1bfa9a10cca 100644
+--- a/crates/tauri-cli/src/helpers/cargo_manifest.rs
++++ b/crates/tauri-cli/src/helpers/cargo_manifest.rs
+@@ -56,7 +56,7 @@ pub fn cargo_manifest_and_lock(tauri_dir: &Path) -> (Option<CargoManifest>, Opti
+     .ok()
+     .and_then(|manifest_contents| toml::from_str(&manifest_contents).ok());
+ 
+-  let lock: Option<CargoLock> = get_workspace_dir()
++  let lock: Option<CargoLock> = get_workspace_dir(tauri_dir)
+     .ok()
+     .and_then(|p| fs::read_to_string(p.join("Cargo.lock")).ok())
+     .and_then(|s| toml::from_str(&s).ok());
+diff --git a/crates/tauri-cli/src/helpers/config.rs b/crates/tauri-cli/src/helpers/config.rs
+index eb2a643deb91..d819867bdbe3 100644
+--- a/crates/tauri-cli/src/helpers/config.rs
++++ b/crates/tauri-cli/src/helpers/config.rs
+@@ -13,8 +13,9 @@ use std::{
+   collections::HashMap,
+   env::{current_dir, set_current_dir, set_var},
+   ffi::{OsStr, OsString},
++  path::Path,
+   process::exit,
+-  sync::{Mutex, OnceLock},
++  sync::OnceLock,
+ };
+ 
+ use crate::error::Context;
+@@ -66,14 +67,11 @@ impl ConfigMetadata {
+   }
+ }
+ 
+-pub type ConfigHandle = &'static Mutex<Option<ConfigMetadata>>;
+-
+ pub fn wix_settings(config: WixConfig) -> tauri_bundler::WixSettings {
+   tauri_bundler::WixSettings {
+     version: config.version,
+     upgrade_code: config.upgrade_code,
+-    fips_compliant: std::env::var("TAURI_BUNDLER_WIX_FIPS_COMPLIANT")
+-      .ok()
++    fips_compliant: std::env::var_os("TAURI_BUNDLER_WIX_FIPS_COMPLIANT")
+       .map(|v| v == "true")
+       .unwrap_or(config.fips_compliant),
+     language: tauri_bundler::WixLanguage(match config.language {
+@@ -141,11 +139,6 @@ pub fn custom_sign_settings(
+   }
+ }
+ 
+-fn config_handle() -> ConfigHandle {
+-  static CONFIG_HANDLE: Mutex<Option<ConfigMetadata>> = Mutex::new(None);
+-  &CONFIG_HANDLE
+-}
+-
+ fn config_schema_validator() -> &'static jsonschema::Validator {
+   // TODO: Switch to `LazyLock` when we bump MSRV to above 1.80
+   static CONFIG_SCHEMA_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
+@@ -156,17 +149,12 @@ fn config_schema_validator() -> &'static jsonschema::Validator {
+   })
+ }
+ 
+-/// Gets the static parsed config from `tauri.conf.json`.
+-fn get_internal(
++fn load_config(
+   merge_configs: &[&serde_json::Value],
+   reload: bool,
+   target: Target,
+-) -> crate::Result<ConfigHandle> {
+-  if !reload && config_handle().lock().unwrap().is_some() {
+-    return Ok(config_handle());
+-  }
+-
+-  let tauri_dir = super::app_paths::tauri_dir();
++  tauri_dir: &Path,
++) -> crate::Result<ConfigMetadata> {
+   let (mut config, config_path) =
+     tauri_utils::config::parse::parse_value(target, tauri_dir.join("tauri.conf.json"))
+       .context("failed to parse config")?;
+@@ -240,59 +228,54 @@ fn get_internal(
+     std::env::set_var(REMOVE_UNUSED_COMMANDS_ENV_VAR, tauri_dir);
+   }
+ 
+-  *config_handle().lock().unwrap() = Some(ConfigMetadata {
++  Ok(ConfigMetadata {
+     target,
+     original_identifier,
+     inner: config,
+     extensions,
+-  });
+-
+-  Ok(config_handle())
++  })
+ }
+ 
+-pub fn get(target: Target, merge_configs: &[&serde_json::Value]) -> crate::Result<ConfigHandle> {
+-  get_internal(merge_configs, false, target)
++pub fn get_config(
++  target: Target,
++  merge_configs: &[&serde_json::Value],
++  tauri_dir: &Path,
++) -> crate::Result<ConfigMetadata> {
++  load_config(merge_configs, false, target, tauri_dir)
+ }
+ 
+-pub fn reload(merge_configs: &[&serde_json::Value]) -> crate::Result<ConfigHandle> {
+-  let target = config_handle()
+-    .lock()
+-    .unwrap()
+-    .as_ref()
+-    .map(|conf| conf.target);
+-  if let Some(target) = target {
+-    get_internal(merge_configs, true, target)
+-  } else {
+-    crate::error::bail!("config not loaded");
+-  }
++pub fn reload_config(
++  config: &mut ConfigMetadata,
++  merge_configs: &[&serde_json::Value],
++  tauri_dir: &Path,
++) -> crate::Result<()> {
++  let target = config.target;
++  *config = load_config(merge_configs, true, target, tauri_dir)?;
++  Ok(())
+ }
+ 
+ /// merges the loaded config with the given value
+-pub fn merge_with(merge_configs: &[&serde_json::Value]) -> crate::Result<ConfigHandle> {
+-  let handle = config_handle();
+-
++pub fn merge_config_with(
++  config: &mut ConfigMetadata,
++  merge_configs: &[&serde_json::Value],
++) -> crate::Result<()> {
+   if merge_configs.is_empty() {
+-    return Ok(handle);
++    return Ok(());
+   }
+ 
+-  if let Some(config_metadata) = &mut *handle.lock().unwrap() {
+-    let mut merge_config = serde_json::Value::Object(Default::default());
+-    for conf in merge_configs {
+-      merge_patches(&mut merge_config, conf);
+-    }
+-
+-    let merge_config_str = serde_json::to_string(&merge_config).unwrap();
+-    set_var("TAURI_CONFIG", merge_config_str);
++  let mut merge_config = serde_json::Value::Object(Default::default());
++  for conf in merge_configs {
++    merge_patches(&mut merge_config, conf);
++  }
+ 
+-    let mut value =
+-      serde_json::to_value(config_metadata.inner.clone()).context("failed to serialize config")?;
+-    merge(&mut value, &merge_config);
+-    config_metadata.inner = serde_json::from_value(value).context("failed to parse config")?;
++  let merge_config_str = serde_json::to_string(&merge_config).unwrap();
++  set_var("TAURI_CONFIG", merge_config_str);
+ 
+-    Ok(handle)
+-  } else {
+-    crate::error::bail!("config not loaded");
+-  }
++  let mut value =
++    serde_json::to_value(config.inner.clone()).context("failed to serialize config")?;
++  merge(&mut value, &merge_config);
++  config.inner = serde_json::from_value(value).context("failed to parse config")?;
++  Ok(())
+ }
+ 
+ /// Same as [`json_patch::merge`] but doesn't delete the key when the patch's value is `null`
+diff --git a/crates/tauri-cli/src/helpers/mod.rs b/crates/tauri-cli/src/helpers/mod.rs
+index 06ff052cebc0..3d2a5f0e9211 100644
+--- a/crates/tauri-cli/src/helpers/mod.rs
++++ b/crates/tauri-cli/src/helpers/mod.rs
+@@ -35,8 +35,6 @@ use crate::{
+   CommandExt,
+ };
+ 
+-use self::app_paths::frontend_dir;
+-
+ pub fn command_env(debug: bool) -> HashMap<&'static str, String> {
+   let mut map = HashMap::new();
+ 
+@@ -78,13 +76,14 @@ pub fn run_hook(
+   hook: HookCommand,
+   interface: &AppInterface,
+   debug: bool,
++  frontend_dir: &Path,
+ ) -> crate::Result<()> {
+   let (script, script_cwd) = match hook {
+     HookCommand::Script(s) if s.is_empty() => (None, None),
+     HookCommand::Script(s) => (Some(s), None),
+     HookCommand::ScriptWithOptions { script, cwd } => (Some(script), cwd.map(Into::into)),
+   };
+-  let cwd = script_cwd.unwrap_or_else(|| frontend_dir().clone());
++  let cwd = script_cwd.unwrap_or_else(|| frontend_dir.to_owned());
+   if let Some(script) = script {
+     log::info!(action = "Running"; "{} `{}`", name, script);
+ 
+diff --git a/crates/tauri-cli/src/icon.rs b/crates/tauri-cli/src/icon.rs
+index 6228dc97bb6a..4945fb8266aa 100644
+--- a/crates/tauri-cli/src/icon.rs
++++ b/crates/tauri-cli/src/icon.rs
+@@ -4,7 +4,6 @@
+ 
+ use crate::{
+   error::{Context, Error, ErrorExt},
+-  helpers::app_paths::tauri_dir,
+   Result,
+ };
+ 
+@@ -237,8 +236,8 @@ fn parse_bg_color(bg_color_string: &String) -> Result<Rgba<u8>> {
+ pub fn command(options: Options) -> Result<()> {
+   let input = options.input;
+   let out_dir = options.output.unwrap_or_else(|| {
+-    crate::helpers::app_paths::resolve();
+-    tauri_dir().join("icons")
++    let dirs = crate::helpers::app_paths::resolve_dirs();
++    dirs.tauri.join("icons")
+   });
+   let png_icon_sizes = options.png.unwrap_or_default();
+ 
+diff --git a/crates/tauri-cli/src/info/app.rs b/crates/tauri-cli/src/info/app.rs
+index 624d79bd353c..6814c96bdcf5 100644
+--- a/crates/tauri-cli/src/info/app.rs
++++ b/crates/tauri-cli/src/info/app.rs
+@@ -3,56 +3,46 @@
+ // SPDX-License-Identifier: MIT
+ 
+ use super::SectionItem;
++use crate::helpers::config::ConfigMetadata;
+ use crate::helpers::framework;
+-use std::{
+-  fs::read_to_string,
+-  path::{Path, PathBuf},
+-};
+-use tauri_utils::platform::Target;
++use std::{fs::read_to_string, path::PathBuf};
+ 
+-pub fn items(frontend_dir: Option<&PathBuf>, tauri_dir: Option<&Path>) -> Vec<SectionItem> {
++pub fn items(config: &ConfigMetadata, frontend_dir: Option<&PathBuf>) -> Vec<SectionItem> {
+   let mut items = Vec::new();
+-  if tauri_dir.is_some() {
+-    if let Ok(config) = crate::helpers::config::get(Target::current(), &[]) {
+-      let config_guard = config.lock().unwrap();
+-      let config = config_guard.as_ref().unwrap();
+-
+-      let bundle_or_build = if config.bundle.active {
+-        "bundle"
+-      } else {
+-        "build"
+-      };
+-      items.push(SectionItem::new().description(format!("build-type: {bundle_or_build}")));
+-
+-      let csp = config
+-        .app
+-        .security
+-        .csp
+-        .clone()
+-        .map(|c| c.to_string())
+-        .unwrap_or_else(|| "unset".to_string());
+-      items.push(SectionItem::new().description(format!("CSP: {csp}")));
+-
+-      if let Some(frontend_dist) = &config.build.frontend_dist {
+-        items.push(SectionItem::new().description(format!("frontendDist: {frontend_dist}")));
+-      }
++  let bundle_or_build = if config.bundle.active {
++    "bundle"
++  } else {
++    "build"
++  };
++  items.push(SectionItem::new().description(format!("build-type: {bundle_or_build}")));
++
++  let csp = config
++    .app
++    .security
++    .csp
++    .clone()
++    .map(|c| c.to_string())
++    .unwrap_or_else(|| "unset".to_string());
++  items.push(SectionItem::new().description(format!("CSP: {csp}")));
++
++  if let Some(frontend_dist) = &config.build.frontend_dist {
++    items.push(SectionItem::new().description(format!("frontendDist: {frontend_dist}")));
++  }
+ 
+-      if let Some(dev_url) = &config.build.dev_url {
+-        items.push(SectionItem::new().description(format!("devUrl: {dev_url}")));
+-      }
++  if let Some(dev_url) = &config.build.dev_url {
++    items.push(SectionItem::new().description(format!("devUrl: {dev_url}")));
++  }
+ 
+-      if let Some(frontend_dir) = frontend_dir {
+-        if let Ok(package_json) = read_to_string(frontend_dir.join("package.json")) {
+-          let (framework, bundler) = framework::infer_from_package_json(&package_json);
++  if let Some(frontend_dir) = frontend_dir {
++    if let Ok(package_json) = read_to_string(frontend_dir.join("package.json")) {
++      let (framework, bundler) = framework::infer_from_package_json(&package_json);
+ 
+-          if let Some(framework) = framework {
+-            items.push(SectionItem::new().description(format!("framework: {framework}")));
+-          }
++      if let Some(framework) = framework {
++        items.push(SectionItem::new().description(format!("framework: {framework}")));
++      }
+ 
+-          if let Some(bundler) = bundler {
+-            items.push(SectionItem::new().description(format!("bundler: {bundler}")));
+-          }
+-        }
++      if let Some(bundler) = bundler {
++        items.push(SectionItem::new().description(format!("bundler: {bundler}")));
+       }
+     }
+   }
+diff --git a/crates/tauri-cli/src/info/mod.rs b/crates/tauri-cli/src/info/mod.rs
+index 0f89d31c1084..cb52415a9256 100644
+--- a/crates/tauri-cli/src/info/mod.rs
++++ b/crates/tauri-cli/src/info/mod.rs
+@@ -12,6 +12,7 @@ use colored::{ColoredString, Colorize};
+ use dialoguer::{theme::ColorfulTheme, Confirm};
+ use serde::Deserialize;
+ use std::fmt::{self, Display, Formatter};
++use tauri_utils::platform::Target;
+ 
+ mod app;
+ mod env_nodejs;
+@@ -265,11 +266,6 @@ pub fn command(options: Options) -> Result<()> {
+   let frontend_dir = resolve_frontend_dir();
+   let tauri_dir = resolve_tauri_dir();
+ 
+-  if tauri_dir.is_some() {
+-    // safe to initialize
+-    crate::helpers::app_paths::resolve();
+-  }
+-
+   let package_manager = frontend_dir
+     .as_ref()
+     .map(packages_nodejs::package_manager)
+@@ -313,9 +309,11 @@ pub fn command(options: Options) -> Result<()> {
+     interactive,
+     items: Vec::new(),
+   };
+-  app
+-    .items
+-    .extend(app::items(frontend_dir.as_ref(), tauri_dir.as_deref()));
++  if let Some(tauri_dir) = &tauri_dir {
++    if let Ok(config) = crate::helpers::config::get_config(Target::current(), &[], tauri_dir) {
++      app.items.extend(app::items(&config, frontend_dir.as_ref()));
++    };
++  }
+ 
+   environment.display();
+ 
+diff --git a/crates/tauri-cli/src/info/plugins.rs b/crates/tauri-cli/src/info/plugins.rs
+index a5080caf13d1..d0ede6b259b3 100644
+--- a/crates/tauri-cli/src/info/plugins.rs
++++ b/crates/tauri-cli/src/info/plugins.rs
+@@ -111,33 +111,27 @@ pub fn items(
+ ) -> Vec<SectionItem> {
+   let mut items = Vec::new();
+ 
+-  if tauri_dir.is_some() || frontend_dir.is_some() {
+-    if let Some(tauri_dir) = tauri_dir {
+-      let (manifest, lock) = cargo_manifest_and_lock(tauri_dir);
+-
+-      for p in helpers::plugins::known_plugins().keys() {
+-        let dep = format!("tauri-plugin-{p}");
+-        let crate_version = crate_version(tauri_dir, manifest.as_ref(), lock.as_ref(), &dep);
+-        if !crate_version.has_version() {
+-          continue;
+-        }
+-        let item = packages_rust::rust_section_item(&dep, crate_version);
+-        items.push(item);
+-
+-        let Some(frontend_dir) = frontend_dir else {
+-          continue;
+-        };
+-
+-        let package = format!("@tauri-apps/plugin-{p}");
+-
+-        let item = packages_nodejs::nodejs_section_item(
+-          package,
+-          None,
+-          frontend_dir.clone(),
+-          package_manager,
+-        );
+-        items.push(item);
++  if let Some(tauri_dir) = tauri_dir {
++    let (manifest, lock) = cargo_manifest_and_lock(tauri_dir);
++
++    for p in helpers::plugins::known_plugins().keys() {
++      let dep = format!("tauri-plugin-{p}");
++      let crate_version = crate_version(tauri_dir, manifest.as_ref(), lock.as_ref(), &dep);
++      if !crate_version.has_version() {
++        continue;
+       }
++      let item = packages_rust::rust_section_item(&dep, crate_version);
++      items.push(item);
++
++      let Some(frontend_dir) = frontend_dir else {
++        continue;
++      };
++
++      let package = format!("@tauri-apps/plugin-{p}");
++
++      let item =
++        packages_nodejs::nodejs_section_item(package, None, frontend_dir.clone(), package_manager);
++      items.push(item);
+     }
+   }
+ 
+diff --git a/crates/tauri-cli/src/inspect.rs b/crates/tauri-cli/src/inspect.rs
+index 68d040ed22ef..a2bb3bfa1c3d 100644
+--- a/crates/tauri-cli/src/inspect.rs
++++ b/crates/tauri-cli/src/inspect.rs
+@@ -1,6 +1,7 @@
+ // Copyright 2019-2024 Tauri Programme within The Commons Conservancy
+ // SPDX-License-Identifier: Apache-2.0
+ // SPDX-License-Identifier: MIT
++use std::path::Path;
+ 
+ use crate::Result;
+ use clap::{Parser, Subcommand};
+@@ -21,19 +22,18 @@ enum Commands {
+ }
+ 
+ pub fn command(cli: Cli) -> Result<()> {
++  let dirs = crate::helpers::app_paths::resolve_dirs();
+   match cli.command {
+-    Commands::WixUpgradeCode => wix_upgrade_code(),
++    Commands::WixUpgradeCode => wix_upgrade_code(dirs.tauri),
+   }
+ }
+ 
+ // NOTE: if this is ever changed, make sure to also update Wix upgrade code generation in tauri-bundler
+-fn wix_upgrade_code() -> Result<()> {
+-  crate::helpers::app_paths::resolve();
+-
++fn wix_upgrade_code(tauri_dir: &Path) -> Result<()> {
+   let target = tauri_utils::platform::Target::Windows;
+-  let config = crate::helpers::config::get(target, &[])?;
++  let config = crate::helpers::config::get_config(target, &[], tauri_dir)?;
+ 
+-  let interface = AppInterface::new(config.lock().unwrap().as_ref().unwrap(), None)?;
++  let interface = AppInterface::new(&config, None, tauri_dir)?;
+ 
+   let product_name = interface.app_settings().get_package_settings().product_name;
+ 
+@@ -44,13 +44,13 @@ fn wix_upgrade_code() -> Result<()> {
+   .to_string();
+ 
+   log::info!("Default WiX Upgrade Code, derived from {product_name}: {upgrade_code}");
+-  if let Some(code) = config.lock().unwrap().as_ref().and_then(|c| {
+-    c.bundle
+-      .windows
+-      .wix
+-      .as_ref()
+-      .and_then(|wix| wix.upgrade_code)
+-  }) {
++  if let Some(code) = config
++    .bundle
++    .windows
++    .wix
++    .as_ref()
++    .and_then(|wix| wix.upgrade_code)
++  {
+     log::info!("Application Upgrade Code override: {code}");
+   }
+ 
+diff --git a/crates/tauri-cli/src/interface/mod.rs b/crates/tauri-cli/src/interface/mod.rs
+index b153b33bf326..8b797091d052 100644
+--- a/crates/tauri-cli/src/interface/mod.rs
++++ b/crates/tauri-cli/src/interface/mod.rs
+@@ -9,9 +9,13 @@ use std::{
+   path::{Path, PathBuf},
+   process::ExitStatus,
+   sync::Arc,
++  sync::Mutex,
+ };
+ 
+-use crate::{error::Context, helpers::config::Config};
++use crate::{
++  error::Context, helpers::app_paths::Dirs, helpers::config::Config,
++  helpers::config::ConfigMetadata,
++};
+ use tauri_bundler::bundle::{PackageType, Settings, SettingsBuilder};
+ 
+ pub use rust::{MobileOptions, Options, Rust as AppInterface, WatcherOptions};
+@@ -32,9 +36,14 @@ pub trait AppSettings {
+     options: &Options,
+     config: &Config,
+     features: &[String],
++    tauri_dir: &Path,
+   ) -> crate::Result<tauri_bundler::BundleSettings>;
+-  fn app_binary_path(&self, options: &Options) -> crate::Result<PathBuf>;
+-  fn get_binaries(&self, options: &Options) -> crate::Result<Vec<tauri_bundler::BundleBinary>>;
++  fn app_binary_path(&self, options: &Options, tauri_dir: &Path) -> crate::Result<PathBuf>;
++  fn get_binaries(
++    &self,
++    options: &Options,
++    tauri_dir: &Path,
++  ) -> crate::Result<Vec<tauri_bundler::BundleBinary>>;
+   fn app_name(&self) -> Option<String>;
+   fn lib_name(&self) -> Option<String>;
+ 
+@@ -44,6 +53,7 @@ pub trait AppSettings {
+     config: &Config,
+     out_dir: &Path,
+     package_types: Vec<PackageType>,
++    tauri_dir: &Path,
+   ) -> crate::Result<Settings> {
+     let no_default_features = options.args.contains(&"--no-default-features".into());
+     let mut enabled_features = options.features.clone();
+@@ -57,7 +67,7 @@ pub trait AppSettings {
+       tauri_utils::platform::target_triple().context("failed to get target triple")?
+     };
+ 
+-    let mut bins = self.get_binaries(&options)?;
++    let mut bins = self.get_binaries(&options, tauri_dir)?;
+     if let Some(main_binary_name) = &config.main_binary_name {
+       let main = bins.iter_mut().find(|b| b.main()).context("no main bin?")?;
+       main.set_name(main_binary_name.to_owned());
+@@ -65,7 +75,7 @@ pub trait AppSettings {
+ 
+     let mut settings_builder = SettingsBuilder::new()
+       .package_settings(self.get_package_settings())
+-      .bundle_settings(self.get_bundle_settings(&options, config, &enabled_features)?)
++      .bundle_settings(self.get_bundle_settings(&options, config, &enabled_features, tauri_dir)?)
+       .binaries(bins)
+       .project_out_directory(out_dir)
+       .target(target)
+@@ -73,7 +83,7 @@ pub trait AppSettings {
+ 
+     if config.bundle.use_local_tools_dir {
+       settings_builder = settings_builder.local_tools_directory(
+-        rust::get_cargo_metadata()
++        rust::get_cargo_metadata(tauri_dir)
+           .context("failed to get cargo metadata")?
+           .target_directory,
+       )
+@@ -99,23 +109,29 @@ pub enum ExitReason {
+ pub trait Interface: Sized {
+   type AppSettings: AppSettings;
+ 
+-  fn new(config: &Config, target: Option<String>) -> crate::Result<Self>;
++  fn new(config: &Config, target: Option<String>, tauri_dir: &Path) -> crate::Result<Self>;
+   fn app_settings(&self) -> Arc<Self::AppSettings>;
+   fn env(&self) -> HashMap<&str, String>;
+-  fn build(&mut self, options: Options) -> crate::Result<PathBuf>;
++  fn build(&mut self, options: Options, dirs: &Dirs) -> crate::Result<PathBuf>;
+   fn dev<F: Fn(Option<i32>, ExitReason) + Send + Sync + 'static>(
+     &mut self,
++    config: &Mutex<ConfigMetadata>,
+     options: Options,
+     on_exit: F,
++    dirs: &Dirs,
+   ) -> crate::Result<()>;
+   fn mobile_dev<R: Fn(MobileOptions) -> crate::Result<Box<dyn DevProcess + Send>>>(
+     &mut self,
++    config: &Mutex<ConfigMetadata>,
+     options: MobileOptions,
+     runner: R,
++    dirs: &Dirs,
+   ) -> crate::Result<()>;
+   fn watch<R: Fn() -> crate::Result<Box<dyn DevProcess + Send>>>(
+     &mut self,
++    config: &Mutex<ConfigMetadata>,
+     options: WatcherOptions,
+     runner: R,
++    dirs: &Dirs,
+   ) -> crate::Result<()>;
+ }
+diff --git a/crates/tauri-cli/src/interface/rust.rs b/crates/tauri-cli/src/interface/rust.rs
+index 6f303c732510..a9a42363ab71 100644
+--- a/crates/tauri-cli/src/interface/rust.rs
++++ b/crates/tauri-cli/src/interface/rust.rs
+@@ -31,8 +31,8 @@ use super::{AppSettings, DevProcess, ExitReason, Interface};
+ use crate::{
+   error::{Context, Error, ErrorExt},
+   helpers::{
+-    app_paths::{frontend_dir, tauri_dir},
+-    config::{nsis_settings, reload as reload_config, wix_settings, BundleResources, Config},
++    app_paths::Dirs,
++    config::{nsis_settings, reload_config, wix_settings, BundleResources, Config, ConfigMetadata},
+   },
+   ConfigValue,
+ };
+@@ -137,7 +137,7 @@ pub struct Rust {
+ impl Interface for Rust {
+   type AppSettings = RustAppSettings;
+ 
+-  fn new(config: &Config, target: Option<String>) -> crate::Result<Self> {
++  fn new(config: &Config, target: Option<String>, tauri_dir: &Path) -> crate::Result<Self> {
+     let manifest = {
+       let (tx, rx) = sync_channel(1);
+       let mut watcher = new_debouncer(Duration::from_secs(1), None, move |r| {
+@@ -147,14 +147,9 @@ impl Interface for Rust {
+       })
+       .unwrap();
+       watcher
+-        .watch(tauri_dir().join("Cargo.toml"), RecursiveMode::NonRecursive)
+-        .with_context(|| {
+-          format!(
+-            "failed to watch {}",
+-            tauri_dir().join("Cargo.toml").display()
+-          )
+-        })?;
+-      let (manifest, modified) = rewrite_manifest(config)?;
++        .watch(tauri_dir.join("Cargo.toml"), RecursiveMode::NonRecursive)
++        .with_context(|| format!("failed to watch {}", tauri_dir.join("Cargo.toml").display()))?;
++      let (manifest, modified) = rewrite_manifest(config, tauri_dir)?;
+       if modified {
+         // Wait for the modified event so we don't trigger a re-build later on
+         let _ = rx.recv_timeout(Duration::from_secs(2));
+@@ -172,7 +167,7 @@ impl Interface for Rust {
+       );
+     }
+ 
+-    let app_settings = RustAppSettings::new(config, manifest, target)?;
++    let app_settings = RustAppSettings::new(config, manifest, target, tauri_dir)?;
+ 
+     Ok(Self {
+       app_settings: Arc::new(app_settings),
+@@ -186,20 +181,23 @@ impl Interface for Rust {
+     self.app_settings.clone()
+   }
+ 
+-  fn build(&mut self, options: Options) -> crate::Result<PathBuf> {
++  fn build(&mut self, options: Options, dirs: &Dirs) -> crate::Result<PathBuf> {
+     desktop::build(
+       options,
+       &self.app_settings,
+       &mut self.available_targets,
+       self.config_features.clone(),
+       self.main_binary_name.as_deref(),
++      dirs.tauri,
+     )
+   }
+ 
+   fn dev<F: Fn(Option<i32>, ExitReason) + Send + Sync + 'static>(
+     &mut self,
++    config: &Mutex<ConfigMetadata>,
+     mut options: Options,
+     on_exit: F,
++    dirs: &Dirs,
+   ) -> crate::Result<()> {
+     let on_exit = Arc::new(on_exit);
+ 
+@@ -229,14 +227,22 @@ impl Interface for Rust {
+           on_exit(status, reason)
+         })
+       });
+-      self.run_dev_watcher(&options.additional_watch_folders, &merge_configs, run)
++      self.run_dev_watcher(
++        config,
++        &options.additional_watch_folders,
++        &merge_configs,
++        run,
++        dirs,
++      )
+     }
+   }
+ 
+   fn mobile_dev<R: Fn(MobileOptions) -> crate::Result<Box<dyn DevProcess + Send>>>(
+     &mut self,
++    config: &Mutex<ConfigMetadata>,
+     mut options: MobileOptions,
+     runner: R,
++    dirs: &Dirs,
+   ) -> crate::Result<()> {
+     let mut run_args = Vec::new();
+     dev_options(
+@@ -252,23 +258,33 @@ impl Interface for Rust {
+       Ok(())
+     } else {
+       self.watch(
++        config,
+         WatcherOptions {
+           config: options.config.clone(),
+           additional_watch_folders: options.additional_watch_folders.clone(),
+         },
+         move || runner(options.clone()),
++        dirs,
+       )
+     }
+   }
+ 
+   fn watch<R: Fn() -> crate::Result<Box<dyn DevProcess + Send>>>(
+     &mut self,
++    config: &Mutex<ConfigMetadata>,
+     options: WatcherOptions,
+     runner: R,
++    dirs: &Dirs,
+   ) -> crate::Result<()> {
+     let merge_configs = options.config.iter().map(|c| &c.0).collect::<Vec<_>>();
+     let run = Arc::new(|_rust: &mut Rust| runner());
+-    self.run_dev_watcher(&options.additional_watch_folders, &merge_configs, run)
++    self.run_dev_watcher(
++      config,
++      &options.additional_watch_folders,
++      &merge_configs,
++      run,
++      dirs,
++    )
+   }
+ 
+   fn env(&self) -> HashMap<&str, String> {
+@@ -443,19 +459,21 @@ fn expand_member_path(path: &Path) -> crate::Result<Vec<PathBuf>> {
+   Ok(res)
+ }
+ 
+-fn get_watch_folders(additional_watch_folders: &[PathBuf]) -> crate::Result<Vec<PathBuf>> {
+-  let tauri_path = tauri_dir();
+-  let workspace_path = get_workspace_dir()?;
++fn get_watch_folders(
++  additional_watch_folders: &[PathBuf],
++  tauri_dir: &Path,
++) -> crate::Result<Vec<PathBuf>> {
++  let workspace_path = get_workspace_dir(tauri_dir)?;
+ 
+   // We always want to watch the main tauri folder.
+-  let mut watch_folders = vec![tauri_path.to_path_buf()];
++  let mut watch_folders = vec![tauri_dir.to_path_buf()];
+ 
+   // Add the additional watch folders, resolving the path from the tauri path if it is relative
+   watch_folders.extend(additional_watch_folders.iter().filter_map(|dir| {
+     let path = if dir.is_absolute() {
+       dir.to_owned()
+     } else {
+-      tauri_path.join(dir)
++      tauri_dir.join(dir)
+     };
+ 
+     let canonicalized = canonicalize(&path).ok();
+@@ -523,17 +541,18 @@ impl Rust {
+ 
+   fn run_dev_watcher<F: Fn(&mut Rust) -> crate::Result<Box<dyn DevProcess + Send>>>(
+     &mut self,
++    config: &Mutex<ConfigMetadata>,
+     additional_watch_folders: &[PathBuf],
+     merge_configs: &[&serde_json::Value],
+     run: Arc<F>,
++    dirs: &Dirs,
+   ) -> crate::Result<()> {
+     let child = run(self)?;
+ 
+     let process = Arc::new(Mutex::new(child));
+     let (tx, rx) = sync_channel(1);
+-    let frontend_path = frontend_dir();
+ 
+-    let watch_folders = get_watch_folders(additional_watch_folders)?;
++    let watch_folders = get_watch_folders(additional_watch_folders, dirs.tauri)?;
+ 
+     let common_ancestor = common_path::common_path_all(watch_folders.iter().map(Path::new))
+       .expect("watch_folders should not be empty");
+@@ -573,22 +592,21 @@ impl Rust {
+ 
+           if let Some(event_path) = event.paths.first() {
+             if !ignore_matcher.is_ignore(event_path, event_path.is_dir()) {
+-              if is_configuration_file(self.app_settings.target_platform, event_path) {
+-                if let Ok(config) = reload_config(merge_configs) {
+-                  let (manifest, modified) =
+-                    rewrite_manifest(config.lock().unwrap().as_ref().unwrap())?;
+-                  if modified {
+-                    *self.app_settings.manifest.lock().unwrap() = manifest;
+-                    // no need to run the watcher logic, the manifest was modified
+-                    // and it will trigger the watcher again
+-                    continue;
+-                  }
++              if is_configuration_file(self.app_settings.target_platform, event_path)
++                && reload_config(&mut config.lock().unwrap(), merge_configs, dirs.tauri).is_ok()
++              {
++                let (manifest, modified) = rewrite_manifest(&config.lock().unwrap(), dirs.tauri)?;
++                if modified {
++                  *self.app_settings.manifest.lock().unwrap() = manifest;
++                  // no need to run the watcher logic, the manifest was modified
++                  // and it will trigger the watcher again
++                  continue;
+                 }
+               }
+ 
+               log::info!(
+                 "File {} changed. Rebuilding application...",
+-                display_path(event_path.strip_prefix(frontend_path).unwrap_or(event_path))
++                display_path(event_path.strip_prefix(dirs.frontend).unwrap_or(event_path))
+               );
+ 
+               let mut p = process.lock().unwrap();
+@@ -837,6 +855,7 @@ impl AppSettings for RustAppSettings {
+     options: &Options,
+     config: &Config,
+     features: &[String],
++    tauri_dir: &Path,
+   ) -> crate::Result<BundleSettings> {
+     let arch64bits = self.target_triple.starts_with("x86_64")
+       || self.target_triple.starts_with("aarch64")
+@@ -867,6 +886,7 @@ impl AppSettings for RustAppSettings {
+       self,
+       features,
+       config,
++      tauri_dir,
+       config.bundle.clone(),
+       updater_settings,
+       arch64bits,
+@@ -911,8 +931,8 @@ impl AppSettings for RustAppSettings {
+     Ok(settings)
+   }
+ 
+-  fn app_binary_path(&self, options: &Options) -> crate::Result<PathBuf> {
+-    let binaries = self.get_binaries(options)?;
++  fn app_binary_path(&self, options: &Options, tauri_dir: &Path) -> crate::Result<PathBuf> {
++    let binaries = self.get_binaries(options, tauri_dir)?;
+     let bin_name = binaries
+       .iter()
+       .find(|x| x.main())
+@@ -920,7 +940,7 @@ impl AppSettings for RustAppSettings {
+       .name();
+ 
+     let out_dir = self
+-      .out_dir(options)
++      .out_dir(options, tauri_dir)
+       .context("failed to get project out directory")?;
+ 
+     let mut path = out_dir.join(bin_name);
+@@ -938,7 +958,7 @@ impl AppSettings for RustAppSettings {
+     Ok(path)
+   }
+ 
+-  fn get_binaries(&self, options: &Options) -> crate::Result<Vec<BundleBinary>> {
++  fn get_binaries(&self, options: &Options, tauri_dir: &Path) -> crate::Result<Vec<BundleBinary>> {
+     let mut binaries = Vec::new();
+ 
+     if let Some(bins) = &self.cargo_settings.bin {
+@@ -967,8 +987,6 @@ impl AppSettings for RustAppSettings {
+       }
+     }
+ 
+-    let tauri_dir = tauri_dir();
+-
+     let mut binaries_paths = std::fs::read_dir(tauri_dir.join("src/bin"))
+       .map(|dir| {
+         dir
+@@ -1060,8 +1078,12 @@ impl AppSettings for RustAppSettings {
+ }
+ 
+ impl RustAppSettings {
+-  pub fn new(config: &Config, manifest: Manifest, target: Option<String>) -> crate::Result<Self> {
+-    let tauri_dir = tauri_dir();
++  pub fn new(
++    config: &Config,
++    manifest: Manifest,
++    target: Option<String>,
++    tauri_dir: &Path,
++  ) -> crate::Result<Self> {
+     let cargo_settings = CargoSettings::load(tauri_dir).context("failed to load Cargo settings")?;
+     let cargo_package_settings = match &cargo_settings.package {
+       Some(package_info) => package_info.clone(),
+@@ -1072,7 +1094,7 @@ impl RustAppSettings {
+       }
+     };
+ 
+-    let ws_package_settings = CargoSettings::load(&get_workspace_dir()?)
++    let ws_package_settings = CargoSettings::load(&get_workspace_dir(tauri_dir)?)
+       .context("failed to load Cargo settings from workspace root")?
+       .workspace
+       .and_then(|v| v.package);
+@@ -1177,8 +1199,8 @@ impl RustAppSettings {
+       .or_else(|| self.cargo_config.build().target())
+   }
+ 
+-  pub fn out_dir(&self, options: &Options) -> crate::Result<PathBuf> {
+-    get_target_dir(self.target(options), options)
++  pub fn out_dir(&self, options: &Options, tauri_dir: &Path) -> crate::Result<PathBuf> {
++    get_target_dir(self.target(options), options, tauri_dir)
+   }
+ }
+ 
+@@ -1188,10 +1210,10 @@ pub(crate) struct CargoMetadata {
+   pub(crate) workspace_root: PathBuf,
+ }
+ 
+-pub(crate) fn get_cargo_metadata() -> crate::Result<CargoMetadata> {
++pub(crate) fn get_cargo_metadata(tauri_dir: &Path) -> crate::Result<CargoMetadata> {
+   let output = Command::new("cargo")
+     .args(["metadata", "--no-deps", "--format-version", "1"])
+-    .current_dir(tauri_dir())
++    .current_dir(tauri_dir)
+     .output()
+     .map_err(|error| Error::CommandFailed {
+       command: "cargo metadata --no-deps --format-version 1".to_string(),
+@@ -1211,13 +1233,13 @@ pub(crate) fn get_cargo_metadata() -> crate::Result<CargoMetadata> {
+ /// Get the cargo target directory based on the provided arguments.
+ /// If "--target-dir" is specified in args, use it as the target directory (relative to current directory).
+ /// Otherwise, use the target directory from cargo metadata.
+-pub(crate) fn get_cargo_target_dir(args: &[String]) -> crate::Result<PathBuf> {
++pub(crate) fn get_cargo_target_dir(args: &[String], tauri_dir: &Path) -> crate::Result<PathBuf> {
+   let path = if let Some(target) = get_cargo_option(args, "--target-dir") {
+     std::env::current_dir()
+       .context("failed to get current directory")?
+       .join(target)
+   } else {
+-    get_cargo_metadata()
++    get_cargo_metadata(tauri_dir)
+       .context("failed to run 'cargo metadata' command to get target directory")?
+       .target_directory
+   };
+@@ -1227,8 +1249,12 @@ pub(crate) fn get_cargo_target_dir(args: &[String]) -> crate::Result<PathBuf> {
+ 
+ /// This function determines the 'target' directory and suffixes it with the profile
+ /// to determine where the compiled binary will be located.
+-fn get_target_dir(triple: Option<&str>, options: &Options) -> crate::Result<PathBuf> {
+-  let mut path = get_cargo_target_dir(&options.args)?;
++fn get_target_dir(
++  triple: Option<&str>,
++  options: &Options,
++  tauri_dir: &Path,
++) -> crate::Result<PathBuf> {
++  let mut path = get_cargo_target_dir(&options.args, tauri_dir)?;
+ 
+   if let Some(triple) = triple {
+     path.push(triple);
+@@ -1253,9 +1279,9 @@ fn get_cargo_option<'a>(args: &'a [String], option: &'a str) -> Option<&'a str>
+ }
+ 
+ /// Executes `cargo metadata` to get the workspace directory.
+-pub fn get_workspace_dir() -> crate::Result<PathBuf> {
++pub fn get_workspace_dir(tauri_dir: &Path) -> crate::Result<PathBuf> {
+   Ok(
+-    get_cargo_metadata()
++    get_cargo_metadata(tauri_dir)
+       .context("failed to run 'cargo metadata' command to get workspace directory")?
+       .workspace_root,
+   )
+@@ -1281,6 +1307,7 @@ fn tauri_config_to_bundle_settings(
+   settings: &RustAppSettings,
+   features: &[String],
+   tauri_config: &Config,
++  tauri_dir: &Path,
+   config: crate::helpers::config::BundleConfig,
+   updater_config: Option<UpdaterSettings>,
+   arch64bits: bool,
+@@ -1562,7 +1589,7 @@ fn tauri_config_to_bundle_settings(
+       info_plist: {
+         let mut src_plists = vec![];
+ 
+-        let path = tauri_dir().join("Info.plist");
++        let path = tauri_dir.join("Info.plist");
+         if path.exists() {
+           src_plists.push(path.into());
+         }
+@@ -1604,7 +1631,7 @@ fn tauri_config_to_bundle_settings(
+             .unwrap()
+         })
+     }),
+-    license_file: config.license_file.map(|l| tauri_dir().join(l)),
++    license_file: config.license_file.map(|l| tauri_dir.join(l)),
+     updater: updater_config,
+     ..Default::default()
+   })
+@@ -1741,7 +1768,7 @@ mod tests {
+ 
+   #[test]
+   fn parse_target_dir_from_opts() {
+-    crate::helpers::app_paths::resolve();
++    let dirs = crate::helpers::app_paths::resolve_dirs();
+     let current_dir = std::env::current_dir().unwrap();
+ 
+     let options = Options {
+@@ -1758,11 +1785,11 @@ mod tests {
+     };
+ 
+     assert_eq!(
+-      get_target_dir(None, &options).unwrap(),
++      get_target_dir(None, &options, dirs.tauri).unwrap(),
+       current_dir.join("path/to/some/dir/release")
+     );
+     assert_eq!(
+-      get_target_dir(Some("x86_64-pc-windows-msvc"), &options).unwrap(),
++      get_target_dir(Some("x86_64-pc-windows-msvc"), &options, dirs.tauri).unwrap(),
+       current_dir
+         .join("path/to/some/dir")
+         .join("x86_64-pc-windows-msvc")
+@@ -1781,23 +1808,27 @@ mod tests {
+     };
+ 
+     #[cfg(windows)]
+-    assert!(get_target_dir(Some("x86_64-pc-windows-msvc"), &options)
+-      .unwrap()
+-      .ends_with("x86_64-pc-windows-msvc\\release"));
++    assert!(
++      get_target_dir(Some("x86_64-pc-windows-msvc"), &options, dirs.tauri)
++        .unwrap()
++        .ends_with("x86_64-pc-windows-msvc\\release")
++    );
+     #[cfg(not(windows))]
+-    assert!(get_target_dir(Some("x86_64-pc-windows-msvc"), &options)
+-      .unwrap()
+-      .ends_with("x86_64-pc-windows-msvc/release"));
++    assert!(
++      get_target_dir(Some("x86_64-pc-windows-msvc"), &options, dirs.tauri)
++        .unwrap()
++        .ends_with("x86_64-pc-windows-msvc/release")
++    );
+ 
+     #[cfg(windows)]
+     {
+       std::env::set_var("CARGO_TARGET_DIR", "D:\\path\\to\\env\\dir");
+       assert_eq!(
+-        get_target_dir(None, &options).unwrap(),
++        get_target_dir(None, &options, dirs.tauri).unwrap(),
+         PathBuf::from("D:\\path\\to\\env\\dir\\release")
+       );
+       assert_eq!(
+-        get_target_dir(Some("x86_64-pc-windows-msvc"), &options).unwrap(),
++        get_target_dir(Some("x86_64-pc-windows-msvc"), &options, dirs.tauri).unwrap(),
+         PathBuf::from("D:\\path\\to\\env\\dir\\x86_64-pc-windows-msvc\\release")
+       );
+     }
+@@ -1806,11 +1837,11 @@ mod tests {
+     {
+       std::env::set_var("CARGO_TARGET_DIR", "/path/to/env/dir");
+       assert_eq!(
+-        get_target_dir(None, &options).unwrap(),
++        get_target_dir(None, &options, dirs.tauri).unwrap(),
+         PathBuf::from("/path/to/env/dir/release")
+       );
+       assert_eq!(
+-        get_target_dir(Some("x86_64-pc-windows-msvc"), &options).unwrap(),
++        get_target_dir(Some("x86_64-pc-windows-msvc"), &options, dirs.tauri).unwrap(),
+         PathBuf::from("/path/to/env/dir/x86_64-pc-windows-msvc/release")
+       );
+     }
+diff --git a/crates/tauri-cli/src/interface/rust/desktop.rs b/crates/tauri-cli/src/interface/rust/desktop.rs
+index b372dc0152c3..1715b8755d33 100644
+--- a/crates/tauri-cli/src/interface/rust/desktop.rs
++++ b/crates/tauri-cli/src/interface/rust/desktop.rs
+@@ -12,7 +12,7 @@ use shared_child::SharedChild;
+ use std::{
+   fs,
+   io::{BufReader, ErrorKind, Write},
+-  path::PathBuf,
++  path::{Path, PathBuf},
+   process::{Command, ExitStatus, Stdio},
+   sync::{
+     atomic::{AtomicBool, Ordering},
+@@ -158,9 +158,10 @@ pub fn build(
+   available_targets: &mut Option<Vec<RustupTarget>>,
+   config_features: Vec<String>,
+   main_binary_name: Option<&str>,
++  tauri_dir: &Path,
+ ) -> crate::Result<PathBuf> {
+-  let out_dir = app_settings.out_dir(&options)?;
+-  let bin_path = app_settings.app_binary_path(&options)?;
++  let out_dir = app_settings.out_dir(&options, tauri_dir)?;
++  let bin_path = app_settings.app_binary_path(&options, tauri_dir)?;
+ 
+   if !std::env::var("STATIC_VCRUNTIME").is_ok_and(|v| v == "false") {
+     std::env::set_var("STATIC_VCRUNTIME", "true");
+@@ -182,7 +183,7 @@ pub fn build(
+       options.target.replace(triple.into());
+ 
+       let triple_out_dir = app_settings
+-        .out_dir(&options)
++        .out_dir(&options, tauri_dir)
+         .with_context(|| format!("failed to get {triple} out dir"))?;
+ 
+       build_production_app(options, available_targets, config_features.clone())
+@@ -348,8 +349,6 @@ mod terminal {
+   pub fn stderr_width() -> Option<usize> {
+     unsafe {
+       let mut winsize: libc::winsize = mem::zeroed();
+-      // The .into() here is needed for FreeBSD which defines TIOCGWINSZ
+-      // as c_uint but ioctl wants c_ulong.
+       #[allow(clippy::useless_conversion)]
+       if libc::ioctl(libc::STDERR_FILENO, libc::TIOCGWINSZ.into(), &mut winsize) < 0 {
+         return None;
+diff --git a/crates/tauri-cli/src/interface/rust/manifest.rs b/crates/tauri-cli/src/interface/rust/manifest.rs
+index 03e9768bd496..58a5dd6c1465 100644
+--- a/crates/tauri-cli/src/interface/rust/manifest.rs
++++ b/crates/tauri-cli/src/interface/rust/manifest.rs
+@@ -4,10 +4,7 @@
+ 
+ use crate::{
+   error::{Context, ErrorExt},
+-  helpers::{
+-    app_paths::tauri_dir,
+-    config::{Config, PatternKind},
+-  },
++  helpers::config::{Config, PatternKind},
+ };
+ 
+ use itertools::Itertools;
+@@ -272,8 +269,8 @@ fn inject_features(
+   Ok(persist)
+ }
+ 
+-pub fn rewrite_manifest(config: &Config) -> crate::Result<(Manifest, bool)> {
+-  let manifest_path = tauri_dir().join("Cargo.toml");
++pub fn rewrite_manifest(config: &Config, tauri_dir: &Path) -> crate::Result<(Manifest, bool)> {
++  let manifest_path = tauri_dir.join("Cargo.toml");
+   let (mut manifest, original_manifest_str) = read_manifest(&manifest_path)?;
+ 
+   let mut dependencies = Vec::new();
+diff --git a/crates/tauri-cli/src/migrate/migrations/v1/mod.rs b/crates/tauri-cli/src/migrate/migrations/v1/mod.rs
+index 14a9cd7c4551..6372db7b5ed1 100644
+--- a/crates/tauri-cli/src/migrate/migrations/v1/mod.rs
++++ b/crates/tauri-cli/src/migrate/migrations/v1/mod.rs
+@@ -2,35 +2,31 @@
+ // SPDX-License-Identifier: Apache-2.0
+ // SPDX-License-Identifier: MIT
+ 
+-use crate::{
+-  error::Context,
+-  helpers::app_paths::{frontend_dir, tauri_dir},
+-  Result,
+-};
++use crate::{error::Context, helpers::app_paths::Dirs, Result};
+ 
+ mod config;
+ mod frontend;
+ mod manifest;
+ 
+-pub fn run() -> Result<()> {
+-  let tauri_dir = tauri_dir();
+-  let frontend_dir = frontend_dir();
+-
+-  let mut migrated = config::migrate(tauri_dir).context("Could not migrate config")?;
+-  manifest::migrate(tauri_dir).context("Could not migrate manifest")?;
+-  let plugins = frontend::migrate(frontend_dir)?;
++pub fn run(dirs: &Dirs) -> Result<()> {
++  let mut migrated = config::migrate(dirs.tauri).context("Could not migrate config")?;
++  manifest::migrate(dirs.tauri).context("Could not migrate manifest")?;
++  let plugins = frontend::migrate(dirs.frontend)?;
+ 
+   migrated.plugins.extend(plugins);
+ 
+   // Add plugins
+   for plugin in migrated.plugins {
+-    crate::add::run(crate::add::Options {
+-      plugin: plugin.clone(),
+-      branch: None,
+-      tag: None,
+-      rev: None,
+-      no_fmt: false,
+-    })
++    crate::add::run(
++      crate::add::Options {
++        plugin: plugin.clone(),
++        branch: None,
++        tag: None,
++        rev: None,
++        no_fmt: false,
++      },
++      dirs,
++    )
+     .with_context(|| format!("Could not migrate plugin '{plugin}'"))?;
+   }
+ 
+diff --git a/crates/tauri-cli/src/migrate/migrations/v2_beta.rs b/crates/tauri-cli/src/migrate/migrations/v2_beta.rs
+index aad4936708e3..dcb6e52c2b0e 100644
+--- a/crates/tauri-cli/src/migrate/migrations/v2_beta.rs
++++ b/crates/tauri-cli/src/migrate/migrations/v2_beta.rs
+@@ -4,10 +4,7 @@
+ 
+ use crate::{
+   error::{Context, ErrorExt},
+-  helpers::{
+-    app_paths::{frontend_dir, tauri_dir},
+-    npm::PackageManager,
+-  },
++  helpers::{app_paths::Dirs, npm::PackageManager},
+   interface::rust::manifest::{read_manifest, serialize_manifest},
+   Result,
+ };
+@@ -16,17 +13,14 @@ use std::{fs::read_to_string, path::Path};
+ 
+ use toml_edit::{DocumentMut, Item, Table, TableLike, Value};
+ 
+-pub fn run() -> Result<()> {
+-  let frontend_dir = frontend_dir();
+-  let tauri_dir = tauri_dir();
+-
+-  let manifest_path = tauri_dir.join("Cargo.toml");
++pub fn run(dirs: &Dirs) -> Result<()> {
++  let manifest_path = dirs.tauri.join("Cargo.toml");
+   let (mut manifest, _) = read_manifest(&manifest_path)?;
+   migrate_manifest(&mut manifest)?;
+ 
+-  migrate_permissions(tauri_dir)?;
++  migrate_permissions(dirs.tauri)?;
+ 
+-  migrate_npm_dependencies(frontend_dir)?;
++  migrate_npm_dependencies(dirs.frontend)?;
+ 
+   std::fs::write(&manifest_path, serialize_manifest(&manifest))
+     .fs_context("failed to rewrite Cargo manifest", &manifest_path)?;
+diff --git a/crates/tauri-cli/src/migrate/mod.rs b/crates/tauri-cli/src/migrate/mod.rs
+index 575a2516b410..9a75089b0f60 100644
+--- a/crates/tauri-cli/src/migrate/mod.rs
++++ b/crates/tauri-cli/src/migrate/mod.rs
+@@ -4,10 +4,7 @@
+ 
+ use crate::{
+   error::{bail, Context, ErrorExt},
+-  helpers::{
+-    app_paths::tauri_dir,
+-    cargo_manifest::{crate_version, CargoLock, CargoManifest},
+-  },
++  helpers::cargo_manifest::{crate_version, CargoLock, CargoManifest},
+   interface::rust::get_workspace_dir,
+   Result,
+ };
+@@ -17,22 +14,20 @@ use std::{fs::read_to_string, str::FromStr};
+ mod migrations;
+ 
+ pub fn command() -> Result<()> {
+-  crate::helpers::app_paths::resolve();
++  let dirs = crate::helpers::app_paths::resolve_dirs();
+ 
+-  let tauri_dir = tauri_dir();
+-
+-  let manifest_contents = read_to_string(tauri_dir.join("Cargo.toml")).fs_context(
++  let manifest_contents = read_to_string(dirs.tauri.join("Cargo.toml")).fs_context(
+     "failed to read Cargo manifest",
+-    tauri_dir.join("Cargo.toml"),
++    dirs.tauri.join("Cargo.toml"),
+   )?;
+   let manifest = toml::from_str::<CargoManifest>(&manifest_contents).with_context(|| {
+     format!(
+       "failed to parse Cargo manifest {}",
+-      tauri_dir.join("Cargo.toml").display()
++      dirs.tauri.join("Cargo.toml").display()
+     )
+   })?;
+ 
+-  let workspace_dir = get_workspace_dir()?;
++  let workspace_dir = get_workspace_dir(dirs.tauri)?;
+   let lock_path = workspace_dir.join("Cargo.lock");
+   let lock = if lock_path.exists() {
+     let lockfile_contents =
+@@ -44,19 +39,19 @@ pub fn command() -> Result<()> {
+     None
+   };
+ 
+-  let tauri_version = crate_version(tauri_dir, Some(&manifest), lock.as_ref(), "tauri")
++  let tauri_version = crate_version(dirs.tauri, Some(&manifest), lock.as_ref(), "tauri")
+     .version
+     .context("failed to get tauri version")?;
+   let tauri_version = semver::Version::from_str(&tauri_version)
+     .with_context(|| format!("failed to parse tauri version {tauri_version}"))?;
+ 
+   if tauri_version.major == 1 {
+-    migrations::v1::run().context("failed to migrate from v1")?;
++    migrations::v1::run(&dirs).context("failed to migrate from v1")?;
+   } else if tauri_version.major == 2 {
+     if let Some((pre, _number)) = tauri_version.pre.as_str().split_once('.') {
+       match pre {
+         "beta" => {
+-          migrations::v2_beta::run().context("failed to migrate from v2 beta")?;
++          migrations::v2_beta::run(&dirs).context("failed to migrate from v2 beta")?;
+         }
+         "alpha" => {
+           bail!(
+diff --git a/crates/tauri-cli/src/mobile/android/android_studio_script.rs b/crates/tauri-cli/src/mobile/android/android_studio_script.rs
+index 4657ac673b4c..ce1d6ba8ef05 100644
+--- a/crates/tauri-cli/src/mobile/android/android_studio_script.rs
++++ b/crates/tauri-cli/src/mobile/android/android_studio_script.rs
+@@ -5,7 +5,7 @@
+ use super::{detect_target_ok, ensure_init, env, get_app, get_config, read_options, MobileTarget};
+ use crate::{
+   error::{Context, ErrorExt},
+-  helpers::config::{get as get_tauri_config, reload as reload_tauri_config},
++  helpers::config::{get_config as get_tauri_config, reload_config as reload_tauri_config},
+   interface::{AppInterface, Interface},
+   mobile::CliOptions,
+   Error, Result,
+@@ -38,7 +38,7 @@ pub struct Options {
+ }
+ 
+ pub fn command(options: Options) -> Result<()> {
+-  crate::helpers::app_paths::resolve();
++  let dirs = crate::helpers::app_paths::resolve_dirs();
+ 
+   let profile = if options.release {
+     Profile::Release
+@@ -46,40 +46,31 @@ pub fn command(options: Options) -> Result<()> {
+     Profile::Debug
+   };
+ 
+-  let (tauri_config, cli_options) = {
+-    let tauri_config = get_tauri_config(tauri_utils::platform::Target::Android, &[])?;
+-    let cli_options = {
+-      let tauri_config_guard = tauri_config.lock().unwrap();
+-      let tauri_config_ = tauri_config_guard.as_ref().unwrap();
+-      read_options(tauri_config_)
+-    };
++  let mut tauri_config = get_tauri_config(tauri_utils::platform::Target::Android, &[], dirs.tauri)?;
++  let cli_options = read_options(&tauri_config);
+ 
+-    let tauri_config = if cli_options.config.is_empty() {
+-      tauri_config
+-    } else {
+-      // reload config with merges from the android dev|build script
+-      reload_tauri_config(
+-        &cli_options
+-          .config
+-          .iter()
+-          .map(|conf| &conf.0)
+-          .collect::<Vec<_>>(),
+-      )?
+-    };
+-
+-    (tauri_config, cli_options)
++  if !cli_options.config.is_empty() {
++    // reload config with merges from the android dev|build script
++    reload_tauri_config(
++      &mut tauri_config,
++      &cli_options
++        .config
++        .iter()
++        .map(|conf| &conf.0)
++        .collect::<Vec<_>>(),
++      dirs.tauri,
++    )?
+   };
+ 
+   let (config, metadata) = {
+-    let tauri_config_guard = tauri_config.lock().unwrap();
+-    let tauri_config_ = tauri_config_guard.as_ref().unwrap();
+     let (config, metadata) = get_config(
+       &get_app(
+         MobileTarget::Android,
+-        tauri_config_,
+-        &AppInterface::new(tauri_config_, None)?,
++        &tauri_config,
++        &AppInterface::new(&tauri_config, None, dirs.tauri)?,
++        dirs.tauri,
+       ),
+-      tauri_config_,
++      &tauri_config,
+       &[],
+       &cli_options,
+     );
+@@ -95,7 +86,8 @@ pub fn command(options: Options) -> Result<()> {
+   )?;
+ 
+   if !cli_options.config.is_empty() {
+-    crate::helpers::config::merge_with(
++    crate::helpers::config::merge_config_with(
++      &mut tauri_config,
+       &cli_options
+         .config
+         .iter()
+@@ -107,16 +99,7 @@ pub fn command(options: Options) -> Result<()> {
+   let env = env(std::env::var("CI").is_ok())?;
+ 
+   if cli_options.dev {
+-    let dev_url = tauri_config
+-      .lock()
+-      .unwrap()
+-      .as_ref()
+-      .unwrap()
+-      .build
+-      .dev_url
+-      .clone();
+-
+-    if let Some(url) = dev_url {
++    if let Some(url) = &tauri_config.build.dev_url {
+       let localhost = match url.host() {
+         Some(url::Host::Domain(d)) => d == "localhost",
+         Some(url::Host::Ipv4(i)) => i == std::net::Ipv4Addr::LOCALHOST,
+diff --git a/crates/tauri-cli/src/mobile/android/build.rs b/crates/tauri-cli/src/mobile/android/build.rs
+index c91ba73c161e..dee966a1f52b 100644
+--- a/crates/tauri-cli/src/mobile/android/build.rs
++++ b/crates/tauri-cli/src/mobile/android/build.rs
+@@ -10,8 +10,8 @@ use crate::{
+   build::Options as BuildOptions,
+   error::Context,
+   helpers::{
+-    app_paths::tauri_dir,
+-    config::{get as get_tauri_config, ConfigHandle},
++    app_paths::Dirs,
++    config::{get_config as get_tauri_config, ConfigMetadata},
+     flock,
+   },
+   interface::{AppInterface, Interface, Options as InterfaceOptions},
+@@ -27,6 +27,8 @@ use cargo_mobile2::{
+ };
+ 
+ use std::env::set_current_dir;
++use std::path::Path;
++use std::sync::Mutex;
+ 
+ #[derive(Debug, Clone, Parser)]
+ #[clap(
+@@ -116,8 +118,25 @@ pub struct BuiltApplication {
+ }
+ 
+ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<BuiltApplication> {
+-  crate::helpers::app_paths::resolve();
++  let dirs = crate::helpers::app_paths::resolve_dirs();
++  let tauri_config = Mutex::new(get_tauri_config(
++    tauri_utils::platform::Target::Android,
++    &options
++      .config
++      .iter()
++      .map(|conf| &conf.0)
++      .collect::<Vec<_>>(),
++    dirs.tauri,
++  )?);
++  run(options, noise_level, &dirs, &tauri_config)
++}
+ 
++pub fn run(
++  options: Options,
++  noise_level: NoiseLevel,
++  dirs: &Dirs,
++  tauri_config: &Mutex<ConfigMetadata>,
++) -> Result<BuiltApplication> {
+   delete_codegen_vars();
+ 
+   let mut build_options: BuildOptions = options.clone().into();
+@@ -132,26 +151,16 @@ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<BuiltApplica
+     )
+     .unwrap();
+   build_options.target = Some(first_target.triple.into());
++  let tauri_config = &tauri_config.lock().unwrap();
+ 
+-  let tauri_config = get_tauri_config(
+-    tauri_utils::platform::Target::Android,
+-    &options
+-      .config
+-      .iter()
+-      .map(|conf| &conf.0)
+-      .collect::<Vec<_>>(),
+-  )?;
+   let (interface, config, metadata) = {
+-    let tauri_config_guard = tauri_config.lock().unwrap();
+-    let tauri_config_ = tauri_config_guard.as_ref().unwrap();
+-
+-    let interface = AppInterface::new(tauri_config_, build_options.target.clone())?;
++    let interface = AppInterface::new(tauri_config, build_options.target.clone(), dirs.tauri)?;
+     interface.build_options(&mut Vec::new(), &mut build_options.features, true);
+ 
+-    let app = get_app(MobileTarget::Android, tauri_config_, &interface);
++    let app = get_app(MobileTarget::Android, tauri_config, &interface, dirs.tauri);
+     let (config, metadata) = get_config(
+       &app,
+-      tauri_config_,
++      tauri_config,
+       &build_options.features,
+       &Default::default(),
+     );
+@@ -164,11 +173,10 @@ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<BuiltApplica
+     Profile::Release
+   };
+ 
+-  let tauri_path = tauri_dir();
+-  set_current_dir(tauri_path).context("failed to set current directory to Tauri directory")?;
++  set_current_dir(dirs.tauri).context("failed to set current directory to Tauri directory")?;
+ 
+   ensure_init(
+-    &tauri_config,
++    tauri_config,
+     config.app(),
+     config.project_dir(),
+     MobileTarget::Android,
+@@ -178,18 +186,9 @@ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<BuiltApplica
+   let mut env = env(options.ci)?;
+   configure_cargo(&mut env, &config)?;
+ 
+-  generate_tauri_properties(
+-    &config,
+-    tauri_config.lock().unwrap().as_ref().unwrap(),
+-    false,
+-  )?;
++  generate_tauri_properties(&config, tauri_config, false)?;
+ 
+-  {
+-    let config_guard = tauri_config.lock().unwrap();
+-    let config_ = config_guard.as_ref().unwrap();
+-
+-    crate::build::setup(&interface, &mut build_options, config_, true)?;
+-  }
++  crate::build::setup(&interface, &mut build_options, tauri_config, true, dirs)?;
+ 
+   let installed_targets =
+     crate::interface::rust::installation::installed_targets().unwrap_or_default();
+@@ -219,6 +218,7 @@ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<BuiltApplica
+     &config,
+     &mut env,
+     noise_level,
++    dirs.tauri,
+   )?;
+ 
+   if open {
+@@ -237,11 +237,12 @@ fn run_build(
+   interface: &AppInterface,
+   mut options: Options,
+   build_options: BuildOptions,
+-  tauri_config: ConfigHandle,
++  tauri_config: &ConfigMetadata,
+   profile: Profile,
+   config: &AndroidConfig,
+   env: &mut Env,
+   noise_level: NoiseLevel,
++  tauri_dir: &Path,
+ ) -> Result<OptionsHandle> {
+   if !(options.apk.is_some() || options.aab.is_some()) {
+     // if the user didn't specify the format to build, we'll do both
+@@ -257,7 +258,7 @@ fn run_build(
+   };
+ 
+   let app_settings = interface.app_settings();
+-  let out_dir = app_settings.out_dir(&interface_options)?;
++  let out_dir = app_settings.out_dir(&interface_options, tauri_dir)?;
+   let _lock = flock::open_rw(out_dir.join("lock").with_extension("android"), "Android")?;
+ 
+   let cli_options = CliOptions {
+@@ -269,9 +270,9 @@ fn run_build(
+     config: build_options.config,
+     target_device: options.target_device.clone(),
+   };
+-  let handle = write_options(tauri_config.lock().unwrap().as_ref().unwrap(), cli_options)?;
++  let handle = write_options(tauri_config, cli_options)?;
+ 
+-  inject_resources(config, tauri_config.lock().unwrap().as_ref().unwrap())?;
++  inject_resources(config, tauri_config)?;
+ 
+   let apk_outputs = if options.apk.unwrap_or_default() {
+     apk::build(
+diff --git a/crates/tauri-cli/src/mobile/android/dev.rs b/crates/tauri-cli/src/mobile/android/dev.rs
+index 5dbaf8778082..bb4624980925 100644
+--- a/crates/tauri-cli/src/mobile/android/dev.rs
++++ b/crates/tauri-cli/src/mobile/android/dev.rs
+@@ -10,8 +10,8 @@ use crate::{
+   dev::Options as DevOptions,
+   error::{Context, ErrorExt},
+   helpers::{
+-    app_paths::tauri_dir,
+-    config::{get as get_tauri_config, ConfigHandle},
++    app_paths::Dirs,
++    config::{get_config as get_tauri_config, ConfigMetadata},
+     flock,
+   },
+   interface::{AppInterface, Interface, MobileOptions, Options as InterfaceOptions},
+@@ -35,6 +35,7 @@ use cargo_mobile2::{
+ };
+ use url::Host;
+ 
++use std::sync::Mutex;
+ use std::{env::set_current_dir, net::Ipv4Addr, path::PathBuf};
+ 
+ #[derive(Debug, Clone, Parser)]
+@@ -131,16 +132,16 @@ impl From<Options> for DevOptions {
+ }
+ 
+ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<()> {
+-  crate::helpers::app_paths::resolve();
++  let dirs = crate::helpers::app_paths::resolve_dirs();
+ 
+-  let result = run_command(options, noise_level);
++  let result = run_command(options, noise_level, dirs);
+   if result.is_err() {
+     crate::dev::kill_before_dev_process();
+   }
+   result
+ }
+ 
+-fn run_command(options: Options, noise_level: NoiseLevel) -> Result<()> {
++fn run_command(options: Options, noise_level: NoiseLevel, dirs: Dirs) -> Result<()> {
+   delete_codegen_vars();
+   // setup env additions before calling env()
+   if let Some(root_certificate_path) = &options.root_certificate_path {
+@@ -160,6 +161,7 @@ fn run_command(options: Options, noise_level: NoiseLevel) -> Result<()> {
+       .iter()
+       .map(|conf| &conf.0)
+       .collect::<Vec<_>>(),
++    dirs.tauri,
+   )?;
+ 
+   let env = env(false)?;
+@@ -183,23 +185,19 @@ fn run_command(options: Options, noise_level: NoiseLevel) -> Result<()> {
+   dev_options.target = Some(target_triple);
+ 
+   let (interface, config, metadata) = {
+-    let tauri_config_guard = tauri_config.lock().unwrap();
+-    let tauri_config_ = tauri_config_guard.as_ref().unwrap();
++    let interface = AppInterface::new(&tauri_config, dev_options.target.clone(), dirs.tauri)?;
+ 
+-    let interface = AppInterface::new(tauri_config_, dev_options.target.clone())?;
+-
+-    let app = get_app(MobileTarget::Android, tauri_config_, &interface);
++    let app = get_app(MobileTarget::Android, &tauri_config, &interface, dirs.tauri);
+     let (config, metadata) = get_config(
+       &app,
+-      tauri_config_,
++      &tauri_config,
+       dev_options.features.as_ref(),
+       &Default::default(),
+     );
+     (interface, config, metadata)
+   };
+ 
+-  let tauri_path = tauri_dir();
+-  set_current_dir(tauri_path).context("failed to set current directory to Tauri directory")?;
++  set_current_dir(dirs.tauri).context("failed to set current directory to Tauri directory")?;
+ 
+   ensure_init(
+     &tauri_config,
+@@ -218,6 +216,7 @@ fn run_command(options: Options, noise_level: NoiseLevel) -> Result<()> {
+     &config,
+     &metadata,
+     noise_level,
++    &dirs,
+   )
+ }
+ 
+@@ -226,12 +225,13 @@ fn run_dev(
+   mut interface: AppInterface,
+   options: Options,
+   mut dev_options: DevOptions,
+-  tauri_config: ConfigHandle,
++  mut tauri_config: ConfigMetadata,
+   device: Option<Device>,
+   mut env: Env,
+   config: &AndroidConfig,
+   metadata: &AndroidMetadata,
+   noise_level: NoiseLevel,
++  dirs: &Dirs,
+ ) -> Result<()> {
+   // when --host is provided or running on a physical device or resolving 0.0.0.0 we must use the network IP
+   if options.host.0.is_some()
+@@ -239,25 +239,24 @@ fn run_dev(
+       .as_ref()
+       .map(|device| !device.serial_no().starts_with("emulator"))
+       .unwrap_or(false)
+-    || tauri_config
+-      .lock()
+-      .unwrap()
+-      .as_ref()
+-      .unwrap()
+-      .build
+-      .dev_url
+-      .as_ref()
+-      .is_some_and(|url| {
+-        matches!(
+-          url.host(),
+-          Some(Host::Ipv4(i)) if i == Ipv4Addr::UNSPECIFIED
+-        )
+-      })
++    || tauri_config.build.dev_url.as_ref().is_some_and(|url| {
++      matches!(
++        url.host(),
++        Some(Host::Ipv4(i)) if i == Ipv4Addr::UNSPECIFIED
++      )
++    })
+   {
+-    use_network_address_for_dev_url(&tauri_config, &mut dev_options, options.force_ip_prompt)?;
++    use_network_address_for_dev_url(
++      &mut tauri_config,
++      &mut dev_options,
++      options.force_ip_prompt,
++      dirs.tauri,
++    )?;
+   }
+ 
+-  crate::dev::setup(&interface, &mut dev_options, tauri_config)?;
++  crate::dev::setup(&interface, &mut dev_options, &mut tauri_config, dirs)?;
++
++  let tauri_config = Mutex::new(tauri_config);
+ 
+   let interface_options = InterfaceOptions {
+     debug: !dev_options.release_mode,
+@@ -266,12 +265,12 @@ fn run_dev(
+   };
+ 
+   let app_settings = interface.app_settings();
+-  let out_dir = app_settings.out_dir(&interface_options)?;
++  let out_dir = app_settings.out_dir(&interface_options, dirs.tauri)?;
+   let _lock = flock::open_rw(out_dir.join("lock").with_extension("android"), "Android")?;
+ 
+   configure_cargo(&mut env, config)?;
+ 
+-  generate_tauri_properties(config, tauri_config.lock().unwrap().as_ref().unwrap(), true)?;
++  generate_tauri_properties(config, &tauri_config.lock().unwrap(), true)?;
+ 
+   let installed_targets =
+     crate::interface::rust::installation::installed_targets().unwrap_or_default();
+@@ -307,6 +306,7 @@ fn run_dev(
+ 
+   let open = options.open;
+   interface.mobile_dev(
++    &tauri_config,
+     MobileOptions {
+       debug: !options.release_mode,
+       features: options.features,
+@@ -329,9 +329,9 @@ fn run_dev(
+         }),
+       };
+ 
+-      let _handle = write_options(tauri_config.lock().unwrap().as_ref().unwrap(), cli_options)?;
++      let _handle = write_options(&tauri_config.lock().unwrap(), cli_options)?;
+ 
+-      inject_resources(config, tauri_config.lock().unwrap().as_ref().unwrap())?;
++      inject_resources(config, &tauri_config.lock().unwrap())?;
+ 
+       if open {
+         open_and_wait(config, &env)
+@@ -347,6 +347,7 @@ fn run_dev(
+         open_and_wait(config, &env)
+       }
+     },
++    dirs,
+   )
+ }
+ 
+diff --git a/crates/tauri-cli/src/mobile/android/mod.rs b/crates/tauri-cli/src/mobile/android/mod.rs
+index 9a73f91e0de3..002ed73ac04a 100644
+--- a/crates/tauri-cli/src/mobile/android/mod.rs
++++ b/crates/tauri-cli/src/mobile/android/mod.rs
+@@ -104,18 +104,17 @@ enum Commands {
+ }
+ 
+ pub fn command(cli: Cli, verbosity: u8) -> Result<()> {
++  let dirs = crate::helpers::app_paths::resolve_dirs();
+   let noise_level = NoiseLevel::from_occurrences(verbosity as u64);
+   match cli.command {
+-    Commands::Init(options) => {
+-      crate::helpers::app_paths::resolve();
+-      init_command(
+-        MobileTarget::Android,
+-        options.ci,
+-        false,
+-        options.skip_targets_install,
+-        options.config,
+-      )?
+-    }
++    Commands::Init(options) => init_command(
++      MobileTarget::Android,
++      options.ci,
++      false,
++      options.skip_targets_install,
++      options.config,
++      &dirs,
++    )?,
+     Commands::Dev(options) => dev::command(options, noise_level)?,
+     Commands::Build(options) => build::command(options, noise_level).map(|_| ())?,
+     Commands::Run(options) => run::command(options, noise_level)?,
+diff --git a/crates/tauri-cli/src/mobile/android/run.rs b/crates/tauri-cli/src/mobile/android/run.rs
+index 8bab82b84fe2..986990ac3a75 100644
+--- a/crates/tauri-cli/src/mobile/android/run.rs
++++ b/crates/tauri-cli/src/mobile/android/run.rs
+@@ -9,6 +9,7 @@ use cargo_mobile2::{
+ };
+ use clap::{ArgAction, Parser};
+ use std::path::PathBuf;
++use std::sync::Mutex;
+ 
+ use super::{configure_cargo, device_prompt, env};
+ use crate::{
+@@ -77,7 +78,18 @@ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<()> {
+     }
+   };
+ 
+-  let mut built_application = super::build::command(
++  let dirs = crate::helpers::app_paths::resolve_dirs();
++  let cfg = crate::helpers::config::get_config(
++    tauri_utils::platform::Target::Android,
++    &options
++      .config
++      .iter()
++      .map(|conf| &conf.0)
++      .collect::<Vec<_>>(),
++    dirs.tauri,
++  )?;
++  let tauri_config = Mutex::new(cfg);
++  let mut built_application = super::build::run(
+     super::build::Options {
+       debug: !options.release,
+       targets: device.as_ref().map(|d| {
+@@ -102,6 +114,8 @@ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<()> {
+       }),
+     },
+     noise_level,
++    &dirs,
++    &tauri_config,
+   )?;
+ 
+   configure_cargo(&mut env, &built_application.config)?;
+@@ -139,11 +153,13 @@ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<()> {
+       runner()?;
+     } else {
+       built_application.interface.watch(
++        &tauri_config,
+         WatcherOptions {
+           config: options.config,
+           additional_watch_folders: options.additional_watch_folders,
+         },
+         runner,
++        &dirs,
+       )?;
+     }
+   }
+diff --git a/crates/tauri-cli/src/mobile/init.rs b/crates/tauri-cli/src/mobile/init.rs
+index eef38d1e941c..0a73249705a8 100644
+--- a/crates/tauri-cli/src/mobile/init.rs
++++ b/crates/tauri-cli/src/mobile/init.rs
+@@ -4,7 +4,8 @@
+ 
+ use super::{get_app, Target};
+ use crate::{
+-  helpers::{config::get as get_tauri_config, template::JsonMap},
++  helpers::app_paths::Dirs,
++  helpers::{config::get_config as get_tauri_config, template::JsonMap},
+   interface::{AppInterface, Interface},
+   ConfigValue, Result,
+ };
+@@ -28,6 +29,7 @@ pub fn command(
+   reinstall_deps: bool,
+   skip_targets_install: bool,
+   config: Vec<ConfigValue>,
++  dirs: &Dirs,
+ ) -> Result<()> {
+   let wrapper = TextWrapper::default();
+ 
+@@ -38,6 +40,7 @@ pub fn command(
+     reinstall_deps,
+     skip_targets_install,
+     config,
++    dirs,
+   )?;
+   Ok(())
+ }
+@@ -49,19 +52,19 @@ pub fn exec(
+   #[allow(unused_variables)] reinstall_deps: bool,
+   skip_targets_install: bool,
+   config: Vec<ConfigValue>,
++  dirs: &Dirs,
+ ) -> Result<App> {
+   let tauri_config = get_tauri_config(
+     target.platform_target(),
+     &config.iter().map(|conf| &conf.0).collect::<Vec<_>>(),
++    dirs.tauri,
+   )?;
+ 
+-  let tauri_config_guard = tauri_config.lock().unwrap();
+-  let tauri_config_ = tauri_config_guard.as_ref().unwrap();
+-
+   let app = get_app(
+     target,
+-    tauri_config_,
+-    &AppInterface::new(tauri_config_, None)?,
++    &tauri_config,
++    &AppInterface::new(&tauri_config, None, dirs.tauri)?,
++    dirs.tauri,
+   );
+ 
+   let (handlebars, mut map) = handlebars(&app);
+@@ -135,7 +138,7 @@ pub fn exec(
+     Target::Android => {
+       let _env = super::android::env(non_interactive)?;
+       let (config, metadata) =
+-        super::android::get_config(&app, tauri_config_, &[], &Default::default());
++        super::android::get_config(&app, &tauri_config, &[], &Default::default());
+       map.insert("android", &config);
+       super::android::project::gen(
+         &config,
+@@ -150,10 +153,10 @@ pub fn exec(
+     // Generate Xcode project
+     Target::Ios => {
+       let (config, metadata) =
+-        super::ios::get_config(&app, tauri_config_, &[], &Default::default())?;
++        super::ios::get_config(&app, &tauri_config, &[], &Default::default(), dirs.tauri)?;
+       map.insert("apple", &config);
+       super::ios::project::gen(
+-        tauri_config_,
++        &tauri_config,
+         &config,
+         &metadata,
+         (handlebars, map),
+diff --git a/crates/tauri-cli/src/mobile/ios/build.rs b/crates/tauri-cli/src/mobile/ios/build.rs
+index e8348726b349..dba74df4e2ce 100644
+--- a/crates/tauri-cli/src/mobile/ios/build.rs
++++ b/crates/tauri-cli/src/mobile/ios/build.rs
+@@ -11,8 +11,8 @@ use crate::{
+   build::Options as BuildOptions,
+   error::{Context, ErrorExt},
+   helpers::{
+-    app_paths::tauri_dir,
+-    config::{get as get_tauri_config, ConfigHandle},
++    app_paths::Dirs,
++    config::{get_config as get_tauri_config, ConfigMetadata},
+     flock,
+     plist::merge_plist,
+   },
+@@ -167,9 +167,7 @@ pub struct BuiltApplication {
+   options_handle: OptionsHandle,
+ }
+ 
+-pub fn command(options: Options, noise_level: NoiseLevel) -> Result<BuiltApplication> {
+-  crate::helpers::app_paths::resolve();
+-
++pub fn command(options: Options, noise_level: NoiseLevel, dirs: &Dirs) -> Result<BuiltApplication> {
+   let mut build_options: BuildOptions = options.clone().into();
+   build_options.target = Some(
+     Target::all()
+@@ -189,26 +187,24 @@ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<BuiltApplica
+   let tauri_config = get_tauri_config(
+     tauri_utils::platform::Target::Ios,
+     &options.config.iter().map(|c| &c.0).collect::<Vec<_>>(),
++    dirs.tauri,
+   )?;
+   let (interface, mut config) = {
+-    let tauri_config_guard = tauri_config.lock().unwrap();
+-    let tauri_config_ = tauri_config_guard.as_ref().unwrap();
+-
+-    let interface = AppInterface::new(tauri_config_, build_options.target.clone())?;
++    let interface = AppInterface::new(&tauri_config, build_options.target.clone(), dirs.tauri)?;
+     interface.build_options(&mut Vec::new(), &mut build_options.features, true);
+ 
+-    let app = get_app(MobileTarget::Ios, tauri_config_, &interface);
++    let app = get_app(MobileTarget::Ios, &tauri_config, &interface, dirs.tauri);
+     let (config, _metadata) = get_config(
+       &app,
+-      tauri_config_,
++      &tauri_config,
+       &build_options.features,
+       &Default::default(),
++      dirs.tauri,
+     )?;
+     (interface, config)
+   };
+ 
+-  let tauri_path = tauri_dir();
+-  set_current_dir(tauri_path).context("failed to set current directory")?;
++  set_current_dir(dirs.tauri).context("failed to set current directory")?;
+ 
+   ensure_init(
+     &tauri_config,
+@@ -217,7 +213,7 @@ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<BuiltApplica
+     MobileTarget::Ios,
+     options.ci,
+   )?;
+-  inject_resources(&config, tauri_config.lock().unwrap().as_ref().unwrap())?;
++  inject_resources(&config, &tauri_config)?;
+ 
+   let mut plist = plist::Dictionary::new();
+   plist.insert(
+@@ -231,21 +227,13 @@ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<BuiltApplica
+     .join("Info.plist");
+   let mut src_plists = vec![info_plist_path.clone().into()];
+   src_plists.push(plist::Value::Dictionary(plist).into());
+-  if tauri_path.join("Info.plist").exists() {
+-    src_plists.push(tauri_path.join("Info.plist").into());
++  if dirs.tauri.join("Info.plist").exists() {
++    src_plists.push(dirs.tauri.join("Info.plist").into());
+   }
+-  if tauri_path.join("Info.ios.plist").exists() {
+-    src_plists.push(tauri_path.join("Info.ios.plist").into());
++  if dirs.tauri.join("Info.ios.plist").exists() {
++    src_plists.push(dirs.tauri.join("Info.ios.plist").into());
+   }
+-  if let Some(info_plist) = &tauri_config
+-    .lock()
+-    .unwrap()
+-    .as_ref()
+-    .unwrap()
+-    .bundle
+-    .ios
+-    .info_plist
+-  {
++  if let Some(info_plist) = &tauri_config.bundle.ios.info_plist {
+     src_plists.push(info_plist.clone().into());
+   }
+   let merged_info_plist = merge_plist(src_plists)?;
+@@ -338,6 +326,7 @@ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<BuiltApplica
+     &mut config,
+     &mut env,
+     noise_level,
++    &dirs,
+   )?;
+ 
+   if open {
+@@ -356,10 +345,11 @@ fn run_build(
+   interface: &AppInterface,
+   options: Options,
+   mut build_options: BuildOptions,
+-  tauri_config: ConfigHandle,
++  tauri_config: ConfigMetadata,
+   config: &mut AppleConfig,
+   env: &mut Env,
+   noise_level: NoiseLevel,
++  dirs: &Dirs,
+ ) -> Result<OptionsHandle> {
+   let profile = if options.debug {
+     Profile::Debug
+@@ -367,20 +357,18 @@ fn run_build(
+     Profile::Release
+   };
+ 
+-  crate::build::setup(
+-    interface,
+-    &mut build_options,
+-    tauri_config.lock().unwrap().as_ref().unwrap(),
+-    true,
+-  )?;
++  crate::build::setup(interface, &mut build_options, &tauri_config, true, dirs)?;
+ 
+   let app_settings = interface.app_settings();
+-  let out_dir = app_settings.out_dir(&InterfaceOptions {
+-    debug: build_options.debug,
+-    target: build_options.target.clone(),
+-    args: build_options.args.clone(),
+-    ..Default::default()
+-  })?;
++  let out_dir = app_settings.out_dir(
++    &InterfaceOptions {
++      debug: build_options.debug,
++      target: build_options.target.clone(),
++      args: build_options.args.clone(),
++      ..Default::default()
++    },
++    dirs.tauri,
++  )?;
+   let _lock = flock::open_rw(out_dir.join("lock").with_extension("ios"), "iOS")?;
+ 
+   let cli_options = CliOptions {
+@@ -392,7 +380,7 @@ fn run_build(
+     config: build_options.config.clone(),
+     target_device: options.target_device.clone(),
+   };
+-  let handle = write_options(tauri_config.lock().unwrap().as_ref().unwrap(), cli_options)?;
++  let handle = write_options(&tauri_config, cli_options)?;
+ 
+   if options.open {
+     return Ok(handle);
+diff --git a/crates/tauri-cli/src/mobile/ios/dev.rs b/crates/tauri-cli/src/mobile/ios/dev.rs
+index 2661581ef77c..6d9c8a697372 100644
+--- a/crates/tauri-cli/src/mobile/ios/dev.rs
++++ b/crates/tauri-cli/src/mobile/ios/dev.rs
+@@ -10,8 +10,8 @@ use crate::{
+   dev::Options as DevOptions,
+   error::{Context, ErrorExt},
+   helpers::{
+-    app_paths::tauri_dir,
+-    config::{get as get_tauri_config, ConfigHandle},
++    app_paths::Dirs,
++    config::{get_config as get_tauri_config, ConfigMetadata},
+     flock,
+     plist::merge_plist,
+   },
+@@ -35,6 +35,7 @@ use cargo_mobile2::{
+ };
+ use url::Host;
+ 
++use std::sync::Mutex;
+ use std::{env::set_current_dir, net::Ipv4Addr, path::PathBuf};
+ 
+ const PHYSICAL_IPHONE_DEV_WARNING: &str = "To develop on physical phones you need the `--host` option (not required for Simulators). See the documentation for more information: https://v2.tauri.app/develop/#development-server";
+@@ -138,16 +139,16 @@ impl From<Options> for DevOptions {
+ }
+ 
+ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<()> {
+-  crate::helpers::app_paths::resolve();
++  let dirs = crate::helpers::app_paths::resolve_dirs();
+ 
+-  let result = run_command(options, noise_level);
++  let result = run_command(options, noise_level, dirs);
+   if result.is_err() {
+     crate::dev::kill_before_dev_process();
+   }
+   result
+ }
+ 
+-fn run_command(options: Options, noise_level: NoiseLevel) -> Result<()> {
++fn run_command(options: Options, noise_level: NoiseLevel, dirs: Dirs) -> Result<()> {
+   // setup env additions before calling env()
+   if let Some(root_certificate_path) = &options.root_certificate_path {
+     std::env::set_var(
+@@ -186,26 +187,24 @@ fn run_command(options: Options, noise_level: NoiseLevel) -> Result<()> {
+   let tauri_config = get_tauri_config(
+     tauri_utils::platform::Target::Ios,
+     &options.config.iter().map(|c| &c.0).collect::<Vec<_>>(),
++    dirs.tauri,
+   )?;
+   let (interface, config) = {
+-    let tauri_config_guard = tauri_config.lock().unwrap();
+-    let tauri_config_ = tauri_config_guard.as_ref().unwrap();
++    let interface = AppInterface::new(&tauri_config, Some(target_triple), dirs.tauri)?;
+ 
+-    let interface = AppInterface::new(tauri_config_, Some(target_triple))?;
+-
+-    let app = get_app(MobileTarget::Ios, tauri_config_, &interface);
++    let app = get_app(MobileTarget::Ios, &tauri_config, &interface, dirs.tauri);
+     let (config, _metadata) = get_config(
+       &app,
+-      tauri_config_,
++      &tauri_config,
+       &dev_options.features,
+       &Default::default(),
++      dirs.tauri,
+     )?;
+ 
+     (interface, config)
+   };
+ 
+-  let tauri_path = tauri_dir();
+-  set_current_dir(tauri_path).context("failed to set current directory to Tauri directory")?;
++  set_current_dir(dirs.tauri).context("failed to set current directory to Tauri directory")?;
+ 
+   ensure_init(
+     &tauri_config,
+@@ -214,28 +213,20 @@ fn run_command(options: Options, noise_level: NoiseLevel) -> Result<()> {
+     MobileTarget::Ios,
+     false,
+   )?;
+-  inject_resources(&config, tauri_config.lock().unwrap().as_ref().unwrap())?;
++  inject_resources(&config, &tauri_config)?;
+ 
+   let info_plist_path = config
+     .project_dir()
+     .join(config.scheme())
+     .join("Info.plist");
+   let mut src_plists = vec![info_plist_path.clone().into()];
+-  if tauri_path.join("Info.plist").exists() {
+-    src_plists.push(tauri_path.join("Info.plist").into());
++  if dirs.tauri.join("Info.plist").exists() {
++    src_plists.push(dirs.tauri.join("Info.plist").into());
+   }
+-  if tauri_path.join("Info.ios.plist").exists() {
+-    src_plists.push(tauri_path.join("Info.ios.plist").into());
++  if dirs.tauri.join("Info.ios.plist").exists() {
++    src_plists.push(dirs.tauri.join("Info.ios.plist").into());
+   }
+-  if let Some(info_plist) = &tauri_config
+-    .lock()
+-    .unwrap()
+-    .as_ref()
+-    .unwrap()
+-    .bundle
+-    .ios
+-    .info_plist
+-  {
++  if let Some(info_plist) = &tauri_config.bundle.ios.info_plist {
+     src_plists.push(info_plist.clone().into());
+   }
+   let merged_info_plist = merge_plist(src_plists)?;
+@@ -274,6 +265,7 @@ fn run_command(options: Options, noise_level: NoiseLevel) -> Result<()> {
+     env,
+     &config,
+     noise_level,
++    &dirs,
+   )
+ }
+ 
+@@ -282,11 +274,12 @@ fn run_dev(
+   mut interface: AppInterface,
+   options: Options,
+   mut dev_options: DevOptions,
+-  tauri_config: ConfigHandle,
++  mut tauri_config: ConfigMetadata,
+   device: Option<Device>,
+   env: Env,
+   config: &AppleConfig,
+   noise_level: NoiseLevel,
++  dirs: &Dirs,
+ ) -> Result<()> {
+   // when --host is provided or running on a physical device or resolving 0.0.0.0 we must use the network IP
+   if options.host.0.is_some()
+@@ -294,38 +287,41 @@ fn run_dev(
+       .as_ref()
+       .map(|device| !matches!(device.kind(), DeviceKind::Simulator))
+       .unwrap_or(false)
+-    || tauri_config
+-      .lock()
+-      .unwrap()
+-      .as_ref()
+-      .unwrap()
+-      .build
+-      .dev_url
+-      .as_ref()
+-      .is_some_and(|url| {
+-        matches!(
++    || tauri_config.build.dev_url.as_ref().is_some_and(|url| {
++      matches!(
+           url.host(),
+           Some(Host::Ipv4(i)) if i == Ipv4Addr::UNSPECIFIED
+-        )
+-      })
++      )
++    })
+   {
+-    use_network_address_for_dev_url(&tauri_config, &mut dev_options, options.force_ip_prompt)?;
++    use_network_address_for_dev_url(
++      &mut tauri_config,
++      &mut dev_options,
++      options.force_ip_prompt,
++      dirs.tauri,
++    )?;
+   }
+ 
+-  crate::dev::setup(&interface, &mut dev_options, tauri_config.clone())?;
++  crate::dev::setup(&interface, &mut dev_options, &mut tauri_config, &dirs)?;
++
++  let tauri_config = Mutex::new(tauri_config);
+ 
+   let app_settings = interface.app_settings();
+-  let out_dir = app_settings.out_dir(&InterfaceOptions {
+-    debug: !dev_options.release_mode,
+-    target: dev_options.target.clone(),
+-    ..Default::default()
+-  })?;
++  let out_dir = app_settings.out_dir(
++    &InterfaceOptions {
++      debug: !dev_options.release_mode,
++      target: dev_options.target.clone(),
++      ..Default::default()
++    },
++    dirs.tauri,
++  )?;
+   let _lock = flock::open_rw(out_dir.join("lock").with_extension("ios"), "iOS")?;
+ 
+   let set_host = options.host.0.is_some();
+ 
+   let open = options.open;
+   interface.mobile_dev(
++    &tauri_config,
+     MobileOptions {
+       debug: true,
+       features: options.features,
+@@ -344,7 +340,7 @@ fn run_dev(
+         config: dev_options.config.clone(),
+         target_device: None,
+       };
+-      let _handle = write_options(tauri_config.lock().unwrap().as_ref().unwrap(), cli_options)?;
++      let _handle = write_options(&tauri_config.lock().unwrap(), cli_options)?;
+ 
+       let open_xcode = || {
+         if !set_host {
+@@ -371,6 +367,7 @@ fn run_dev(
+         open_xcode()
+       }
+     },
++    &dirs,
+   )
+ }
+ 
+diff --git a/crates/tauri-cli/src/mobile/ios/mod.rs b/crates/tauri-cli/src/mobile/ios/mod.rs
+index d589f76a6ad7..0590e772a001 100644
+--- a/crates/tauri-cli/src/mobile/ios/mod.rs
++++ b/crates/tauri-cli/src/mobile/ios/mod.rs
+@@ -30,8 +30,7 @@ use super::{
+ use crate::{
+   error::{Context, ErrorExt},
+   helpers::{
+-    app_paths::tauri_dir,
+-    config::{BundleResources, Config as TauriConfig, ConfigHandle},
++    config::{BundleResources, Config as TauriConfig, ConfigMetadata},
+     pbxproj, strip_semver_prerelease_tag,
+   },
+   ConfigValue, Error, Result,
+@@ -103,19 +102,18 @@ enum Commands {
+ 
+ pub fn command(cli: Cli, verbosity: u8) -> Result<()> {
+   let noise_level = NoiseLevel::from_occurrences(verbosity as u64);
++  let dirs = crate::helpers::app_paths::resolve_dirs();
+   match cli.command {
+-    Commands::Init(options) => {
+-      crate::helpers::app_paths::resolve();
+-      init_command(
+-        MobileTarget::Ios,
+-        options.ci,
+-        options.reinstall_deps,
+-        options.skip_targets_install,
+-        options.config,
+-      )?
+-    }
++    Commands::Init(options) => init_command(
++      MobileTarget::Ios,
++      options.ci,
++      options.reinstall_deps,
++      options.skip_targets_install,
++      options.config,
++      &dirs,
++    )?,
+     Commands::Dev(options) => dev::command(options, noise_level)?,
+-    Commands::Build(options) => build::command(options, noise_level).map(|_| ())?,
++    Commands::Build(options) => build::command(options, noise_level, &dirs).map(|_| ())?,
+     Commands::Run(options) => run::command(options, noise_level)?,
+     Commands::XcodeScript(options) => xcode_script::command(options)?,
+   }
+@@ -128,6 +126,7 @@ pub fn get_config(
+   tauri_config: &TauriConfig,
+   features: &[String],
+   cli_options: &CliOptions,
++  tauri_dir: &Path,
+ ) -> Result<(AppleConfig, AppleMetadata)> {
+   let mut ios_options = cli_options.clone();
+   ios_options.features.extend_from_slice(features);
+@@ -236,8 +235,6 @@ pub fn get_config(
+   let config = AppleConfig::from_raw(app.clone(), Some(raw))
+     .context("failed to create Apple configuration")?;
+ 
+-  let tauri_dir = tauri_dir();
+-
+   let mut vendor_frameworks = Vec::new();
+   let mut frameworks = Vec::new();
+   for framework in tauri_config
+@@ -272,11 +269,7 @@ pub fn get_config(
+     supported: true,
+     ios: ApplePlatform {
+       cargo_args: Some(ios_options.args),
+-      features: if ios_options.features.is_empty() {
+-        None
+-      } else {
+-        Some(ios_options.features)
+-      },
++      features: Some(ios_options.features),
+       frameworks: Some(frameworks),
+       vendor_frameworks: Some(vendor_frameworks),
+       ..Default::default()
+@@ -553,26 +546,14 @@ pub fn load_pbxproj(config: &AppleConfig) -> Result<pbxproj::Pbxproj> {
+ 
+ pub fn synchronize_project_config(
+   config: &AppleConfig,
+-  tauri_config: &ConfigHandle,
++  tauri_config: &ConfigMetadata,
+   pbxproj: &mut pbxproj::Pbxproj,
+   export_options_plist: &mut plist::Dictionary,
+   project_config: &ProjectConfig,
+   debug: bool,
+ ) -> Result<()> {
+-  let identifier = tauri_config
+-    .lock()
+-    .unwrap()
+-    .as_ref()
+-    .unwrap()
+-    .identifier
+-    .clone();
+-  let product_name = tauri_config
+-    .lock()
+-    .unwrap()
+-    .as_ref()
+-    .unwrap()
+-    .product_name
+-    .clone();
++  let identifier = tauri_config.identifier.clone();
++  let product_name = tauri_config.product_name.clone();
+ 
+   let manual_signing = project_config.code_sign_identity.is_some()
+     || project_config.provisioning_profile_uuid.is_some();
+diff --git a/crates/tauri-cli/src/mobile/ios/run.rs b/crates/tauri-cli/src/mobile/ios/run.rs
+index 844e2f4c8774..7d18cdb60e4d 100644
+--- a/crates/tauri-cli/src/mobile/ios/run.rs
++++ b/crates/tauri-cli/src/mobile/ios/run.rs
+@@ -3,6 +3,7 @@
+ // SPDX-License-Identifier: MIT
+ 
+ use std::path::PathBuf;
++use std::sync::Mutex;
+ 
+ use cargo_mobile2::opts::{NoiseLevel, Profile};
+ use clap::{ArgAction, Parser};
+@@ -10,6 +11,7 @@ use clap::{ArgAction, Parser};
+ use super::{device_prompt, env};
+ use crate::{
+   error::Context,
++  helpers::config::get_config as get_tauri_config,
+   interface::{DevProcess, Interface, WatcherOptions},
+   mobile::{DevChild, TargetDevice},
+   ConfigValue, Result,
+@@ -73,6 +75,8 @@ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<()> {
+     }
+   };
+ 
++  let dirs = crate::helpers::app_paths::resolve_dirs();
++
+   let mut built_application = super::build::command(
+     super::build::Options {
+       debug: !options.release,
+@@ -91,7 +95,15 @@ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<()> {
+       }),
+     },
+     noise_level,
++    &dirs,
++  )?;
++
++  let cfg = get_tauri_config(
++    tauri_utils::platform::Target::Ios,
++    &options.config.iter().map(|c| &c.0).collect::<Vec<_>>(),
++    dirs.tauri,
+   )?;
++  let tauri_config = Mutex::new(cfg);
+ 
+   // options.open is handled by the build command
+   // so all we need to do here is run the app on the selected device
+@@ -117,11 +129,13 @@ pub fn command(options: Options, noise_level: NoiseLevel) -> Result<()> {
+       runner()?;
+     } else {
+       built_application.interface.watch(
++        &tauri_config,
+         WatcherOptions {
+           config: options.config,
+           additional_watch_folders: options.additional_watch_folders,
+         },
+         runner,
++        &dirs,
+       )?;
+     }
+   }
+diff --git a/crates/tauri-cli/src/mobile/ios/xcode_script.rs b/crates/tauri-cli/src/mobile/ios/xcode_script.rs
+index 25955c5ae9c7..0b30ba2f447f 100644
+--- a/crates/tauri-cli/src/mobile/ios/xcode_script.rs
++++ b/crates/tauri-cli/src/mobile/ios/xcode_script.rs
+@@ -5,7 +5,7 @@
+ use super::{ensure_init, env, get_app, get_config, read_options, MobileTarget};
+ use crate::{
+   error::{Context, ErrorExt},
+-  helpers::config::{get as get_tauri_config, reload as reload_tauri_config},
++  helpers::config::{get_config as get_tauri_config, reload_config as reload_tauri_config},
+   interface::{AppInterface, Interface, Options as InterfaceOptions},
+   mobile::ios::LIB_OUTPUT_FILE_NAME,
+   Error, Result,
+@@ -89,47 +89,43 @@ pub fn command(options: Options) -> Result<()> {
+     .unwrap();
+   }
+ 
+-  crate::helpers::app_paths::resolve();
++  let dirs = crate::helpers::app_paths::resolve_dirs();
+ 
+   let profile = profile_from_configuration(&options.configuration);
+   let macos = macos_from_platform(&options.platform);
+ 
+-  let (tauri_config, cli_options) = {
+-    let tauri_config = get_tauri_config(tauri_utils::platform::Target::Ios, &[])?;
+-    let cli_options = {
+-      let tauri_config_guard = tauri_config.lock().unwrap();
+-      let tauri_config_ = tauri_config_guard.as_ref().unwrap();
+-      read_options(tauri_config_)
+-    };
+-    let tauri_config = if cli_options.config.is_empty() {
+-      tauri_config
+-    } else {
++  let mut tauri_config = get_tauri_config(tauri_utils::platform::Target::Ios, &[], dirs.tauri)?;
++  let cli_options = {
++    let cli_options = { read_options(&tauri_config) };
++    if !cli_options.config.is_empty() {
+       // reload config with merges from the ios dev|build script
+       reload_tauri_config(
++        &mut tauri_config,
+         &cli_options
+           .config
+           .iter()
+           .map(|conf| &conf.0)
+           .collect::<Vec<_>>(),
++        dirs.tauri,
+       )?
+     };
+ 
+-    (tauri_config, cli_options)
++    cli_options
+   };
+ 
+   let (config, metadata) = {
+-    let tauri_config_guard = tauri_config.lock().unwrap();
+-    let tauri_config_ = tauri_config_guard.as_ref().unwrap();
+-    let cli_options = read_options(tauri_config_);
++    let cli_options = read_options(&tauri_config);
+     let (config, metadata) = get_config(
+       &get_app(
+         MobileTarget::Ios,
+-        tauri_config_,
+-        &AppInterface::new(tauri_config_, None)?,
++        &tauri_config,
++        &AppInterface::new(&tauri_config, None, dirs.tauri)?,
++        dirs.tauri,
+       ),
+-      tauri_config_,
++      &tauri_config,
+       &[],
+       &cli_options,
++      dirs.tauri,
+     )?;
+     (config, metadata)
+   };
+@@ -142,7 +138,8 @@ pub fn command(options: Options) -> Result<()> {
+   )?;
+ 
+   if !cli_options.config.is_empty() {
+-    crate::helpers::config::merge_with(
++    crate::helpers::config::merge_config_with(
++      &mut tauri_config,
+       &cli_options
+         .config
+         .iter()
+@@ -236,10 +233,7 @@ pub fn command(options: Options) -> Result<()> {
+       }
+     };
+ 
+-    let interface = AppInterface::new(
+-      tauri_config.lock().unwrap().as_ref().unwrap(),
+-      Some(rust_triple.into()),
+-    )?;
++    let interface = AppInterface::new(&tauri_config, Some(rust_triple.into()), dirs.tauri)?;
+ 
+     let cflags = format!("CFLAGS_{env_triple}");
+     let cxxflags = format!("CFLAGS_{env_triple}");
+@@ -280,11 +274,14 @@ pub fn command(options: Options) -> Result<()> {
+       )
+       .context("failed to compile iOS app")?;
+ 
+-    let out_dir = interface.app_settings().out_dir(&InterfaceOptions {
+-      debug: matches!(profile, Profile::Debug),
+-      target: Some(rust_triple.into()),
+-      ..Default::default()
+-    })?;
++    let out_dir = interface.app_settings().out_dir(
++      &InterfaceOptions {
++        debug: matches!(profile, Profile::Debug),
++        target: Some(rust_triple.into()),
++        ..Default::default()
++      },
++      dirs.tauri,
++    )?;
+ 
+     let lib_path = out_dir.join(format!("lib{}.a", config.app().lib_name()));
+     if !lib_path.exists() {
+diff --git a/crates/tauri-cli/src/mobile/mod.rs b/crates/tauri-cli/src/mobile/mod.rs
+index b94543d65c7c..6b06e0cac4c5 100644
+--- a/crates/tauri-cli/src/mobile/mod.rs
++++ b/crates/tauri-cli/src/mobile/mod.rs
+@@ -4,10 +4,7 @@
+ 
+ use crate::{
+   error::{Context, ErrorExt},
+-  helpers::{
+-    app_paths::tauri_dir,
+-    config::{reload as reload_config, Config as TauriConfig, ConfigHandle, ConfigMetadata},
+-  },
++  helpers::config::{reload_config, Config as TauriConfig, ConfigMetadata},
+   interface::{AppInterface, AppSettings, DevProcess, Interface, Options as InterfaceOptions},
+   ConfigValue, Error, Result,
+ };
+@@ -31,7 +28,7 @@ use std::{
+   fmt::{Display, Write},
+   fs::{read_to_string, write},
+   net::{AddrParseError, IpAddr, Ipv4Addr, SocketAddr},
+-  path::PathBuf,
++  path::{Path, PathBuf},
+   process::{exit, ExitStatus},
+   str::FromStr,
+   sync::{
+@@ -217,12 +214,9 @@ fn local_ip_address(force: bool) -> &'static IpAddr {
+ 
+         })
+         .collect();
+-      match addresses.len() {
+-        0 => panic!("No external IP detected."),
+-        1 => {
+-          let ipaddr = addresses.first().unwrap();
+-          *ipaddr
+-        }
++      match addresses.as_slice() {
++        [] => panic!("No external IP detected."),
++        [ipaddr] => *ipaddr,
+         _ => {
+           let selected = dialoguer::Select::with_theme(&dialoguer::theme::ColorfulTheme::default())
+             .with_prompt(
+@@ -252,18 +246,12 @@ struct DevUrlConfig {
+ }
+ 
+ fn use_network_address_for_dev_url(
+-  config: &ConfigHandle,
++  config: &mut ConfigMetadata,
+   dev_options: &mut crate::dev::Options,
+   force_ip_prompt: bool,
++  tauri_dir: &Path,
+ ) -> crate::Result<DevUrlConfig> {
+-  let mut dev_url = config
+-    .lock()
+-    .unwrap()
+-    .as_ref()
+-    .unwrap()
+-    .build
+-    .dev_url
+-    .clone();
++  let mut dev_url = config.build.dev_url.clone();
+ 
+   let ip = if let Some(url) = &mut dev_url {
+     let localhost = match url.host() {
+@@ -299,11 +287,13 @@ fn use_network_address_for_dev_url(
+         })));
+ 
+       reload_config(
++        config,
+         &dev_options
+           .config
+           .iter()
+           .map(|conf| &conf.0)
+           .collect::<Vec<_>>(),
++        tauri_dir,
+       )?;
+ 
+       Some(ip)
+@@ -441,7 +431,12 @@ fn read_options(config: &ConfigMetadata) -> CliOptions {
+   options
+ }
+ 
+-pub fn get_app(target: Target, config: &TauriConfig, interface: &AppInterface) -> App {
++pub fn get_app(
++  target: Target,
++  config: &TauriConfig,
++  interface: &AppInterface,
++  tauri_dir: &Path,
++) -> App {
+   let identifier = match target {
+     Target::Android => config.identifier.replace('-', "_"),
+     #[cfg(target_os = "macos")]
+@@ -478,22 +473,26 @@ pub fn get_app(target: Target, config: &TauriConfig, interface: &AppInterface) -
+   };
+ 
+   let app_settings = interface.app_settings();
+-  App::from_raw(tauri_dir().to_path_buf(), raw)
++  let tauri_dir = tauri_dir.to_path_buf();
++  App::from_raw(tauri_dir.to_path_buf(), raw)
+     .unwrap()
+     .with_target_dir_resolver(move |target, profile| {
+       app_settings
+-        .out_dir(&InterfaceOptions {
+-          debug: matches!(profile, Profile::Debug),
+-          target: Some(target.into()),
+-          ..Default::default()
+-        })
++        .out_dir(
++          &InterfaceOptions {
++            debug: matches!(profile, Profile::Debug),
++            target: Some(target.into()),
++            ..Default::default()
++          },
++          &tauri_dir,
++        )
+         .expect("failed to resolve target directory")
+     })
+ }
+ 
+ #[allow(unused_variables)]
+ fn ensure_init(
+-  tauri_config: &ConfigHandle,
++  tauri_config: &ConfigMetadata,
+   app: &App,
+   project_dir: PathBuf,
+   target: Target,
+@@ -508,16 +507,13 @@ fn ensure_init(
+     )
+   }
+ 
+-  let tauri_config_guard = tauri_config.lock().unwrap();
+-  let tauri_config_ = tauri_config_guard.as_ref().unwrap();
+-
+   let mut project_outdated_reasons = Vec::new();
+ 
+   match target {
+     Target::Android => {
+       let java_folder = project_dir
+         .join("app/src/main/java")
+-        .join(tauri_config_.identifier.replace('.', "/").replace('-', "_"));
++        .join(tauri_config.identifier.replace('.', "/").replace('-', "_"));
+       if java_folder.exists() {
+         #[cfg(unix)]
+         ensure_gradlew(&project_dir)?;
+diff --git a/crates/tauri-cli/src/remove.rs b/crates/tauri-cli/src/remove.rs
+index 319f60e82860..ba20ae778f6c 100644
+--- a/crates/tauri-cli/src/remove.rs
++++ b/crates/tauri-cli/src/remove.rs
+@@ -6,11 +6,7 @@ use clap::Parser;
+ 
+ use crate::{
+   acl,
+-  helpers::{
+-    app_paths::{resolve_frontend_dir, tauri_dir},
+-    cargo,
+-    npm::PackageManager,
+-  },
++  helpers::{app_paths::resolve_frontend_dir, cargo, npm::PackageManager},
+   Result,
+ };
+ 
+@@ -22,11 +18,7 @@ pub struct Options {
+ }
+ 
+ pub fn command(options: Options) -> Result<()> {
+-  crate::helpers::app_paths::resolve();
+-  run(options)
+-}
+-
+-pub fn run(options: Options) -> Result<()> {
++  let dirs = crate::helpers::app_paths::resolve_dirs();
+   let plugin = options.plugin;
+ 
+   let crate_name = format!("tauri-plugin-{plugin}");
+@@ -35,7 +27,6 @@ pub fn run(options: Options) -> Result<()> {
+   let metadata = plugins.remove(plugin.as_str()).unwrap_or_default();
+ 
+   let frontend_dir = resolve_frontend_dir();
+-  let tauri_dir = tauri_dir();
+ 
+   let target_str = metadata
+     .desktop_only
+@@ -48,14 +39,14 @@ pub fn run(options: Options) -> Result<()> {
+ 
+   cargo::uninstall_one(cargo::CargoUninstallOptions {
+     name: &crate_name,
+-    cwd: Some(tauri_dir),
++    cwd: Some(dirs.tauri),
+     target: target_str,
+   })?;
+ 
+   if !metadata.rust_only {
+     if let Some(manager) = frontend_dir.map(PackageManager::from_project) {
+       let npm_name = format!("@tauri-apps/plugin-{plugin}");
+-      manager.remove(&[npm_name], tauri_dir)?;
++      manager.remove(&[npm_name], dirs.tauri)?;
+     }
+ 
+     acl::permission::rm::command(acl::permission::rm::Options {

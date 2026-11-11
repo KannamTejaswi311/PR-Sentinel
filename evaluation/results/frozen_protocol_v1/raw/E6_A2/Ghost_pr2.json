@@ -1,0 +1,357 @@
+{
+  "pr_id": "Ghost_pr2",
+  "experiment_id": "E6_A2",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr2.diff",
+      "line_start": 96,
+      "evidence": "// Set logged-in member with NO expertise",
+      "execution_status": "SUCCESS",
+      "finding_id": "c1081e5f-9128-4050-9e54-386b900513f9",
+      "line_end": 96,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr2.diff",
+      "line_start": 101,
+      "evidence": "html: '<p>This is a comment from someone with expertise</p>',",
+      "execution_status": "SUCCESS",
+      "finding_id": "3fb7dfc8-e755-4633-8970-41a23ab00c84",
+      "line_end": 101,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr2.diff",
+      "line_start": 111,
+      "evidence": "// Click reply on the parent comment",
+      "execution_status": "SUCCESS",
+      "finding_id": "d816db43-b080-4958-a16f-a23d33e92f1d",
+      "line_end": 111,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr2.diff",
+      "line_start": 115,
+      "evidence": "// Wait for reply form to appear",
+      "execution_status": "SUCCESS",
+      "finding_id": "0f00d135-e15b-440f-8430-e5b793d473df",
+      "line_end": 115,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr2.diff",
+      "line_start": 122,
+      "evidence": "// The reply form should show the logged-in member's info, NOT the parent's",
+      "execution_status": "SUCCESS",
+      "finding_id": "ae9f2932-0e19-4e4f-85b2-be7d11fb509c",
+      "line_end": 122,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr2.diff",
+      "line_start": 125,
+      "evidence": "// The expertise button should show \"Add your expertise\" since the",
+      "execution_status": "SUCCESS",
+      "finding_id": "3d420091-6763-4985-93fc-1c13e038b629",
+      "line_end": 125,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr2.diff",
+      "line_start": 126,
+      "evidence": "// logged-in member has no expertise - it should NOT show \"Head of Comments\"",
+      "execution_status": "SUCCESS",
+      "finding_id": "c6d1d685-4837-475c-85e6-7a31d64f8ac4",
+      "line_end": 126,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr2.diff",
+      "line_start": 133,
+      "evidence": "// Set logged-in member with NO name (null triggers the fallback bug)",
+      "execution_status": "SUCCESS",
+      "finding_id": "c4c3477e-7e0a-470c-ade7-5dd3e9bbfdc7",
+      "line_end": 133,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr2.diff",
+      "line_start": 138,
+      "evidence": "html: '<p>This is a comment from someone with a name</p>',",
+      "execution_status": "SUCCESS",
+      "finding_id": "f5a577e9-d796-4730-b2c2-45bebfdac1da",
+      "line_end": 138,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr2.diff",
+      "line_start": 148,
+      "evidence": "// Click reply on the parent comment",
+      "execution_status": "SUCCESS",
+      "finding_id": "5648d6f2-253e-41c1-9fa1-5272d03f900c",
+      "line_end": 148,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr2.diff",
+      "line_start": 152,
+      "evidence": "// Wait for reply form to appear",
+      "execution_status": "SUCCESS",
+      "finding_id": "07b1ce71-bd6a-4c1e-9d73-4b4699d074ec",
+      "line_end": 152,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr2.diff",
+      "line_start": 156,
+      "evidence": "// The reply form should NOT show the parent comment author's name",
+      "execution_status": "SUCCESS",
+      "finding_id": "e223ba05-4189-4cad-8152-e65d42b645aa",
+      "line_end": 156,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr2.diff",
+      "line_start": 157,
+      "evidence": "// It should either show nothing, \"Anonymous\", or prompt for a name",
+      "execution_status": "SUCCESS",
+      "finding_id": "5355b95a-b485-42d3-877a-ced445a7cd21",
+      "line_end": 157,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr2",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr2.diff",
+      "line_start": 158,
+      "evidence": "// but definitely NOT \"Named Author\"",
+      "execution_status": "SUCCESS",
+      "finding_id": "8da16aa1-60ba-421a-967e-8c1a001b8d37",
+      "line_end": 158,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6_A2"
+      }
+    }
+  ],
+  "findings_count": 14,
+  "risk_assessment": {
+    "score": 100,
+    "risk_level": "CRITICAL RISK",
+    "recommendation": "DO NOT MERGE: PR contains critical security or logic defects. Extensive remediation required.",
+    "metrics": {
+      "raw_finding_score": 210.0,
+      "file_spread_multiplier": 1.2,
+      "diff_size_multiplier": 1.15,
+      "codebert_penalty_added": 0.0,
+      "total_diff_lines": 165,
+      "modified_files_count": 3
+    },
+    "formula_explanation": "PR Risk Score = min(100, round(RawScore(210.0) * FileSpread(1.20) * DiffSize(1.15) + CodeBERTPenalty(0.0))) = 100",
+    "top_contributions": [
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      },
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      },
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      },
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      },
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      }
+    ]
+  },
+  "duration_seconds": 0.009,
+  "execution_manifest": {
+    "codebert": "ERROR: Real CodeBERT model required in research mode, but unavailable.",
+    "static_analyzer": "SKIPPED",
+    "rag_pipeline": "ERROR: Real CodeBERT model required in research mode, but unavailable.",
+    "multi_agent": "SUCCESS",
+    "synthesizer": "SUCCESS",
+    "test_generator": "SUCCESS"
+  }
+}

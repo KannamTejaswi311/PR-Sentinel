@@ -1,0 +1,187 @@
+diff --git a/api/.env.example b/api/.env.example
+index 8099c4a42a7a17..15981c14b82eb8 100644
+--- a/api/.env.example
++++ b/api/.env.example
+@@ -417,6 +417,8 @@ SMTP_USERNAME=123
+ SMTP_PASSWORD=abc
+ SMTP_USE_TLS=true
+ SMTP_OPPORTUNISTIC_TLS=false
++# Optional: override the local hostname used for SMTP HELO/EHLO
++SMTP_LOCAL_HOSTNAME=
+ # Sendgid configuration
+ SENDGRID_API_KEY=
+ # Sentry configuration
+@@ -713,3 +715,4 @@ ANNOTATION_IMPORT_MAX_CONCURRENT=5
+ SANDBOX_EXPIRED_RECORDS_CLEAN_GRACEFUL_PERIOD=21
+ SANDBOX_EXPIRED_RECORDS_CLEAN_BATCH_SIZE=1000
+ SANDBOX_EXPIRED_RECORDS_RETENTION_DAYS=30
++
+diff --git a/api/configs/feature/__init__.py b/api/configs/feature/__init__.py
+index cf855b1cc0587a..cf71a33fa84883 100644
+--- a/api/configs/feature/__init__.py
++++ b/api/configs/feature/__init__.py
+@@ -949,6 +949,12 @@ class MailConfig(BaseSettings):
+         default=False,
+     )
+ 
++    SMTP_LOCAL_HOSTNAME: str | None = Field(
++        description="Override the local hostname used in SMTP HELO/EHLO. "
++        "Useful behind NAT or when the default hostname causes rejections.",
++        default=None,
++    )
++
+     EMAIL_SEND_IP_LIMIT_PER_MINUTE: PositiveInt = Field(
+         description="Maximum number of emails allowed to be sent from the same IP address in a minute",
+         default=50,
+diff --git a/api/libs/smtp.py b/api/libs/smtp.py
+index 4044c6f7edb3e9..1925eb2f10352f 100644
+--- a/api/libs/smtp.py
++++ b/api/libs/smtp.py
+@@ -3,6 +3,8 @@
+ from email.mime.multipart import MIMEMultipart
+ from email.mime.text import MIMEText
+ 
++from configs import dify_config
++
+ logger = logging.getLogger(__name__)
+ 
+ 
+@@ -19,20 +21,19 @@ def __init__(
+         self.opportunistic_tls = opportunistic_tls
+ 
+     def send(self, mail: dict):
+-        smtp = None
++        smtp: smtplib.SMTP | None = None
++        local_host = dify_config.SMTP_LOCAL_HOSTNAME or ""
+         try:
+-            if self.use_tls:
+-                if self.opportunistic_tls:
+-                    smtp = smtplib.SMTP(self.server, self.port, timeout=10)
+-                    # Send EHLO command with the HELO domain name as the server address
+-                    smtp.ehlo(self.server)
+-                    smtp.starttls()
+-                    # Resend EHLO command to identify the TLS session
+-                    smtp.ehlo(self.server)
+-                else:
+-                    smtp = smtplib.SMTP_SSL(self.server, self.port, timeout=10)
+-            else:
+-                smtp = smtplib.SMTP(self.server, self.port, timeout=10)
++            # Use ternary to select SMTP class based on TLS mode
++            smtp = (smtplib.SMTP_SSL if (self.use_tls and not self.opportunistic_tls) else smtplib.SMTP)(
++                self.server, self.port, timeout=10, local_hostname=local_host or None
++            )
++
++            assert smtp is not None
++            if self.use_tls and self.opportunistic_tls:
++                smtp.ehlo(local_host)
++                smtp.starttls()
++                smtp.ehlo(local_host)
+ 
+             # Only authenticate if both username and password are non-empty
+             if self.username and self.password and self.username.strip() and self.password.strip():
+diff --git a/api/tests/integration_tests/.env.example b/api/tests/integration_tests/.env.example
+index acc268f1d44654..39effbab58a341 100644
+--- a/api/tests/integration_tests/.env.example
++++ b/api/tests/integration_tests/.env.example
+@@ -103,6 +103,8 @@ SMTP_USERNAME=123
+ SMTP_PASSWORD=abc
+ SMTP_USE_TLS=true
+ SMTP_OPPORTUNISTIC_TLS=false
++# Optional: override the local hostname used for SMTP HELO/EHLO
++SMTP_LOCAL_HOSTNAME=
+ 
+ # Sentry configuration
+ SENTRY_DSN=
+diff --git a/api/tests/unit_tests/libs/test_smtp_client.py b/api/tests/unit_tests/libs/test_smtp_client.py
+index fcee01ca008c63..042bc15643ebcf 100644
+--- a/api/tests/unit_tests/libs/test_smtp_client.py
++++ b/api/tests/unit_tests/libs/test_smtp_client.py
+@@ -1,4 +1,4 @@
+-from unittest.mock import MagicMock, patch
++from unittest.mock import ANY, MagicMock, patch
+ 
+ import pytest
+ 
+@@ -17,7 +17,7 @@ def test_smtp_plain_success(mock_smtp_cls: MagicMock):
+     client = SMTPClient(server="smtp.example.com", port=25, username="", password="", _from="noreply@example.com")
+     client.send(_mail())
+ 
+-    mock_smtp_cls.assert_called_once_with("smtp.example.com", 25, timeout=10)
++    mock_smtp_cls.assert_called_once_with("smtp.example.com", 25, timeout=10, local_hostname=ANY)
+     mock_smtp.sendmail.assert_called_once()
+     mock_smtp.quit.assert_called_once()
+ 
+@@ -38,7 +38,7 @@ def test_smtp_tls_opportunistic_success(mock_smtp_cls: MagicMock):
+     )
+     client.send(_mail())
+ 
+-    mock_smtp_cls.assert_called_once_with("smtp.example.com", 587, timeout=10)
++    mock_smtp_cls.assert_called_once_with("smtp.example.com", 587, timeout=10, local_hostname=ANY)
+     assert mock_smtp.ehlo.call_count == 2
+     mock_smtp.starttls.assert_called_once()
+     mock_smtp.login.assert_called_once_with("user", "pass")
+diff --git a/api/tests/unit_tests/tasks/test_mail_send_task.py b/api/tests/unit_tests/tasks/test_mail_send_task.py
+index 736871d78497f1..5cb933e3f3f9e2 100644
+--- a/api/tests/unit_tests/tasks/test_mail_send_task.py
++++ b/api/tests/unit_tests/tasks/test_mail_send_task.py
+@@ -9,7 +9,7 @@
+ """
+ 
+ import smtplib
+-from unittest.mock import MagicMock, patch
++from unittest.mock import ANY, MagicMock, patch
+ 
+ import pytest
+ 
+@@ -151,7 +151,7 @@ def test_smtp_send_with_tls_ssl(self, mock_smtp_ssl):
+         client.send(mail_data)
+ 
+         # Assert
+-        mock_smtp_ssl.assert_called_once_with("smtp.example.com", 465, timeout=10)
++        mock_smtp_ssl.assert_called_once_with("smtp.example.com", 465, timeout=10, local_hostname=ANY)
+         mock_server.login.assert_called_once_with("user@example.com", "password123")
+         mock_server.sendmail.assert_called_once()
+         mock_server.quit.assert_called_once()
+@@ -181,7 +181,7 @@ def test_smtp_send_with_opportunistic_tls(self, mock_smtp):
+         client.send(mail_data)
+ 
+         # Assert
+-        mock_smtp.assert_called_once_with("smtp.example.com", 587, timeout=10)
++        mock_smtp.assert_called_once_with("smtp.example.com", 587, timeout=10, local_hostname=ANY)
+         mock_server.ehlo.assert_called()
+         mock_server.starttls.assert_called_once()
+         assert mock_server.ehlo.call_count == 2  # Before and after STARTTLS
+@@ -213,7 +213,7 @@ def test_smtp_send_without_tls(self, mock_smtp):
+         client.send(mail_data)
+ 
+         # Assert
+-        mock_smtp.assert_called_once_with("smtp.example.com", 25, timeout=10)
++        mock_smtp.assert_called_once_with("smtp.example.com", 25, timeout=10, local_hostname=ANY)
+         mock_server.login.assert_called_once()
+         mock_server.sendmail.assert_called_once()
+         mock_server.quit.assert_called_once()
+diff --git a/docker/.env.example b/docker/.env.example
+index 9a3a7239c6a2b9..627a3a23dab628 100644
+--- a/docker/.env.example
++++ b/docker/.env.example
+@@ -968,6 +968,8 @@ SMTP_USERNAME=
+ SMTP_PASSWORD=
+ SMTP_USE_TLS=true
+ SMTP_OPPORTUNISTIC_TLS=false
++# Optional: override the local hostname used for SMTP HELO/EHLO
++SMTP_LOCAL_HOSTNAME=
+ 
+ # Sendgid configuration
+ SENDGRID_API_KEY=
+diff --git a/docker/docker-compose.yaml b/docker/docker-compose.yaml
+index fcb07dda366e3e..6439cccf47eec7 100644
+--- a/docker/docker-compose.yaml
++++ b/docker/docker-compose.yaml
+@@ -425,6 +425,7 @@ x-shared-env: &shared-api-worker-env
+   SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+   SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+   SMTP_OPPORTUNISTIC_TLS: ${SMTP_OPPORTUNISTIC_TLS:-false}
++  SMTP_LOCAL_HOSTNAME: ${SMTP_LOCAL_HOSTNAME:-}
+   SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+   INDEXING_MAX_SEGMENTATION_TOKENS_LENGTH: ${INDEXING_MAX_SEGMENTATION_TOKENS_LENGTH:-4000}
+   INVITE_EXPIRY_HOURS: ${INVITE_EXPIRY_HOURS:-72}

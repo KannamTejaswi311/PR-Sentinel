@@ -1,0 +1,502 @@
+diff --git a/BrowserKit/Package.swift b/BrowserKit/Package.swift
+index 82c1eb8f8e14e..64a7347736d10 100644
+--- a/BrowserKit/Package.swift
++++ b/BrowserKit/Package.swift
+@@ -1,4 +1,4 @@
+-// swift-tools-version: 5.10
++// swift-tools-version: 6.2
+ 
+ import PackageDescription
+ 
+@@ -87,8 +87,6 @@ let package = Package(
+             dependencies: ["Common"],
+             swiftSettings: [
+                 .unsafeFlags(["-enable-testing"]),
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]
+         ),
+         .target(
+@@ -96,15 +94,11 @@ let package = Package(
+             dependencies: ["Common", "SiteImageView"],
+             swiftSettings: [
+                 .unsafeFlags(["-enable-testing"]),
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableUpcomingFeature("InferSendableFromCaptures"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]),
+         .testTarget(
+             name: "ComponentLibraryTests",
+             dependencies: ["ComponentLibrary"],
+             swiftSettings: [
+-                .enableExperimentalFeature("StrictConcurrency"),
+             ]
+         ),
+         .target(
+@@ -114,9 +108,6 @@ let package = Package(
+             resources: [.process("BundledTopSitesFavicons.xcassets")],
+             swiftSettings: [
+                 .unsafeFlags(["-enable-testing"]),
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableUpcomingFeature("InferSendableFromCaptures"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]),
+         .testTarget(
+             name: "SiteImageViewTests",
+@@ -127,7 +118,6 @@ let package = Package(
+                 .copy("Resources/hackernews.svg")
+             ],
+             swiftSettings: [
+-                .enableExperimentalFeature("StrictConcurrency"),
+             ],
+         ),
+         .target(
+@@ -137,30 +127,23 @@ let package = Package(
+                            .product(name: "Sentry-Dynamic", package: "sentry-cocoa")],
+             swiftSettings: [
+                 .unsafeFlags(["-enable-testing"]),
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableUpcomingFeature("InferSendableFromCaptures"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]
+         ),
+         .testTarget(
+             name: "CommonTests",
+             dependencies: ["Common"],
+             swiftSettings: [
+-                .enableExperimentalFeature("StrictConcurrency")
+             ]),
+         .target(
+             name: "TabDataStore",
+             dependencies: ["Common"],
+             swiftSettings: [
+                 .unsafeFlags(["-enable-testing"]),
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]),
+         .testTarget(
+             name: "TabDataStoreTests",
+             dependencies: ["TabDataStore"],
+             swiftSettings: [
+-                .enableExperimentalFeature("StrictConcurrency"),
+             ]
+         ),
+         .target(
+@@ -168,15 +151,11 @@ let package = Package(
+             dependencies: ["Common"],
+             swiftSettings: [
+                 .unsafeFlags(["-enable-testing"]),
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]),
+         .testTarget(
+             name: "ReduxTests",
+             dependencies: ["Redux"],
+             swiftSettings: [
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]
+         ),
+         .target(
+@@ -185,14 +164,11 @@ let package = Package(
+                            .product(name: "GCDWebServers", package: "GCDWebServer")],
+             swiftSettings: [
+                 .unsafeFlags(["-enable-testing"]),
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]),
+         .testTarget(
+             name: "WebEngineTests",
+             dependencies: ["WebEngine"],
+             swiftSettings: [
+-                .enableExperimentalFeature("StrictConcurrency"),
+             ]
+         ),
+         .target(
+@@ -200,29 +176,22 @@ let package = Package(
+             dependencies: ["Common"],
+             swiftSettings: [
+                 .unsafeFlags(["-enable-testing"]),
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableUpcomingFeature("InferSendableFromCaptures"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]),
+         .testTarget(
+             name: "ToolbarKitTests",
+             dependencies: ["ToolbarKit"],
+             swiftSettings: [
+-                .enableExperimentalFeature("StrictConcurrency")
+         ]),
+         .target(
+             name: "MenuKit",
+             dependencies: ["Common", "ComponentLibrary"],
+             swiftSettings: [
+                 .unsafeFlags(["-enable-testing"]),
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]),
+         .testTarget(
+             name: "MenuKitTests",
+             dependencies: ["MenuKit"],
+             swiftSettings: [
+-                .enableExperimentalFeature("StrictConcurrency"),
+             ]
+         ),
+         .target(
+@@ -234,31 +203,24 @@ let package = Package(
+             ],
+             swiftSettings: [
+                 .unsafeFlags(["-enable-testing"]),
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]
+         ),
+         .testTarget(name: "SummarizeKitTests",
+                     dependencies: ["SummarizeKit"],
+                     swiftSettings: [
+                         .unsafeFlags(["-enable-testing"]),
+-                        .enableExperimentalFeature("StrictConcurrency")
+                     ]),
+         .target(
+             name: "JWTKit",
+             dependencies: ["Common", "Shared"],
+             swiftSettings: [
+                 .unsafeFlags(["-enable-testing"]),
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]
+         ),
+         .testTarget(
+             name: "JWTKitTests",
+             dependencies: ["JWTKit"],
+             swiftSettings: [
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]
+         ),
+         .target(
+@@ -266,21 +228,16 @@ let package = Package(
+             dependencies: ["Common", "ComponentLibrary", "MenuKit"],
+             swiftSettings: [
+                 .unsafeFlags(["-enable-testing"]),
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]),
+         .target(
+             name: "ContentBlockingGenerator",
+             swiftSettings: [
+                 .unsafeFlags(["-enable-testing"]),
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]),
+         .testTarget(
+             name: "ContentBlockingGeneratorTests",
+             dependencies: ["ContentBlockingGenerator"],
+             swiftSettings: [
+-                .enableExperimentalFeature("StrictConcurrency")
+             ]),
+         .target(
+             name: "OnboardingKit",
+@@ -290,8 +247,6 @@ let package = Package(
+             ],
+             swiftSettings: [
+                 .unsafeFlags(["-enable-testing"]),
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ],
+             linkerSettings: [
+                 .linkedFramework("Metal"),
+@@ -301,21 +256,16 @@ let package = Package(
+             name: "OnboardingKitTests",
+             dependencies: ["OnboardingKit"],
+             swiftSettings: [
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]),
+         .target(
+             name: "ActionExtensionKit",
+             swiftSettings: [
+                 .unsafeFlags(["-enable-testing"]),
+-                .enableExperimentalFeature("StrictConcurrency"),
+-                .enableExperimentalFeature("RegionBasedIsolation")
+             ]),
+         .testTarget(
+             name: "ActionExtensionKitTests",
+             dependencies: ["ActionExtensionKit"],
+             swiftSettings: [
+-                .enableExperimentalFeature("StrictConcurrency"),
+             ]),
+         .executableTarget(
+             name: "ExecutableContentBlockingGenerator",
+diff --git a/BrowserKit/Sources/ExecutableContentBlockingGenerator/MainContentBlockerGenerator.swift b/BrowserKit/Sources/ExecutableContentBlockingGenerator/MainContentBlockerGenerator.swift
+index 859f8529999f3..4ea0a5dbf63d5 100644
+--- a/BrowserKit/Sources/ExecutableContentBlockingGenerator/MainContentBlockerGenerator.swift
++++ b/BrowserKit/Sources/ExecutableContentBlockingGenerator/MainContentBlockerGenerator.swift
+@@ -1,12 +1,9 @@
+-// This Source Code Form is subject to the terms of the Mozilla Public
+-// License, v. 2.0. If a copy of the MPL was not distributed with this
+-// file, You can obtain one at http://mozilla.org/MPL/2.0/
+-
+ import ContentBlockingGenerator
+ 
+ @main
+ public struct MainContentBlockerGenerator {
+-    static let generator = ContentBlockerGenerator.factory()
++    // FXIOS-14548 ContentBlockerGenerator is not thread safe
++    nonisolated(unsafe) static let generator = ContentBlockerGenerator.factory()
+ 
+     // Static main needs to be used for executable, providing an instance so we can
+     // call it from a terminal
+diff --git a/BrowserKit/Tests/SiteImageViewTests/SVGImageProcessorTests.swift b/BrowserKit/Tests/SiteImageViewTests/SVGImageProcessorTests.swift
+index 610e842f25eb1..f41d3339b949e 100644
+--- a/BrowserKit/Tests/SiteImageViewTests/SVGImageProcessorTests.swift
++++ b/BrowserKit/Tests/SiteImageViewTests/SVGImageProcessorTests.swift
+@@ -9,7 +9,7 @@ import Kingfisher
+ import GCDWebServers
+ 
+ class SVGImageProcessorTests: XCTestCase, @unchecked Sendable {
+-    func testDownloadingSVGImage_withKingfisherProcessor_forStandardSVGCase() async {
++    func testDownloadingSVGImage_withKingfisherProcessor_forStandardSVGCase() {
+         let assetType: AssetType = .svgCase1
+         let expectedRasterSize = CGSize(width: 360, height: 360)
+ 
+@@ -18,13 +18,11 @@ class SVGImageProcessorTests: XCTestCase, @unchecked Sendable {
+             return
+         }
+ 
+-        guard let mockedURL = try? await startMockImageServer(imageData: imageData, forAssetType: assetType) else {
++        guard let mockedURL = try? startMockImageServer(imageData: imageData, forAssetType: assetType) else {
+             XCTFail("Check bundle setup for mock server response data")
+             return
+         }
+ 
+-        let exp = expectation(description: "Image download and parse")
+-
+         let siteDownloader = DefaultSiteImageDownloader()
+         siteDownloader.downloadImage(with: mockedURL, options: [.processor(SVGImageProcessor())]) { result in
+             switch result {
+@@ -32,18 +30,14 @@ class SVGImageProcessorTests: XCTestCase, @unchecked Sendable {
+                 XCTAssertEqual(result.originalData, imageData)
+                 XCTAssertEqual(result.url, mockedURL)
+                 XCTAssertEqual(result.image.size, expectedRasterSize)
+-                exp.fulfill()
+             case .failure(let error):
+                 XCTFail("Should not have an error: \(error) \(error.errorDescription ?? "")")
+-                exp.fulfill()
+             }
+         }
+-
+-        await fulfillment(of: [exp], timeout: 2.0)
+     }
+ 
+     /// FXIOS-11361: Tests a special SVG which previously caused crashes in older versions of SwiftDraw.
+-    func testDownloadingSVGImage_withKingfisherProcessor_forSpecialSVGCase() async {
++    func testDownloadingSVGImage_withKingfisherProcessor_forSpecialSVGCase() {
+         let assetType: AssetType = .svgCase2
+         let expectedRasterSize = CGSize(width: 360, height: 360)
+ 
+@@ -52,7 +46,7 @@ class SVGImageProcessorTests: XCTestCase, @unchecked Sendable {
+             return
+         }
+ 
+-        guard let mockedURL = try? await startMockImageServer(imageData: imageData, forAssetType: assetType) else {
++        guard let mockedURL = try? startMockImageServer(imageData: imageData, forAssetType: assetType) else {
+             XCTFail("Check bundle setup for mock server response data")
+             return
+         }
+@@ -73,10 +67,10 @@ class SVGImageProcessorTests: XCTestCase, @unchecked Sendable {
+             }
+         }
+ 
+-        await fulfillment(of: [exp], timeout: 2.0)
++        wait(for: [exp], timeout: 2.0)
+     }
+ 
+-    func testDownloadingICOImage_withKingfisherProcessor() async {
++    func testDownloadingICOImage_withKingfisherProcessor() {
+         let assetType: AssetType = .ico
+ 
+         guard let imageData = try? dataFor(type: assetType) else {
+@@ -84,7 +78,7 @@ class SVGImageProcessorTests: XCTestCase, @unchecked Sendable {
+             return
+         }
+ 
+-        guard let mockedURL = try? await startMockImageServer(imageData: imageData, forAssetType: assetType) else {
++        guard let mockedURL = try? startMockImageServer(imageData: imageData, forAssetType: assetType) else {
+             XCTFail("Check bundle setup for mock server response data")
+             return
+         }
+@@ -104,16 +98,16 @@ class SVGImageProcessorTests: XCTestCase, @unchecked Sendable {
+             }
+         }
+ 
+-        await fulfillment(of: [exp], timeout: 2.0)
++        wait(for: [exp], timeout: 2.0)
+     }
+ 
+-    func testDownloadingGarbageData_withKingfisherProcessor() async {
++    func testDownloadingGarbageData_withKingfisherProcessor() {
+         guard let garbageData = try? dataFor(type: .badType) else {
+             XCTFail("Could not load test asset")
+             return
+         }
+ 
+-        guard let mockedURL = try? await startMockImageServer(imageData: garbageData, forAssetType: .badType) else {
++        guard let mockedURL = try? startMockImageServer(imageData: garbageData, forAssetType: .badType) else {
+             XCTFail("Check bundle setup for mock server response data")
+             return
+         }
+@@ -131,13 +125,13 @@ class SVGImageProcessorTests: XCTestCase, @unchecked Sendable {
+             }
+         }
+ 
+-        await fulfillment(of: [exp], timeout: 2.0)
++        wait(for: [exp], timeout: 2.0)
+     }
+ 
+-    func testDownloadingEmptyImage_withKingfisherProcessor() async {
++    func testDownloadingEmptyImage_withKingfisherProcessor() {
+         let emptyData = Data()
+ 
+-        guard let mockedURL = try? await startMockImageServer(imageData: emptyData, forAssetType: .ico) else {
++        guard let mockedURL = try? startMockImageServer(imageData: emptyData, forAssetType: .ico) else {
+             XCTFail("Check bundle setup for mock server response data")
+             return
+         }
+@@ -155,7 +149,7 @@ class SVGImageProcessorTests: XCTestCase, @unchecked Sendable {
+             }
+         }
+ 
+-        await fulfillment(of: [exp], timeout: 2.0)
++        wait(for: [exp], timeout: 2.0)
+     }
+ }
+ 
+@@ -211,9 +205,6 @@ extension SVGImageProcessorTests {
+         throw MockImageServerError.noAssetData
+     }
+ 
+-    // GDCWebServer must be initialized for the first time on the main thread
+-    // So this @MainActor ensures that if this test file is run alone it will not crash
+-    @MainActor
+     func startMockImageServer(imageData: Data, forAssetType assetType: AssetType) throws -> URL {
+         let webServer = GCDWebServer()
+ 
+diff --git a/BrowserKit/Tests/WebEngineTests/WKUIHandlerTests.swift b/BrowserKit/Tests/WebEngineTests/WKUIHandlerTests.swift
+index 8a5e1608f864d..a9831dffbfdab 100644
+--- a/BrowserKit/Tests/WebEngineTests/WKUIHandlerTests.swift
++++ b/BrowserKit/Tests/WebEngineTests/WKUIHandlerTests.swift
+@@ -35,14 +35,11 @@ final class WKUIHandlerTests: XCTestCase {
+     func testRequestMediaCaptureSuccess() {
+         let subject = createSubject(isActive: true)
+ 
+-        let expectation = expectation(description: "Wait for the decision handler to be called")
+-        let decisionHandler = { (decision: WKPermissionDecision) in
++        let decisionHandler: @Sendable (WKPermissionDecision) -> Void = { (decision: WKPermissionDecision) in
+             XCTAssertEqual(decision, .prompt)
+-            expectation.fulfill()
+         }
+ 
+         subject.requestMediaCapturePermission(decisionHandler: decisionHandler)
+-        wait(for: [expectation])
+     }
+ 
+     func testRequestMediaCaptureIsActiveFalse() {
+@@ -50,7 +47,7 @@ final class WKUIHandlerTests: XCTestCase {
+ 
+         let expectation = expectation(description: "Wait for the decision handler to be called")
+ 
+-        let decisionHandler = { (decision: WKPermissionDecision) in
++        let decisionHandler: @Sendable (WKPermissionDecision) -> Void = { (decision: WKPermissionDecision) in
+             XCTAssertEqual(decision, .deny)
+             expectation.fulfill()
+         }
+@@ -65,7 +62,7 @@ final class WKUIHandlerTests: XCTestCase {
+ 
+         let expectation = expectation(description: "Wait for the decision handler to be called")
+ 
+-        let decisionHandler = { (decision: WKPermissionDecision) in
++        let decisionHandler: @Sendable (WKPermissionDecision) -> Void = { (decision: WKPermissionDecision) in
+             XCTAssertEqual(decision, .deny)
+             expectation.fulfill()
+         }
+diff --git a/firefox-ios/Client.xcodeproj/project.pbxproj b/firefox-ios/Client.xcodeproj/project.pbxproj
+index d9d6ddfaf0d77..9f423dad7269c 100644
+--- a/firefox-ios/Client.xcodeproj/project.pbxproj
++++ b/firefox-ios/Client.xcodeproj/project.pbxproj
+@@ -28008,6 +28008,7 @@
+ 				PRODUCT_BUNDLE_IDENTIFIER = "$(MOZ_BUNDLE_ID).$(PRODUCT_NAME)";
+ 				PROVISIONING_PROFILE_SPECIFIER = "BR STG org.mozilla.ios.FirefoxBeta.ShareTo";
+ 				SKIP_INSTALL = NO;
++				SWIFT_VERSION = 6.0;
+ 			};
+ 			name = FirefoxStaging;
+ 		};
+@@ -28492,6 +28493,7 @@
+ 				PRODUCT_BUNDLE_IDENTIFIER = "$(MOZ_BUNDLE_ID).$(PRODUCT_NAME)";
+ 				PROVISIONING_PROFILE_SPECIFIER = "";
+ 				SKIP_INSTALL = NO;
++				SWIFT_VERSION = 6.0;
+ 			};
+ 			name = Fennec_Testing;
+ 		};
+@@ -29781,6 +29783,7 @@
+ 				PRODUCT_BUNDLE_IDENTIFIER = "$(MOZ_BUNDLE_ID).$(PRODUCT_NAME)";
+ 				PROVISIONING_PROFILE_SPECIFIER = "bitrise org.mozilla.ios.Firefox.ShareTo";
+ 				SKIP_INSTALL = NO;
++				SWIFT_VERSION = 6.0;
+ 			};
+ 			name = Firefox;
+ 		};
+@@ -30088,6 +30091,7 @@
+ 				PROVISIONING_PROFILE_SPECIFIER = "";
+ 				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "Fennec Enterprise ShareTo";
+ 				SKIP_INSTALL = NO;
++				SWIFT_VERSION = 6.0;
+ 			};
+ 			name = Fennec_Enterprise;
+ 		};
+@@ -30404,6 +30408,7 @@
+ 				PRODUCT_BUNDLE_IDENTIFIER = "$(MOZ_BUNDLE_ID).$(PRODUCT_NAME)";
+ 				PROVISIONING_PROFILE_SPECIFIER = "bitrise org.mozilla.ios.FirefoxBeta.ShareTo";
+ 				SKIP_INSTALL = NO;
++				SWIFT_VERSION = 6.0;
+ 			};
+ 			name = FirefoxBeta;
+ 		};
+@@ -30933,6 +30938,7 @@
+ 				PRODUCT_BUNDLE_IDENTIFIER = "$(MOZ_BUNDLE_ID).$(PRODUCT_NAME)";
+ 				PROVISIONING_PROFILE_SPECIFIER = "";
+ 				SKIP_INSTALL = NO;
++				SWIFT_VERSION = 6.0;
+ 			};
+ 			name = Fennec;
+ 		};
+diff --git a/firefox-ios/Client/Frontend/Home/Homepage/SectionHeader/LabelButtonHeaderView.swift b/firefox-ios/Client/Frontend/Home/Homepage/SectionHeader/LabelButtonHeaderView.swift
+index d0e5040687434..0cf4e67ff6ce4 100644
+--- a/firefox-ios/Client/Frontend/Home/Homepage/SectionHeader/LabelButtonHeaderView.swift
++++ b/firefox-ios/Client/Frontend/Home/Homepage/SectionHeader/LabelButtonHeaderView.swift
+@@ -94,7 +94,7 @@ class LabelButtonHeaderView: UICollectionReusableView,
+ 
+     func configure(
+         state: SectionHeaderConfiguration,
+-        moreButtonAction: (@MainActor (UIButton) -> Void)? = nil,
++        moreButtonAction: (@Sendable @MainActor (UIButton) -> Void)? = nil,
+         textColor: UIColor?,
+         theme: Theme
+     ) {
+@@ -103,10 +103,13 @@ class LabelButtonHeaderView: UICollectionReusableView,
+ 
+         moreButton.isHidden = state.isButtonHidden
+         if !state.isButtonHidden {
++            let wrappedAction: (@MainActor (UIButton) -> Void)? = { button in
++                moreButtonAction?(button)
++            }
+             let moreButtonViewModel = ActionButtonViewModel(
+                 title: state.buttonTitle ?? .BookmarksSavedShowAllText,
+                 a11yIdentifier: state.buttonA11yIdentifier,
+-                touchUpAction: moreButtonAction
++                touchUpAction: wrappedAction
+             )
+             moreButton.configure(
+                 viewModel: moreButtonViewModel

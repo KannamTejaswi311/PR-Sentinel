@@ -1,0 +1,380 @@
+diff --git a/apps/api/v2/src/ee/platform-endpoints-module.ts b/apps/api/v2/src/ee/platform-endpoints-module.ts
+index e10450f6288c..11a146308366 100644
+--- a/apps/api/v2/src/ee/platform-endpoints-module.ts
++++ b/apps/api/v2/src/ee/platform-endpoints-module.ts
+@@ -13,6 +13,7 @@ import { RoutingFormsModule } from "@/modules/routing-forms/routing-forms.module
+ import { SlotsModule_2024_04_15 } from "@/modules/slots/slots-2024-04-15/slots.module";
+ import { SlotsModule_2024_09_04 } from "@/modules/slots/slots-2024-09-04/slots.module";
+ import { TeamsEventTypesModule } from "@/modules/teams/event-types/teams-event-types.module";
++import { TeamsInviteModule } from "@/modules/teams/invite/teams-invite.module";
+ import { TeamsMembershipsModule } from "@/modules/teams/memberships/teams-memberships.module";
+ import { TeamsModule } from "@/modules/teams/teams/teams.module";
+ import type { MiddlewareConsumer, NestModule } from "@nestjs/common";
+@@ -32,6 +33,7 @@ import { Module } from "@nestjs/common";
+     BookingsModule_2024_04_15,
+     BookingsModule_2024_08_13,
+     TeamsMembershipsModule,
++    TeamsInviteModule,
+     SlotsModule_2024_04_15,
+     SlotsModule_2024_09_04,
+     TeamsModule,
+diff --git a/apps/api/v2/src/modules/teams/invite/controllers/teams-invite.controller.e2e-spec.ts b/apps/api/v2/src/modules/teams/invite/controllers/teams-invite.controller.e2e-spec.ts
+new file mode 100644
+index 000000000000..ffb36119e855
+--- /dev/null
++++ b/apps/api/v2/src/modules/teams/invite/controllers/teams-invite.controller.e2e-spec.ts
+@@ -0,0 +1,209 @@
++import { bootstrap } from "@/bootstrap";
++import { AppModule } from "@/app.module";
++import { PrismaModule } from "@/modules/prisma/prisma.module";
++import { TokensModule } from "@/modules/tokens/tokens.module";
++import { UsersModule } from "@/modules/users/users.module";
++import { INestApplication } from "@nestjs/common";
++import { NestExpressApplication } from "@nestjs/platform-express";
++import { Test } from "@nestjs/testing";
++import request from "supertest";
++import { MembershipRepositoryFixture } from "test/fixtures/repository/membership.repository.fixture";
++import { TeamRepositoryFixture } from "test/fixtures/repository/team.repository.fixture";
++import { UserRepositoryFixture } from "test/fixtures/repository/users.repository.fixture";
++import { randomString } from "test/utils/randomString";
++import { withApiAuth } from "test/utils/withApiAuth";
++
++import { SUCCESS_STATUS } from "@calcom/platform-constants";
++import type { Team, User } from "@calcom/prisma/client";
++
++describe("Teams Invite Endpoints", () => {
++  describe("User Authentication - User is Team Admin", () => {
++    let app: INestApplication;
++
++    let userRepositoryFixture: UserRepositoryFixture;
++    let teamsRepositoryFixture: TeamRepositoryFixture;
++    let membershipsRepositoryFixture: MembershipRepositoryFixture;
++
++    let team: Team;
++
++    const userEmail = `teams-invite-admin-${randomString()}@api.com`;
++
++    let user: User;
++
++    beforeAll(async () => {
++      const moduleRef = await withApiAuth(
++        userEmail,
++        Test.createTestingModule({
++          imports: [AppModule, PrismaModule, UsersModule, TokensModule],
++        })
++      ).compile();
++
++      userRepositoryFixture = new UserRepositoryFixture(moduleRef);
++      teamsRepositoryFixture = new TeamRepositoryFixture(moduleRef);
++      membershipsRepositoryFixture = new MembershipRepositoryFixture(moduleRef);
++
++      user = await userRepositoryFixture.create({
++        email: userEmail,
++        username: userEmail,
++      });
++
++      team = await teamsRepositoryFixture.create({
++        name: `teams-invite-team-${randomString()}`,
++        isOrganization: false,
++      });
++
++      // Admin of the team
++      await membershipsRepositoryFixture.create({
++        role: "ADMIN",
++        user: { connect: { id: user.id } },
++        team: { connect: { id: team.id } },
++      });
++
++      app = moduleRef.createNestApplication();
++      bootstrap(app as NestExpressApplication);
++      await app.init();
++    });
++
++    it("should create a team invite", async () => {
++      return request(app.getHttpServer())
++        .post(`/v2/teams/${team.id}/invite`)
++        .expect(200)
++        .then((response) => {
++          expect(response.body.status).toEqual(SUCCESS_STATUS);
++          expect(response.body.data.token.length).toBeGreaterThan(0);
++          expect(response.body.data.inviteLink).toEqual(expect.any(String));
++          expect(response.body.data.inviteLink).toContain(response.body.data.token);
++        });
++    });
++
++    it("should create a new invite on each request", async () => {
++      const first = await request(app.getHttpServer()).post(`/v2/teams/${team.id}/invite`).expect(200);
++      const firstToken = first.body.data.token as string;
++
++      return request(app.getHttpServer())
++        .post(`/v2/teams/${team.id}/invite`)
++        .expect(200)
++        .then((response) => {
++          expect(response.body.status).toEqual(SUCCESS_STATUS);
++          expect(response.body.data.token).not.toEqual(firstToken);
++          expect(response.body.data.inviteLink).toEqual(expect.any(String));
++          expect(response.body.data.inviteLink).toContain(response.body.data.token);
++        });
++    });
++
++    afterAll(async () => {
++      await userRepositoryFixture.deleteByEmail(user.email);
++      await teamsRepositoryFixture.delete(team.id);
++      await app.close();
++    });
++  });
++
++  describe("User Authentication - User is Team Member (not Admin)", () => {
++    let app: INestApplication;
++
++    let userRepositoryFixture: UserRepositoryFixture;
++    let teamsRepositoryFixture: TeamRepositoryFixture;
++    let membershipsRepositoryFixture: MembershipRepositoryFixture;
++
++    let team: Team;
++
++    const userEmail = `teams-invite-member-${randomString()}@api.com`;
++
++    let user: User;
++
++    beforeAll(async () => {
++      const moduleRef = await withApiAuth(
++        userEmail,
++        Test.createTestingModule({
++          imports: [AppModule, PrismaModule, UsersModule, TokensModule],
++        })
++      ).compile();
++
++      userRepositoryFixture = new UserRepositoryFixture(moduleRef);
++      teamsRepositoryFixture = new TeamRepositoryFixture(moduleRef);
++      membershipsRepositoryFixture = new MembershipRepositoryFixture(moduleRef);
++
++      user = await userRepositoryFixture.create({
++        email: userEmail,
++        username: userEmail,
++      });
++
++      team = await teamsRepositoryFixture.create({
++        name: `teams-invite-member-team-${randomString()}`,
++        isOrganization: false,
++      });
++
++      // Regular member of the team (not admin)
++      await membershipsRepositoryFixture.create({
++        role: "MEMBER",
++        user: { connect: { id: user.id } },
++        team: { connect: { id: team.id } },
++      });
++
++      app = moduleRef.createNestApplication();
++      bootstrap(app as NestExpressApplication);
++      await app.init();
++    });
++
++    it("should fail to create invite as non-admin member", async () => {
++      return request(app.getHttpServer()).post(`/v2/teams/${team.id}/invite`).expect(403);
++    });
++
++    afterAll(async () => {
++      await userRepositoryFixture.deleteByEmail(user.email);
++      await teamsRepositoryFixture.delete(team.id);
++      await app.close();
++    });
++  });
++
++  describe("User Authentication - User is not a Team Member", () => {
++    let app: INestApplication;
++
++    let userRepositoryFixture: UserRepositoryFixture;
++    let teamsRepositoryFixture: TeamRepositoryFixture;
++
++    let team: Team;
++
++    const userEmail = `teams-invite-non-member-${randomString()}@api.com`;
++
++    let user: User;
++
++    beforeAll(async () => {
++      const moduleRef = await withApiAuth(
++        userEmail,
++        Test.createTestingModule({
++          imports: [AppModule, PrismaModule, UsersModule, TokensModule],
++        })
++      ).compile();
++
++      userRepositoryFixture = new UserRepositoryFixture(moduleRef);
++      teamsRepositoryFixture = new TeamRepositoryFixture(moduleRef);
++
++      user = await userRepositoryFixture.create({
++        email: userEmail,
++        username: userEmail,
++      });
++
++      team = await teamsRepositoryFixture.create({
++        name: `teams-invite-non-member-team-${randomString()}`,
++        isOrganization: false,
++      });
++
++      // User is NOT a member of this team
++
++      app = moduleRef.createNestApplication();
++      bootstrap(app as NestExpressApplication);
++      await app.init();
++    });
++
++    it("should fail to create invite as non-member", async () => {
++      return request(app.getHttpServer()).post(`/v2/teams/${team.id}/invite`).expect(403);
++    });
++
++    afterAll(async () => {
++      await userRepositoryFixture.deleteByEmail(user.email);
++      await teamsRepositoryFixture.delete(team.id);
++      await app.close();
++    });
++  });
++});
+diff --git a/apps/api/v2/src/modules/teams/invite/controllers/teams-invite.controller.ts b/apps/api/v2/src/modules/teams/invite/controllers/teams-invite.controller.ts
+new file mode 100644
+index 000000000000..20328685e211
+--- /dev/null
++++ b/apps/api/v2/src/modules/teams/invite/controllers/teams-invite.controller.ts
+@@ -0,0 +1,41 @@
++import { API_VERSIONS_VALUES } from "@/lib/api-versions";
++import { API_KEY_HEADER } from "@/lib/docs/headers";
++import { GetUser } from "@/modules/auth/decorators/get-user/get-user.decorator";
++import { Roles } from "@/modules/auth/decorators/roles/roles.decorator";
++import { ApiAuthGuard } from "@/modules/auth/guards/api-auth/api-auth.guard";
++import { RolesGuard } from "@/modules/auth/guards/roles/roles.guard";
++import { CreateInviteOutputDto } from "@/modules/teams/invite/outputs/invite.output";
++
++import {
++  Controller,
++  UseGuards,
++  Post,
++  Param,
++  ParseIntPipe,
++  HttpCode,
++  HttpStatus,
++} from "@nestjs/common";
++import { ApiHeader, ApiOperation, ApiTags as DocsTags } from "@nestjs/swagger";
++
++import { SUCCESS_STATUS } from "@calcom/platform-constants";
++import { TeamService } from "@calcom/features/ee/teams/services/teamService";
++
++@Controller({
++  path: "/v2/teams/:teamId",
++  version: API_VERSIONS_VALUES,
++})
++@UseGuards(ApiAuthGuard, RolesGuard)
++@DocsTags("Teams / Invite")
++@ApiHeader(API_KEY_HEADER)
++export class TeamsInviteController {
++  @Post("/invite")
++  @Roles("TEAM_MEMBER")
++  @ApiOperation({ summary: "Create team invite link" })
++  @HttpCode(HttpStatus.OK)
++  async createInvite(
++    @Param("teamId", ParseIntPipe) teamId: number
++  ): Promise<CreateInviteOutputDto> {
++    const result = await TeamService.createInvite(teamId);
++    return { status: SUCCESS_STATUS, data: result };
++  }
++}
+diff --git a/apps/api/v2/src/modules/teams/invite/outputs/invite.output.ts b/apps/api/v2/src/modules/teams/invite/outputs/invite.output.ts
+new file mode 100644
+index 000000000000..05ddc3ab1521
+--- /dev/null
++++ b/apps/api/v2/src/modules/teams/invite/outputs/invite.output.ts
+@@ -0,0 +1,38 @@
++import { ERROR_STATUS, SUCCESS_STATUS } from "@calcom/platform-constants";
++import { ApiProperty } from "@nestjs/swagger";
++import { Expose, Type } from "class-transformer";
++import { IsEnum, IsString, ValidateNested } from "class-validator";
++
++export class InviteDataDto {
++  @IsString()
++  @Expose()
++  @ApiProperty({
++    description:
++      "Unique invitation token for this team. Share this token with prospective members to allow them to join the team.",
++    example: "f6a5c8b1d2e34c7f90a1b2c3d4e5f6a5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2",
++  })
++  token!: string;
++
++  @IsString()
++  @Expose()
++  @ApiProperty({
++    description:
++      "Complete invitation URL that can be shared with prospective members. Opens the signup page with the token and redirects to getting started after signup.",
++    example:
++      "http://app.cal.com/signup?token=f6a5c8b1d2e34c7f90a1b2c3d4e5f6a5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2&callbackUrl=/getting-started",
++  })
++  inviteLink!: string;
++}
++
++export class CreateInviteOutputDto {
++  @Expose()
++  @ApiProperty({ example: SUCCESS_STATUS, enum: [SUCCESS_STATUS, ERROR_STATUS] })
++  @IsEnum([SUCCESS_STATUS, ERROR_STATUS])
++  status!: typeof SUCCESS_STATUS | typeof ERROR_STATUS;
++
++  @Expose()
++  @ValidateNested()
++  @Type(() => InviteDataDto)
++  @ApiProperty({ type: InviteDataDto })
++  data!: InviteDataDto;
++}
+diff --git a/apps/api/v2/src/modules/teams/invite/teams-invite.module.ts b/apps/api/v2/src/modules/teams/invite/teams-invite.module.ts
+new file mode 100644
+index 000000000000..8ab7c9710046
+--- /dev/null
++++ b/apps/api/v2/src/modules/teams/invite/teams-invite.module.ts
+@@ -0,0 +1,11 @@
++import { MembershipsModule } from "@/modules/memberships/memberships.module";
++import { PrismaModule } from "@/modules/prisma/prisma.module";
++import { RedisModule } from "@/modules/redis/redis.module";
++import { TeamsInviteController } from "@/modules/teams/invite/controllers/teams-invite.controller";
++import { Module } from "@nestjs/common";
++
++@Module({
++  imports: [PrismaModule, RedisModule, MembershipsModule],
++  controllers: [TeamsInviteController],
++})
++export class TeamsInviteModule {}
+diff --git a/packages/features/ee/teams/services/teamService.ts b/packages/features/ee/teams/services/teamService.ts
+index 054e0c613499..25c4de6c983a 100644
+--- a/packages/features/ee/teams/services/teamService.ts
++++ b/packages/features/ee/teams/services/teamService.ts
+@@ -85,7 +85,7 @@ export class TeamService {
+     }
+ 
+     const token = randomBytes(32).toString("hex");
+-    await prisma.verificationToken.create({
++    const newToken = await prisma.verificationToken.create({
+       data: {
+         identifier: `invite-link-for-teamId-${teamId}`,
+         token,
+@@ -96,14 +96,14 @@ export class TeamService {
+     });
+ 
+     return {
+-      token,
++      token: newToken.identifier,
+       inviteLink: await TeamService.buildInviteLink(token, isOrganizationOrATeamInOrganization),
+     };
+   }
+ 
+   private static async buildInviteLink(token: string, isOrgContext: boolean): Promise<string> {
+     const teamInviteLink = `${WEBAPP_URL}/teams?token=${token}`;
+-    if (!isOrgContext) {
++    if (isOrgContext) {
+       return teamInviteLink;
+     }
+     const gettingStartedPath = await OnboardingPathService.getGettingStartedPathWhenInvited(prisma);
+@@ -564,4 +564,4 @@ export class TeamService {
+       }),
+     ]);
+   }
+-}
++}
+\ No newline at end of file

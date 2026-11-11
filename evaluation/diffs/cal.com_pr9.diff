@@ -1,0 +1,673 @@
+diff --git a/apps/web/app/(use-page-wrapper)/event-types/[type]/page.tsx b/apps/web/app/(use-page-wrapper)/event-types/[type]/page.tsx
+index bbe79e13f1b8..f6bbefed7d27 100644
+--- a/apps/web/app/(use-page-wrapper)/event-types/[type]/page.tsx
++++ b/apps/web/app/(use-page-wrapper)/event-types/[type]/page.tsx
+@@ -6,7 +6,7 @@ import { cookies, headers } from "next/headers";
+ import { redirect } from "next/navigation";
+ import { z } from "zod";
+ 
+-import { EventTypeWebWrapper } from "@calcom/atoms/event-types/wrappers/EventTypeWebWrapper";
++import { EventTypeWebWrapper } from "@calcom/web/modules/event-types/components/EventTypeWebWrapper";
+ import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+ import { getEventTypePermissions } from "@calcom/features/pbac/lib/event-type-permissions";
+ import { eventTypesRouter } from "@calcom/trpc/server/routers/viewer/eventTypes/_router";
+diff --git a/apps/web/app/(use-page-wrapper)/settings/(settings-layout)/my-account/conferencing/loading.tsx b/apps/web/app/(use-page-wrapper)/settings/(settings-layout)/my-account/conferencing/loading.tsx
+index 40bb0e320529..dd4be8266ca6 100644
+--- a/apps/web/app/(use-page-wrapper)/settings/(settings-layout)/my-account/conferencing/loading.tsx
++++ b/apps/web/app/(use-page-wrapper)/settings/(settings-layout)/my-account/conferencing/loading.tsx
+@@ -1,4 +1,4 @@
+-import { SkeletonLoader } from "@calcom/atoms/connect/conferencing-apps/ConferencingAppsViewWebWrapper";
++import { SkeletonLoader } from "@calcom/web/modules/apps/components/ConferencingAppsViewWebWrapper";
+ 
+ export default function Loading() {
+   return <SkeletonLoader />;
+diff --git a/apps/web/app/(use-page-wrapper)/settings/(settings-layout)/my-account/conferencing/page.tsx b/apps/web/app/(use-page-wrapper)/settings/(settings-layout)/my-account/conferencing/page.tsx
+index ebb7bd810f4a..ccd9a1e193fa 100644
+--- a/apps/web/app/(use-page-wrapper)/settings/(settings-layout)/my-account/conferencing/page.tsx
++++ b/apps/web/app/(use-page-wrapper)/settings/(settings-layout)/my-account/conferencing/page.tsx
+@@ -1,7 +1,7 @@
+ import { createRouterCaller } from "app/_trpc/context";
+ import { _generateMetadata } from "app/_utils";
+ 
+-import { ConferencingAppsViewWebWrapper } from "@calcom/atoms/connect/conferencing-apps/ConferencingAppsViewWebWrapper";
++import { ConferencingAppsViewWebWrapper } from "@calcom/web/modules/apps/components/ConferencingAppsViewWebWrapper";
+ import { appsRouter } from "@calcom/trpc/server/routers/viewer/apps/_router";
+ import { eventTypesRouter } from "@calcom/trpc/server/routers/viewer/eventTypes/_router";
+ 
+diff --git a/apps/web/components/apps/CalendarListContainer.tsx b/apps/web/components/apps/CalendarListContainer.tsx
+index bdcbbb46caf5..69836304ced7 100644
+--- a/apps/web/components/apps/CalendarListContainer.tsx
++++ b/apps/web/components/apps/CalendarListContainer.tsx
+@@ -3,8 +3,8 @@
+ import { useEffect, Suspense } from "react";
+ 
+ import { InstallAppButton } from "@calcom/app-store/InstallAppButton";
+-import { DestinationCalendarSettingsWebWrapper } from "@calcom/atoms/destination-calendar/wrappers/DestinationCalendarSettingsWebWrapper";
+-import { SelectedCalendarsSettingsWebWrapper } from "@calcom/atoms/selected-calendars/wrappers/SelectedCalendarsSettingsWebWrapper";
++import { DestinationCalendarSettingsWebWrapper } from "./DestinationCalendarSettingsWebWrapper";
++import { SelectedCalendarsSettingsWebWrapper } from "@calcom/web/modules/calendars/components/SelectedCalendarsSettingsWebWrapper";
+ import AppListCard from "@calcom/web/modules/apps/components/AppListCard";
+ import { SkeletonLoader } from "@calcom/web/modules/apps/components/SkeletonLoader";
+ import SettingsHeader from "@calcom/features/settings/appDir/SettingsHeader";
+diff --git a/packages/platform/atoms/destination-calendar/wrappers/DestinationCalendarSettingsWebWrapper.tsx b/apps/web/components/apps/DestinationCalendarSettingsWebWrapper.tsx
+similarity index 80%
+rename from packages/platform/atoms/destination-calendar/wrappers/DestinationCalendarSettingsWebWrapper.tsx
+rename to apps/web/components/apps/DestinationCalendarSettingsWebWrapper.tsx
+index 94b9be789758..b046f8cce602 100644
+--- a/packages/platform/atoms/destination-calendar/wrappers/DestinationCalendarSettingsWebWrapper.tsx
++++ b/apps/web/components/apps/DestinationCalendarSettingsWebWrapper.tsx
+@@ -1,7 +1,7 @@
+ import { trpc } from "@calcom/trpc/react";
+ 
+-import { AtomsWrapper } from "../../src/components/atoms-wrapper";
+-import { DestinationCalendarSettings } from "../DestinationCalendar";
++import { AtomsWrapper } from "../../../../packages/platform/atoms/src/components/atoms-wrapper";
++import { DestinationCalendarSettings } from "../../../../packages/platform/atoms/destination-calendar/DestinationCalendar";
+ 
+ export const DestinationCalendarSettingsWebWrapper = () => {
+   const calendars = trpc.viewer.calendars.connectedCalendars.useQuery();
+diff --git a/packages/platform/atoms/connect/conferencing-apps/ConferencingAppsViewWebWrapper.tsx b/apps/web/modules/apps/components/ConferencingAppsViewWebWrapper.tsx
+similarity index 97%
+rename from packages/platform/atoms/connect/conferencing-apps/ConferencingAppsViewWebWrapper.tsx
+rename to apps/web/modules/apps/components/ConferencingAppsViewWebWrapper.tsx
+index b9febb21acd6..b6e929f04f44 100644
+--- a/packages/platform/atoms/connect/conferencing-apps/ConferencingAppsViewWebWrapper.tsx
++++ b/apps/web/modules/apps/components/ConferencingAppsViewWebWrapper.tsx
+@@ -2,8 +2,6 @@
+ 
+ import { useReducer } from "react";
+ 
+-import { AppList } from "@calcom/web/modules/apps/components/AppList";
+-import DisconnectIntegrationModal from "@calcom/web/modules/apps/components/DisconnectIntegrationModal";
+ import SettingsHeader from "@calcom/features/settings/appDir/SettingsHeader";
+ import { useLocale } from "@calcom/lib/hooks/useLocale";
+ import { trpc } from "@calcom/trpc/react";
+@@ -13,6 +11,9 @@ import { EmptyScreen } from "@calcom/ui/components/empty-screen";
+ import { SkeletonText, SkeletonContainer } from "@calcom/ui/components/skeleton";
+ import { showToast } from "@calcom/ui/components/toast";
+ 
++import { AppList } from "./AppList";
++import DisconnectIntegrationModal from "./DisconnectIntegrationModal";
++
+ export type UpdateUsersDefaultConferencingAppParams = {
+   appSlug: string;
+   appLink?: string;
+diff --git a/packages/platform/atoms/booker/BookerWebWrapper.tsx b/apps/web/modules/bookings/components/BookerWebWrapper.tsx
+similarity index 97%
+rename from packages/platform/atoms/booker/BookerWebWrapper.tsx
+rename to apps/web/modules/bookings/components/BookerWebWrapper.tsx
+index e8cd69411d22..3a66b00b5bbe 100644
+--- a/packages/platform/atoms/booker/BookerWebWrapper.tsx
++++ b/apps/web/modules/bookings/components/BookerWebWrapper.tsx
+@@ -1,8 +1,8 @@
+ "use client";
+ 
+ import { useSession } from "next-auth/react";
+-import { useSearchParams, usePathname, useRouter } from "next/navigation";
+-import { useMemo, useCallback, useEffect, useRef } from "react";
++import { useSearchParams, usePathname } from "next/navigation";
++import { useMemo, useCallback, useEffect } from "react";
+ import React from "react";
+ import { shallow } from "zustand/shallow";
+ 
+@@ -12,7 +12,6 @@ import {
+ } from "@calcom/embed-core/embed-iframe";
+ import { useBookerEmbedEvents } from "@calcom/embed-core/src/embed-iframe/react-hooks";
+ import type { BookerProps } from "@calcom/features/bookings/Booker";
+-import { Booker as BookerComponent } from "@calcom/web/modules/bookings/components/Booker";
+ import {
+   BookerStoreProvider,
+   useInitializeBookerStoreContext,
+@@ -33,12 +32,13 @@ import { DEFAULT_LIGHT_BRAND_COLOR, DEFAULT_DARK_BRAND_COLOR, WEBAPP_URL } from
+ import { useRouterQuery } from "@calcom/lib/hooks/useRouterQuery";
+ import { localStorage } from "@calcom/lib/webstorage";
+ 
++import { Booker as BookerComponent } from "./Booker";
++
+ export type BookerWebWrapperAtomProps = BookerProps & {
+   eventData?: NonNullable<Awaited<ReturnType<typeof getPublicEvent>>>;
+ };
+ 
+ const BookerWebWrapperComponent = (props: BookerWebWrapperAtomProps) => {
+-  const router = useRouter();
+   const pathname = usePathname();
+   const searchParams = useSearchParams();
+   const clientFetchedEvent = useEvent({
+diff --git a/packages/platform/atoms/selected-calendars/wrappers/SelectedCalendarsSettingsWebWrapper.tsx b/apps/web/modules/calendars/components/SelectedCalendarsSettingsWebWrapper.tsx
+similarity index 99%
+rename from packages/platform/atoms/selected-calendars/wrappers/SelectedCalendarsSettingsWebWrapper.tsx
+rename to apps/web/modules/calendars/components/SelectedCalendarsSettingsWebWrapper.tsx
+index 4b3271638718..4770405eb59f 100644
+--- a/packages/platform/atoms/selected-calendars/wrappers/SelectedCalendarsSettingsWebWrapper.tsx
++++ b/apps/web/modules/calendars/components/SelectedCalendarsSettingsWebWrapper.tsx
+@@ -12,7 +12,7 @@ import { Alert } from "@calcom/ui/components/alert";
+ import { Select } from "@calcom/ui/components/form";
+ import { List } from "@calcom/ui/components/list";
+ 
+-import { SelectedCalendarsSettings } from "../SelectedCalendarsSettings";
++import { SelectedCalendarsSettings } from "@calcom/atoms/selected-calendars/SelectedCalendarsSettings";
+ 
+ export enum SelectedCalendarSettingsScope {
+   User = "user",
+@@ -147,7 +147,6 @@ export const SelectedCalendarsSettingsWebWrapper = (props: SelectedCalendarsSett
+ 
+   const query = trpc.viewer.calendars.connectedCalendars.useQuery(
+     {
+-       
+       eventTypeId: scope === SelectedCalendarSettingsScope.EventType ? eventTypeId! : null,
+     },
+     {
+diff --git a/apps/web/modules/d/[link]/d-type-view.tsx b/apps/web/modules/d/[link]/d-type-view.tsx
+index b733cba23dd0..9fa2d998f0a8 100644
+--- a/apps/web/modules/d/[link]/d-type-view.tsx
++++ b/apps/web/modules/d/[link]/d-type-view.tsx
+@@ -1,6 +1,6 @@
+ "use client";
+ 
+-import { BookerWebWrapper as Booker } from "@calcom/atoms/booker";
++import { BookerWebWrapper as Booker } from "@calcom/web/modules/bookings/components/BookerWebWrapper";
+ import { getBookerWrapperClasses } from "@calcom/features/bookings/Booker/utils/getBookerWrapperClasses";
+ 
+ import { type PageProps } from "@lib/d/[link]/[slug]/getServerSideProps";
+diff --git a/apps/web/modules/event-types/components/AddMembersWithSwitch.tsx b/apps/web/modules/event-types/components/AddMembersWithSwitch.tsx
+index 47a761fee3cc..a4c0d35cdfa0 100644
+--- a/apps/web/modules/event-types/components/AddMembersWithSwitch.tsx
++++ b/apps/web/modules/event-types/components/AddMembersWithSwitch.tsx
+@@ -4,7 +4,7 @@ import { Controller } from "react-hook-form";
+ import type { Options } from "react-select";
+ 
+ import { AddMembersWithSwitchPlatformWrapper } from "@calcom/atoms/add-members-switch/AddMembersWithSwitchPlatformWrapper";
+-import { AddMembersWithSwitchWebWrapper } from "@calcom/atoms/add-members-switch/AddMembersWithSwitchWebWrapper";
++import { AddMembersWithSwitchWebWrapper } from "./AddMembersWithSwitchWebWrapper";
+ import { useIsPlatform } from "@calcom/atoms/hooks/useIsPlatform";
+ import { Segment } from "@calcom/features/Segment";
+ import type {
+diff --git a/packages/platform/atoms/add-members-switch/AddMembersWithSwitchWebWrapper.tsx b/apps/web/modules/event-types/components/AddMembersWithSwitchWebWrapper.tsx
+similarity index 59%
+rename from packages/platform/atoms/add-members-switch/AddMembersWithSwitchWebWrapper.tsx
+rename to apps/web/modules/event-types/components/AddMembersWithSwitchWebWrapper.tsx
+index 7a530b7e9e8a..6ea54bca11c2 100644
+--- a/packages/platform/atoms/add-members-switch/AddMembersWithSwitchWebWrapper.tsx
++++ b/apps/web/modules/event-types/components/AddMembersWithSwitchWebWrapper.tsx
+@@ -1,7 +1,8 @@
+-import type { AddMembersWithSwitchProps } from "@calcom/web/modules/event-types/components/AddMembersWithSwitch";
+-import { AddMembersWithSwitch } from "@calcom/web/modules/event-types/components/AddMembersWithSwitch";
+ import { trpc } from "@calcom/trpc/react";
+ 
++import type { AddMembersWithSwitchProps } from "./AddMembersWithSwitch";
++import { AddMembersWithSwitch } from "./AddMembersWithSwitch";
++
+ export const AddMembersWithSwitchWebWrapper = ({ ...props }: AddMembersWithSwitchProps) => {
+   const utils = trpc.useUtils();
+ 
+diff --git a/packages/platform/atoms/event-types/wrappers/EventTypeWebWrapper.tsx b/apps/web/modules/event-types/components/EventTypeWebWrapper.tsx
+similarity index 84%
+rename from packages/platform/atoms/event-types/wrappers/EventTypeWebWrapper.tsx
+rename to apps/web/modules/event-types/components/EventTypeWebWrapper.tsx
+index 5f4c88537862..bc952ae7669c 100644
+--- a/packages/platform/atoms/event-types/wrappers/EventTypeWebWrapper.tsx
++++ b/apps/web/modules/event-types/components/EventTypeWebWrapper.tsx
+@@ -6,8 +6,6 @@ import { useEffect, useRef, useState } from "react";
+ import { z } from "zod";
+ 
+ import { useOrgBranding } from "@calcom/features/ee/organizations/context/provider";
+-import type { ChildrenEventType } from "@calcom/web/modules/event-types/components/ChildrenEventTypeSelect";
+-import { EventType as EventTypeComponent } from "@calcom/web/modules/event-types/components/EventType";
+ import type { EventTypeSetupProps } from "@calcom/features/eventtypes/lib/types";
+ import { EventPermissionProvider } from "@calcom/features/pbac/client/context/EventPermissionContext";
+ import { useWorkflowPermission } from "@calcom/features/pbac/client/hooks/useEventPermission";
+@@ -20,14 +18,17 @@ import { trpc } from "@calcom/trpc/react";
+ import type { RouterOutputs } from "@calcom/trpc/react";
+ import useMeQuery from "@calcom/trpc/react/hooks/useMeQuery";
+ import { showToast } from "@calcom/ui/components/toast";
+-import { revalidateTeamEventTypeCache } from "@calcom/web/app/(booking-page-wrapper)/team/[slug]/[type]/actions";
+-import { revalidateEventTypeEditPage } from "@calcom/web/app/(use-page-wrapper)/event-types/[type]/actions";
+ 
+ import { TRPCClientError } from "@trpc/react-query";
+ 
+-import { useEventTypeForm } from "../hooks/useEventTypeForm";
+-import { useHandleRouteChange } from "../hooks/useHandleRouteChange";
+-import { useTabsNavigations } from "../hooks/useTabsNavigations";
++import { revalidateTeamEventTypeCache } from "@calcom/web/app/(booking-page-wrapper)/team/[slug]/[type]/actions";
++import { revalidateEventTypeEditPage } from "@calcom/web/app/(use-page-wrapper)/event-types/[type]/actions";
++
++import type { ChildrenEventType } from "./ChildrenEventTypeSelect";
++import { EventType as EventTypeComponent } from "./EventType";
++import { useEventTypeForm } from "@calcom/atoms/event-types/hooks/useEventTypeForm";
++import { useHandleRouteChange } from "@calcom/atoms/event-types/hooks/useHandleRouteChange";
++import { useTabsNavigations } from "@calcom/atoms/event-types/hooks/useTabsNavigations";
+ 
+ type EventPermissions = {
+   eventTypes: {
+@@ -44,65 +45,49 @@ type EventPermissions = {
+   };
+ };
+ 
+-const ManagedEventTypeDialog = dynamic(
+-  () => import("@calcom/web/modules/event-types/components/dialogs/ManagedEventDialog")
+-);
++const ManagedEventTypeDialog = dynamic(() => import("./dialogs/ManagedEventDialog"));
+ 
+-const AssignmentWarningDialog = dynamic(
+-  () => import("@calcom/web/modules/event-types/components/dialogs/AssignmentWarningDialog")
+-);
++const AssignmentWarningDialog = dynamic(() => import("./dialogs/AssignmentWarningDialog"));
+ 
+ const EventSetupTab = dynamic(
+-  () =>
+-    // import web wrapper when it's ready
+-    import("./EventSetupTabWebWrapper").then((mod) => mod),
++  () => import("./tabs/setup/EventSetupTabWebWrapper").then((mod) => mod),
+   { loading: () => null }
+ );
+ 
+ const EventAvailabilityTab = dynamic(() =>
+-  // import web wrapper when it's ready
+-  import("./EventAvailabilityTabWebWrapper").then((mod) => mod)
++  import("./tabs/availability/EventAvailabilityTabWebWrapper").then((mod) => mod)
+ );
+ 
+-const EventTeamAssignmentTab = dynamic(() => import("./EventTeamAssignmentTabWebWrapper").then((mod) => mod));
++const EventTeamAssignmentTab = dynamic(() => import("./tabs/assignment/EventTeamAssignmentTabWebWrapper"));
+ 
+ const EventLimitsTab = dynamic(() =>
+-  // import web wrapper when it's ready
+-  import("./EventLimitsTabWebWrapper").then((mod) => mod)
++  import("./tabs/limits/EventLimitsTabWebWrapper").then((mod) => mod)
+ );
+ 
+ const EventAdvancedTab = dynamic(() =>
+-  // import web wrapper when it's ready
+-  import("./EventAdvancedWebWrapper").then((mod) => mod)
++  import("./tabs/advanced/EventAdvancedWebWrapper").then((mod) => mod)
+ );
+ 
+ const EventInstantTab = dynamic(() =>
+-  import("@calcom/web/modules/event-types/components/tabs/instant/EventInstantTab").then(
+-    (mod) => mod.EventInstantTab
+-  )
++  import("./tabs/instant/EventInstantTab").then((mod) => mod.EventInstantTab)
+ );
+ 
+ const EventRecurringTab = dynamic(() =>
+-  // import web wrapper when it's ready
+-  import("./EventRecurringWebWrapper").then((mod) => mod)
++  import("./tabs/recurring/EventRecurringWebWrapper").then((mod) => mod)
+ );
+ 
+ const EventAppsTab = dynamic(() =>
+-  import("@calcom/web/modules/event-types/components/tabs/apps/EventAppsTab").then((mod) => mod.EventAppsTab)
++  import("./tabs/apps/EventAppsTab").then((mod) => mod.EventAppsTab)
+ );
+ 
+-const EventWorkflowsTab = dynamic(
+-  () => import("@calcom/web/modules/event-types/components/tabs/workflows/EventWorkflowsTab")
+-);
++const EventWorkflowsTab = dynamic(() => import("./tabs/workflows/EventWorkflowsTab"));
+ 
+ const EventWebhooksTab = dynamic(() =>
+-  import("@calcom/web/modules/event-types/components/tabs/webhooks/EventWebhooksTab").then(
+-    (mod) => mod.EventWebhooksTab
+-  )
++  import("./tabs/webhooks/EventWebhooksTab").then((mod) => mod.EventWebhooksTab)
+ );
+ 
+ const EventAITab = dynamic(() =>
+-  import("@calcom/web/modules/event-types/components/tabs/ai/EventAITab").then((mod) => mod.EventAITab)
++  import("./tabs/ai/EventAITab").then((mod) => mod.EventAITab)
+ );
+ 
+ export type EventTypeWebWrapperProps = {
+@@ -248,21 +233,21 @@ const EventTypeWeb = ({
+ 
+   const tabMap = {
+     setup: (
+-      <EventSetupTab
+-        eventType={eventType}
+-        locationOptions={locationOptions}
+-        team={team}
+-        teamMembers={teamMembers}
+-        destinationCalendar={destinationCalendar}
+-      />
++        <EventSetupTab
++            eventType={eventType}
++            locationOptions={locationOptions}
++            team={team}
++            teamMembers={teamMembers}
++            destinationCalendar={destinationCalendar}
++        />
+     ),
+     availability: (
+-      <EventAvailabilityTab
+-        eventType={eventType}
+-        isTeamEvent={!!team}
+-        user={user}
+-        teamMembers={teamMembers}
+-      />
++        <EventAvailabilityTab
++            eventType={eventType}
++            isTeamEvent={!!team}
++            user={user}
++            teamMembers={teamMembers}
++        />
+     ),
+     team: (
+       <EventTeamAssignmentTab
+diff --git a/apps/web/modules/event-types/components/HostEditDialogs.tsx b/apps/web/modules/event-types/components/HostEditDialogs.tsx
+index cd756da61b70..90e1aa2bf316 100644
+--- a/apps/web/modules/event-types/components/HostEditDialogs.tsx
++++ b/apps/web/modules/event-types/components/HostEditDialogs.tsx
+@@ -10,7 +10,7 @@ import type {
+   InputClassNames,
+   SelectClassNames,
+ } from "@calcom/features/eventtypes/lib/types";
+-import { groupHostsByGroupId, getHostsFromOtherGroups } from "@calcom/lib/bookings/hostGroupUtils";
++import { groupHostsByGroupId, getHostsFromOtherGroups, sortHosts } from "@calcom/lib/bookings/hostGroupUtils";
+ import { DEFAULT_GROUP_ID } from "@calcom/lib/constants";
+ import { useLocale } from "@calcom/lib/hooks/useLocale";
+ import classNames from "@calcom/ui/classNames";
+@@ -128,27 +128,6 @@ export const PriorityDialog = (
+   );
+ };
+ 
+-export function sortHosts(
+-  hostA: { priority: number | null; weight: number | null },
+-  hostB: { priority: number | null; weight: number | null },
+-  isRRWeightsEnabled: boolean
+-) {
+-  const weightA = hostA.weight ?? 100;
+-  const priorityA = hostA.priority ?? 2;
+-  const weightB = hostB.weight ?? 100;
+-  const priorityB = hostB.priority ?? 2;
+-
+-  if (isRRWeightsEnabled) {
+-    if (weightA === weightB) {
+-      return priorityB - priorityA;
+-    } else {
+-      return weightB - weightA;
+-    }
+-  } else {
+-    return priorityB - priorityA;
+-  }
+-}
+-
+ export type WeightDialogCustomClassNames = {
+   container?: string;
+   label?: string;
+diff --git a/apps/web/modules/event-types/components/tabs/advanced/EventAdvancedTab.tsx b/apps/web/modules/event-types/components/tabs/advanced/EventAdvancedTab.tsx
+index feb0323d31fb..55a42cb2e75e 100644
+--- a/apps/web/modules/event-types/components/tabs/advanced/EventAdvancedTab.tsx
++++ b/apps/web/modules/event-types/components/tabs/advanced/EventAdvancedTab.tsx
+@@ -10,7 +10,7 @@ import {
+   SelectedCalendarsSettingsWebWrapper,
+   SelectedCalendarSettingsScope,
+   SelectedCalendarsSettingsWebWrapperSkeleton,
+-} from "@calcom/atoms/selected-calendars/wrappers/SelectedCalendarsSettingsWebWrapper";
++} from "@calcom/web/modules/calendars/components/SelectedCalendarsSettingsWebWrapper";
+ import { Timezone as PlatformTimzoneSelect } from "@calcom/atoms/timezone";
+ import getLocationsOptionsForSelect from "@calcom/features/bookings/lib/getLocationOptionsForSelect";
+ import DestinationCalendarSelector from "@calcom/features/calendars/DestinationCalendarSelector";
+diff --git a/packages/platform/atoms/event-types/wrappers/EventAdvancedWebWrapper.tsx b/apps/web/modules/event-types/components/tabs/advanced/EventAdvancedWebWrapper.tsx
+similarity index 76%
+rename from packages/platform/atoms/event-types/wrappers/EventAdvancedWebWrapper.tsx
+rename to apps/web/modules/event-types/components/tabs/advanced/EventAdvancedWebWrapper.tsx
+index 99b51bfad3c5..ec711897c69e 100644
+--- a/packages/platform/atoms/event-types/wrappers/EventAdvancedWebWrapper.tsx
++++ b/apps/web/modules/event-types/components/tabs/advanced/EventAdvancedWebWrapper.tsx
+@@ -1,7 +1,8 @@
+ import { localeOptions } from "@calcom/lib/i18n";
+ import { trpc } from "@calcom/trpc/react";
+-import type { EventAdvancedBaseProps } from "@calcom/web/modules/event-types/components/tabs/advanced/EventAdvancedTab";
+-import { EventAdvancedTab } from "@calcom/web/modules/event-types/components/tabs/advanced/EventAdvancedTab";
++
++import type { EventAdvancedBaseProps } from "./EventAdvancedTab";
++import { EventAdvancedTab } from "./EventAdvancedTab";
+ 
+ const EventAdvancedWebWrapper = ({ ...props }: EventAdvancedBaseProps) => {
+   const connectedCalendarsQuery = trpc.viewer.calendars.connectedCalendars.useQuery();
+diff --git a/apps/web/modules/event-types/components/tabs/assignment/EventTeamAssignmentTab.tsx b/apps/web/modules/event-types/components/tabs/assignment/EventTeamAssignmentTab.tsx
+index 561247ba962e..54818fbc9e98 100644
+--- a/apps/web/modules/event-types/components/tabs/assignment/EventTeamAssignmentTab.tsx
++++ b/apps/web/modules/event-types/components/tabs/assignment/EventTeamAssignmentTab.tsx
+@@ -14,7 +14,7 @@ import AssignAllTeamMembers from "@calcom/web/modules/event-types/components/Ass
+ import type { ChildrenEventTypeSelectCustomClassNames } from "@calcom/web/modules/event-types/components/ChildrenEventTypeSelect";
+ import ChildrenEventTypeSelect from "@calcom/web/modules/event-types/components/ChildrenEventTypeSelect";
+ import { EditWeightsForAllTeamMembers } from "@calcom/web/modules/event-types/components/EditWeightsForAllTeamMembers";
+-import { sortHosts } from "@calcom/web/modules/event-types/components/HostEditDialogs";
++import { sortHosts } from "@calcom/lib/bookings/hostGroupUtils";
+ import { LearnMoreLink } from "@calcom/web/modules/event-types/components/LearnMoreLink";
+ import WeightDescription from "@calcom/web/modules/event-types/components/WeightDescription";
+ import type {
+diff --git a/packages/platform/atoms/event-types/wrappers/EventTeamAssignmentTabWebWrapper.tsx b/apps/web/modules/event-types/components/tabs/assignment/EventTeamAssignmentTabWebWrapper.tsx
+similarity index 80%
+rename from packages/platform/atoms/event-types/wrappers/EventTeamAssignmentTabWebWrapper.tsx
+rename to apps/web/modules/event-types/components/tabs/assignment/EventTeamAssignmentTabWebWrapper.tsx
+index e28d863979cc..4a3f10b2d71b 100644
+--- a/packages/platform/atoms/event-types/wrappers/EventTeamAssignmentTabWebWrapper.tsx
++++ b/apps/web/modules/event-types/components/tabs/assignment/EventTeamAssignmentTabWebWrapper.tsx
+@@ -1,7 +1,7 @@
+ import {
+   EventTeamAssignmentTab,
+   type EventTeamAssignmentTabBaseProps,
+-} from "@calcom/web/modules/event-types/components/tabs/assignment/EventTeamAssignmentTab";
++} from "./EventTeamAssignmentTab";
+ 
+ const EventTeamAssignmentTabWebWrapper = (
+   props: Omit<EventTeamAssignmentTabBaseProps, "isSegmentApplicable">
+diff --git a/apps/web/modules/event-types/components/tabs/availability/EventAvailabilityTab.tsx b/apps/web/modules/event-types/components/tabs/availability/EventAvailabilityTab.tsx
+index cc09b4922bdc..5da456431915 100644
+--- a/apps/web/modules/event-types/components/tabs/availability/EventAvailabilityTab.tsx
++++ b/apps/web/modules/event-types/components/tabs/availability/EventAvailabilityTab.tsx
+@@ -5,7 +5,7 @@ import { Controller, useFormContext } from "react-hook-form";
+ import type { OptionProps, SingleValueProps } from "react-select";
+ import { components } from "react-select";
+ 
+-import type { GetAllSchedulesByUserIdQueryType } from "@calcom/atoms/event-types/wrappers/EventAvailabilityTabWebWrapper";
++import type { GetAllSchedulesByUserIdQueryType } from "./EventAvailabilityTabWebWrapper";
+ import { useIsPlatform } from "@calcom/atoms/hooks/useIsPlatform";
+ import dayjs from "@calcom/dayjs";
+ import { SelectSkeletonLoader } from "@calcom/features/availability/components/SkeletonLoader";
+diff --git a/packages/platform/atoms/event-types/wrappers/EventAvailabilityTabWebWrapper.tsx b/apps/web/modules/event-types/components/tabs/availability/EventAvailabilityTabWebWrapper.tsx
+similarity index 93%
+rename from packages/platform/atoms/event-types/wrappers/EventAvailabilityTabWebWrapper.tsx
+rename to apps/web/modules/event-types/components/tabs/availability/EventAvailabilityTabWebWrapper.tsx
+index fbcbcd6362cb..ccf3c6680e62 100644
+--- a/packages/platform/atoms/event-types/wrappers/EventAvailabilityTabWebWrapper.tsx
++++ b/apps/web/modules/event-types/components/tabs/availability/EventAvailabilityTabWebWrapper.tsx
+@@ -1,12 +1,13 @@
+ import { useFormContext } from "react-hook-form";
+ 
+ import useLockedFieldsManager from "@calcom/features/ee/managed-event-types/hooks/useLockedFieldsManager";
+-import type { TeamMembers } from "@calcom/web/modules/event-types/components/EventType";
+ import type { EventTypeSetup, FormValues } from "@calcom/features/eventtypes/lib/types";
+ import { useLocale } from "@calcom/lib/hooks/useLocale";
+ import type { RouterOutputs } from "@calcom/trpc/react";
+ import { trpc } from "@calcom/trpc/react";
+-import { EventAvailabilityTab } from "@calcom/web/modules/event-types/components/tabs/availability/EventAvailabilityTab";
++
++import type { TeamMembers } from "../../EventType";
++import { EventAvailabilityTab } from "./EventAvailabilityTab";
+ 
+ export type EventAvailabilityTabWebWrapperProps = {
+   eventType: EventTypeSetup;
+diff --git a/packages/platform/atoms/event-types/wrappers/EventLimitsTabWebWrapper.tsx b/apps/web/modules/event-types/components/tabs/limits/EventLimitsTabWebWrapper.tsx
+similarity index 88%
+rename from packages/platform/atoms/event-types/wrappers/EventLimitsTabWebWrapper.tsx
+rename to apps/web/modules/event-types/components/tabs/limits/EventLimitsTabWebWrapper.tsx
+index 91f9ee42716d..a81548a860bb 100644
+--- a/packages/platform/atoms/event-types/wrappers/EventLimitsTabWebWrapper.tsx
++++ b/apps/web/modules/event-types/components/tabs/limits/EventLimitsTabWebWrapper.tsx
+@@ -5,4 +5,4 @@ const EventLimitsTabWebWrapper = (props: EventLimitsTabProps) => {
+   return <EventLimitsTab {...props} />;
+ };
+ 
+-export default EventLimitsTabWebWrapper;
++export default EventLimitsTabWebWrapper;
+\ No newline at end of file
+diff --git a/packages/platform/atoms/event-types/wrappers/EventRecurringWebWrapper.tsx b/apps/web/modules/event-types/components/tabs/recurring/EventRecurringWebWrapper.tsx
+similarity index 89%
+rename from packages/platform/atoms/event-types/wrappers/EventRecurringWebWrapper.tsx
+rename to apps/web/modules/event-types/components/tabs/recurring/EventRecurringWebWrapper.tsx
+index 37f3c286334b..a20f91fed16c 100644
+--- a/packages/platform/atoms/event-types/wrappers/EventRecurringWebWrapper.tsx
++++ b/apps/web/modules/event-types/components/tabs/recurring/EventRecurringWebWrapper.tsx
+@@ -5,4 +5,4 @@ const EventRecurringWebWrapper = (props: EventRecurringTabProps) => {
+   return <EventRecurringTab {...props} />;
+ };
+ 
+-export default EventRecurringWebWrapper;
++export default EventRecurringWebWrapper;
+\ No newline at end of file
+diff --git a/packages/platform/atoms/event-types/wrappers/EventSetupTabWebWrapper.tsx b/apps/web/modules/event-types/components/tabs/setup/EventSetupTabWebWrapper.tsx
+similarity index 78%
+rename from packages/platform/atoms/event-types/wrappers/EventSetupTabWebWrapper.tsx
+rename to apps/web/modules/event-types/components/tabs/setup/EventSetupTabWebWrapper.tsx
+index 26b507d333dc..b6f5f23e449a 100644
+--- a/packages/platform/atoms/event-types/wrappers/EventSetupTabWebWrapper.tsx
++++ b/apps/web/modules/event-types/components/tabs/setup/EventSetupTabWebWrapper.tsx
+@@ -3,8 +3,9 @@ import { useSession } from "next-auth/react";
+ import { useOrgBranding } from "@calcom/features/ee/organizations/context/provider";
+ import { WEBSITE_URL } from "@calcom/lib/constants";
+ import { localeOptions } from "@calcom/lib/i18n";
+-import type { EventSetupTabProps } from "@calcom/web/modules/event-types/components/tabs/setup/EventSetupTab";
+-import { EventSetupTab } from "@calcom/web/modules/event-types/components/tabs/setup/EventSetupTab";
++
++import type { EventSetupTabProps } from "./EventSetupTab";
++import { EventSetupTab } from "./EventSetupTab";
+ 
+ const EventSetupTabWebWrapper = (props: EventSetupTabProps) => {
+   const orgBranding = useOrgBranding();
+diff --git a/apps/web/modules/org/[orgSlug]/instant-meeting/team/[slug]/[type]/instant-meeting-view.tsx b/apps/web/modules/org/[orgSlug]/instant-meeting/team/[slug]/[type]/instant-meeting-view.tsx
+index f1184c3c6b88..ede5ad6c4b50 100644
+--- a/apps/web/modules/org/[orgSlug]/instant-meeting/team/[slug]/[type]/instant-meeting-view.tsx
++++ b/apps/web/modules/org/[orgSlug]/instant-meeting/team/[slug]/[type]/instant-meeting-view.tsx
+@@ -2,7 +2,7 @@
+ 
+ import type { EmbedProps } from "app/WithEmbedSSR";
+ 
+-import { BookerWebWrapper as Booker } from "@calcom/atoms/booker";
++import { BookerWebWrapper as Booker } from "@calcom/web/modules/bookings/components/BookerWebWrapper";
+ import { getBookerWrapperClasses } from "@calcom/features/bookings/Booker/utils/getBookerWrapperClasses";
+ 
+ import type { getServerSideProps } from "@lib/org/[orgSlug]/instant-meeting/team/[slug]/[type]/getServerSideProps";
+diff --git a/apps/web/modules/team/type-view-cached.tsx b/apps/web/modules/team/type-view-cached.tsx
+index b679bd88ed31..534287228706 100644
+--- a/apps/web/modules/team/type-view-cached.tsx
++++ b/apps/web/modules/team/type-view-cached.tsx
+@@ -1,6 +1,6 @@
+ "use client";
+ 
+-import { BookerWebWrapper, type BookerWebWrapperAtomProps } from "@calcom/atoms/booker";
++import { BookerWebWrapper, type BookerWebWrapperAtomProps } from "@calcom/web/modules/bookings/components/BookerWebWrapper";
+ import { getBookerWrapperClasses } from "@calcom/features/bookings/Booker/utils/getBookerWrapperClasses";
+ 
+ import BookingPageErrorBoundary from "@components/error/BookingPageErrorBoundary";
+diff --git a/apps/web/modules/team/type-view.tsx b/apps/web/modules/team/type-view.tsx
+index 88e6e2598838..2e2c312086df 100644
+--- a/apps/web/modules/team/type-view.tsx
++++ b/apps/web/modules/team/type-view.tsx
+@@ -3,7 +3,7 @@
+ import type { EmbedProps } from "app/WithEmbedSSR";
+ import { useSearchParams } from "next/navigation";
+ 
+-import { BookerWebWrapper as Booker } from "@calcom/atoms/booker";
++import { BookerWebWrapper as Booker } from "@calcom/web/modules/bookings/components/BookerWebWrapper";
+ import { getBookerWrapperClasses } from "@calcom/features/bookings/Booker/utils/getBookerWrapperClasses";
+ 
+ import type { getServerSideProps } from "@lib/team/[slug]/[type]/getServerSideProps";
+diff --git a/apps/web/modules/users/views/users-type-public-view.tsx b/apps/web/modules/users/views/users-type-public-view.tsx
+index 197ae7be9e32..ab9910bdbaac 100644
+--- a/apps/web/modules/users/views/users-type-public-view.tsx
++++ b/apps/web/modules/users/views/users-type-public-view.tsx
+@@ -3,7 +3,7 @@
+ import type { EmbedProps } from "app/WithEmbedSSR";
+ import { useSearchParams } from "next/navigation";
+ 
+-import { BookerWebWrapper as Booker } from "@calcom/atoms/booker";
++import { BookerWebWrapper as Booker } from "@calcom/web/modules/bookings/components/BookerWebWrapper";
+ import { getBookerWrapperClasses } from "@calcom/features/bookings/Booker/utils/getBookerWrapperClasses";
+ 
+ import type { inferSSRProps } from "@lib/types/inferSSRProps";
+diff --git a/packages/lib/bookings/hostGroupUtils.ts b/packages/lib/bookings/hostGroupUtils.ts
+index 71d75057aa54..6b446128d8e7 100644
+--- a/packages/lib/bookings/hostGroupUtils.ts
++++ b/packages/lib/bookings/hostGroupUtils.ts
+@@ -37,3 +37,24 @@ export function getHostsFromOtherGroups<T extends { groupId?: string | null }>(
+     (host) => (groupId && (!host.groupId || host.groupId !== groupId)) || (!groupId && host.groupId)
+   );
+ }
++
++export function sortHosts(
++  hostA: { priority: number | null; weight: number | null },
++  hostB: { priority: number | null; weight: number | null },
++  isRRWeightsEnabled: boolean
++) {
++  const weightA = hostA.weight ?? 100;
++  const priorityA = hostA.priority ?? 2;
++  const weightB = hostB.weight ?? 100;
++  const priorityB = hostB.priority ?? 2;
++
++  if (isRRWeightsEnabled) {
++    if (weightA === weightB) {
++      return priorityA - priorityB;
++    } else {
++      return weightB - weightA;
++    }
++  } else {
++    return priorityB - priorityA;
++  }
++}
+diff --git a/packages/platform/atoms/booker/index.ts b/packages/platform/atoms/booker/index.ts
+deleted file mode 100644
+index 9fbfb6a67fd8..000000000000
+--- a/packages/platform/atoms/booker/index.ts
++++ /dev/null
+@@ -1,2 +0,0 @@
+-export { BookerWebWrapper } from "./BookerWebWrapper";
+-export type { BookerWebWrapperAtomProps } from "./BookerWebWrapper";
+diff --git a/packages/platform/atoms/event-types/hooks/useEventTypeForm.ts b/packages/platform/atoms/event-types/hooks/useEventTypeForm.ts
+index 698570b77299..b7eebe89e595 100644
+--- a/packages/platform/atoms/event-types/hooks/useEventTypeForm.ts
++++ b/packages/platform/atoms/event-types/hooks/useEventTypeForm.ts
+@@ -7,8 +7,8 @@ import checkForMultiplePaymentApps from "@calcom/app-store/_utils/payments/check
+ import { locationsResolver } from "@calcom/app-store/locations";
+ import { DEFAULT_PROMPT_VALUE, DEFAULT_BEGIN_MESSAGE } from "@calcom/features/calAIPhone/promptTemplates";
+ import type { TemplateType } from "@calcom/features/calAIPhone/zod-utils";
+-import { sortHosts } from "@calcom/web/modules/event-types/components/HostEditDialogs";
+ import { validateCustomEventName } from "@calcom/features/eventtypes/lib/eventNaming";
++import { sortHosts } from "@calcom/lib/bookings/hostGroupUtils";
+ import type {
+   FormValues,
+   EventTypeSetupProps,
+diff --git a/packages/platform/atoms/package.json b/packages/platform/atoms/package.json
+index ee7096ad495a..30afb007a34a 100644
+--- a/packages/platform/atoms/package.json
++++ b/packages/platform/atoms/package.json
+@@ -54,15 +54,12 @@
+       "require": "./dist/cal-atoms.umd.cjs"
+     },
+     "./add-members-switch/AddMembersWithSwitchPlatformWrapper": "./add-members-switch/AddMembersWithSwitchPlatformWrapper.tsx",
+-    "./add-members-switch/AddMembersWithSwitchWebWrapper": "./add-members-switch/AddMembersWithSwitchWebWrapper.tsx",
+     "./availability/AvailabilitySettings": "./availability/AvailabilitySettings.tsx",
+     "./booker": "./booker/index.ts",
++    "./selected-calendars/SelectedCalendarsSettings": "./selected-calendars/SelectedCalendarsSettings.tsx",
+     "./components/ui/shell": "./src/components/ui/shell.tsx",
+-    "./connect/conferencing-apps/ConferencingAppsViewWebWrapper": "./connect/conferencing-apps/ConferencingAppsViewWebWrapper.tsx",
+-    "./destination-calendar/wrappers/DestinationCalendarSettingsWebWrapper": "./destination-calendar/wrappers/DestinationCalendarSettingsWebWrapper.tsx",
+     "./dist/index.ts": "./index.ts",
+     "./dist/index.d.ts": "./dist/index.d.ts",
+-    "./event-types/wrappers/EventTypeWebWrapper": "./event-types/wrappers/EventTypeWebWrapper.tsx",
+     "./globals.min.css": "./globals.min.css",
+     "./hooks/bookings/useBookings": "./hooks/bookings/useBookings.ts",
+     "./hooks/bookings/useHandleBookEvent": "./hooks/bookings/useHandleBookEvent.ts",
+@@ -72,7 +69,9 @@
+     "./hooks/useIsPlatform": "./hooks/useIsPlatform.ts",
+     "./hooks/useIsPlatformBookerEmbed": "./hooks/useIsPlatformBookerEmbed.ts",
+     "./hooks/event-types/private/useEventTypeById": "./hooks/event-types/private/useEventTypeById.ts",
+-    "./selected-calendars/wrappers/SelectedCalendarsSettingsWebWrapper": "./selected-calendars/wrappers/SelectedCalendarsSettingsWebWrapper.tsx",
++    "./event-types/hooks/useEventTypeForm": "./event-types/hooks/useEventTypeForm.ts",
++    "./event-types/hooks/useHandleRouteChange": "./event-types/hooks/useHandleRouteChange.ts",
++    "./event-types/hooks/useTabsNavigations": "./event-types/hooks/useTabsNavigations.tsx",
+     "./timezone": "./timezone/index.tsx"
+   },
+   "types": "./dist/index.d.ts",

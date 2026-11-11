@@ -1,0 +1,288 @@
+diff --git a/.changes/feat-bundler-platform-certs.md b/.changes/feat-bundler-platform-certs.md
+new file mode 100644
+index 000000000000..89bcfcf7b0a5
+--- /dev/null
++++ b/.changes/feat-bundler-platform-certs.md
+@@ -0,0 +1,7 @@
++---
++"tauri-bundler": "minor:enhance"
++"tauri-cli": "minor:enhance"
++"@tauri-apps/cli": "minor:enhance"
++---
++
++The bundler and cli will now read TLS Certificates installed on the system when downloading tools and checking versions.
+diff --git a/Cargo.lock b/Cargo.lock
+index b069038ff5ac..cfa22a5637b7 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3907,6 +3907,20 @@ dependencies = [
+  "system-deps",
+ ]
+ 
++[[package]]
++name = "jni"
++version = "0.19.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "c6df18c2e3db7e453d3c6ac5b3e9d5182664d28788126d39b91f2d1e22b017ec"
++dependencies = [
++ "cesu8",
++ "combine",
++ "jni-sys",
++ "log",
++ "thiserror 1.0.69",
++ "walkdir",
++]
++
+ [[package]]
+ name = "jni"
+ version = "0.21.1"
+@@ -7210,6 +7224,33 @@ dependencies = [
+  "web-time",
+ ]
+ 
++[[package]]
++name = "rustls-platform-verifier"
++version = "0.3.4"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "afbb878bdfdf63a336a5e63561b1835e7a8c91524f51621db870169eac84b490"
++dependencies = [
++ "core-foundation 0.9.4",
++ "core-foundation-sys",
++ "jni 0.19.0",
++ "log",
++ "once_cell",
++ "rustls 0.23.20",
++ "rustls-native-certs 0.7.3",
++ "rustls-platform-verifier-android",
++ "rustls-webpki 0.102.8",
++ "security-framework",
++ "security-framework-sys",
++ "webpki-roots 0.26.7",
++ "winapi",
++]
++
++[[package]]
++name = "rustls-platform-verifier-android"
++version = "0.1.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "f87165f0995f63a9fbeea62b64d10b4d9d8e78ec6d7d51fb2125fda7bb36788f"
++
+ [[package]]
+ name = "rustls-webpki"
+ version = "0.101.7"
+@@ -7429,6 +7470,7 @@ dependencies = [
+  "core-foundation 0.9.4",
+  "core-foundation-sys",
+  "libc",
++ "num-bigint",
+  "security-framework-sys",
+ ]
+ 
+@@ -8383,7 +8425,7 @@ dependencies = [
+  "gdkwayland-sys",
+  "gdkx11-sys",
+  "gtk",
+- "jni",
++ "jni 0.21.1",
+  "lazy_static",
+  "libc",
+  "log",
+@@ -8458,7 +8500,7 @@ dependencies = [
+  "http 1.3.1",
+  "http-range",
+  "image",
+- "jni",
++ "jni 0.21.1",
+  "libc",
+  "log",
+  "mime",
+@@ -8812,7 +8854,7 @@ dependencies = [
+  "dpi",
+  "gtk",
+  "http 1.3.1",
+- "jni",
++ "jni 0.21.1",
+  "objc2 0.6.0",
+  "objc2-ui-kit",
+  "raw-window-handle",
+@@ -8830,7 +8872,7 @@ version = "2.7.2"
+ dependencies = [
+  "gtk",
+  "http 1.3.1",
+- "jni",
++ "jni 0.21.1",
+  "log",
+  "objc2 0.6.0",
+  "objc2-app-kit",
+@@ -9733,6 +9775,7 @@ dependencies = [
+  "rustls 0.23.20",
+  "rustls-pemfile 2.2.0",
+  "rustls-pki-types",
++ "rustls-platform-verifier",
+  "socks",
+  "ureq-proto",
+  "utf-8",
+@@ -10911,7 +10954,7 @@ dependencies = [
+  "html5ever",
+  "http 1.3.1",
+  "javascriptcore-rs",
+- "jni",
++ "jni 0.21.1",
+  "kuchikiki",
+  "libc",
+  "ndk",
+diff --git a/crates/tauri-bundler/Cargo.toml b/crates/tauri-bundler/Cargo.toml
+index 54b00ed724f3..d1609ecce191 100644
+--- a/crates/tauri-bundler/Cargo.toml
++++ b/crates/tauri-bundler/Cargo.toml
+@@ -74,7 +74,8 @@ name = "tauri_bundler"
+ path = "src/lib.rs"
+ 
+ [features]
+-default = ["rustls"]
++default = ["rustls", "platform-certs"]
+ native-tls = ["ureq/native-tls"]
+ native-tls-vendored = ["native-tls", "native-tls/vendored"]
+ rustls = ["ureq/rustls"]
++platform-certs = ["ureq/platform-verifier"]
+diff --git a/crates/tauri-bundler/src/bundle/windows/util.rs b/crates/tauri-bundler/src/bundle/windows/util.rs
+index b7a290332797..c61f2f4ecd49 100644
+--- a/crates/tauri-bundler/src/bundle/windows/util.rs
++++ b/crates/tauri-bundler/src/bundle/windows/util.rs
+@@ -4,11 +4,12 @@
+ 
+ use std::{
+   fs::create_dir_all,
++  io::Read,
+   path::{Path, PathBuf},
+ };
+ use ureq::ResponseExt;
+ 
+-use crate::utils::http_utils::download;
++use crate::utils::http_utils::{base_ureq_agent, download};
+ 
+ pub const WEBVIEW2_BOOTSTRAPPER_URL: &str = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
+ pub const WEBVIEW2_OFFLINE_INSTALLER_X86_URL: &str =
+@@ -23,10 +24,7 @@ pub const WIX_OUTPUT_FOLDER_NAME: &str = "msi";
+ pub const WIX_UPDATER_OUTPUT_FOLDER_NAME: &str = "msi-updater";
+ 
+ pub fn webview2_guid_path(url: &str) -> crate::Result<(String, String)> {
+-  let agent: ureq::Agent = ureq::Agent::config_builder()
+-    .proxy(ureq::Proxy::try_from_env())
+-    .build()
+-    .into();
++  let agent = base_ureq_agent();
+   let response = agent.head(url).call().map_err(Box::new)?;
+   let final_url = response.get_uri().to_string();
+   let remaining_url = final_url.strip_prefix(WEBVIEW2_URL_PREFIX).ok_or_else(|| {
+@@ -64,7 +62,10 @@ pub fn download_webview2_offline_installer(base_path: &Path, arch: &str) -> crat
+   let file_path = dir_path.join(filename);
+   if !file_path.exists() {
+     create_dir_all(dir_path)?;
+-    std::fs::write(&file_path, download(url)?)?;
++    let response = ureq::get(url).call().map_err(Box::new)?;
++    let mut bytes = Vec::new();
++    response.into_body().into_reader().read_to_end(&mut bytes)?;
++    std::fs::write(&file_path, bytes)?;
+   }
+   Ok(file_path)
+ }
+diff --git a/crates/tauri-bundler/src/utils/http_utils.rs b/crates/tauri-bundler/src/utils/http_utils.rs
+index 3456dd664d25..5ffc312a220e 100644
+--- a/crates/tauri-bundler/src/utils/http_utils.rs
++++ b/crates/tauri-bundler/src/utils/http_utils.rs
+@@ -34,8 +34,7 @@ fn generate_github_mirror_url_from_base(github_url: &str) -> Option<String> {
+   std::env::var("TAURI_BUNDLER_TOOLS_GITHUB_MIRROR")
+     .ok()
+     .and_then(|cdn| Url::parse(&cdn).ok())
+-    .map(|mut cdn| {
+-      cdn.set_path(github_url);
++    .map(|cdn| {
+       cdn.to_string()
+     })
+ }
+@@ -51,13 +50,26 @@ fn generate_github_alternative_url(url: &str) -> Option<(ureq::Agent, String)> {
+ }
+ 
+ fn create_agent_and_url(url: &str) -> (ureq::Agent, String) {
+-  generate_github_alternative_url(url).unwrap_or((
+-    ureq::Agent::config_builder()
+-      .proxy(ureq::Proxy::try_from_env())
+-      .build()
+-      .into(),
+-    url.to_owned(),
+-  ))
++  generate_github_alternative_url(url).unwrap_or((base_ureq_agent(), url.to_owned()))
++}
++
++pub(crate) fn base_ureq_agent() -> ureq::Agent {
++  #[cfg(feature = "platform-certs")]
++  let agent: ureq::Agent = ureq::Agent::config_builder()
++    .tls_config(
++      ureq::tls::TlsConfig::builder()
++        .root_certs(ureq::tls::RootCerts::PlatformVerifier)
++        .build(),
++    )
++    .proxy(ureq::Proxy::try_from_env())
++    .build()
++    .into();
++  #[cfg(not(feature = "platform-certs"))]
++  let agent: ureq::Agent = ureq::Agent::config_builder()
++    .proxy(ureq::Proxy::try_from_env())
++    .build()
++    .into();
++  return agent;
+ }
+ 
+ #[allow(dead_code)]
+diff --git a/crates/tauri-cli/Cargo.toml b/crates/tauri-cli/Cargo.toml
+index 605d31181e69..299e10048ed9 100644
+--- a/crates/tauri-cli/Cargo.toml
++++ b/crates/tauri-cli/Cargo.toml
+@@ -138,7 +138,7 @@ object = { version = "0.36", default-features = false, features = [
+ ar = "0.9"
+ 
+ [features]
+-default = ["rustls"]
++default = ["rustls", "platform-certs"]
+ native-tls = [
+   "tauri-bundler/native-tls",
+   "cargo-mobile2/native-tls",
+@@ -146,3 +146,4 @@ native-tls = [
+ ]
+ native-tls-vendored = ["native-tls", "tauri-bundler/native-tls-vendored"]
+ rustls = ["tauri-bundler/rustls", "cargo-mobile2/rustls", "ureq/rustls"]
++platform-certs = ["tauri-bundler/platform-certs", "ureq/platform-verifier"]
+diff --git a/crates/tauri-cli/src/helpers/cargo_manifest.rs b/crates/tauri-cli/src/helpers/cargo_manifest.rs
+index f72647327cc4..056cd005b131 100644
+--- a/crates/tauri-cli/src/helpers/cargo_manifest.rs
++++ b/crates/tauri-cli/src/helpers/cargo_manifest.rs
+@@ -117,6 +117,19 @@ struct CrateIoGetResponse {
+ pub fn crate_latest_version(name: &str) -> Option<String> {
+   // Reference: https://github.com/rust-lang/crates.io/blob/98c83c8231cbcd15d6b8f06d80a00ad462f71585/src/controllers/krate/metadata.rs#L88
+   let url = format!("https://crates.io/api/v1/crates/{name}?include");
++  #[cfg(feature = "platform-certs")]
++  let mut response = {
++    let agent = ureq::Agent::config_builder()
++      .tls_config(
++        ureq::tls::TlsConfig::builder()
++          .root_certs(ureq::tls::RootCerts::PlatformVerifier)
++          .build(),
++      )
++      .build()
++      .new_agent();
++    agent.get(&url).call().ok()?
++  };
++  #[cfg(not(feature = "platform-certs"))]
+   let mut response = ureq::get(&url).call().ok()?;
+   let metadata: CrateIoGetResponse =
+     serde_json::from_reader(response.body_mut().as_reader()).unwrap();
+@@ -178,7 +191,7 @@ pub fn crate_version(
+       }
+     }
+ 
+-    if lock.is_some() && crate_lock_packages.is_empty() {
++    if lock.is_some() && !crate_lock_packages.is_empty() {
+       let lock_version = crate_lock_packages
+         .iter()
+         .map(|p| p.version.clone())

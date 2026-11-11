@@ -1,0 +1,3151 @@
+diff --git a/ghost/core/core/server/api/endpoints/authentication.js b/ghost/core/core/server/api/endpoints/authentication.js
+index 2297fff7ccaa..2cfdbce78b60 100644
+--- a/ghost/core/core/server/api/endpoints/authentication.js
++++ b/ghost/core/core/server/api/endpoints/authentication.js
+@@ -10,7 +10,7 @@ const invitations = require('../../services/invitations');
+ const dbBackup = require('../../data/db/backup');
+ const apiMail = require('./index').mail;
+ const apiSettings = require('./index').settings;
+-const UsersService = require('../../services/Users');
++const UsersService = require('../../services/users');
+ const userService = new UsersService({dbBackup, models, auth, apiMail, apiSettings});
+ const {deleteAllSessions} = require('../../services/auth/session');
+ 
+diff --git a/ghost/core/core/server/api/endpoints/users.js b/ghost/core/core/server/api/endpoints/users.js
+index fa8a308922ca..c8950256f9b0 100644
+--- a/ghost/core/core/server/api/endpoints/users.js
++++ b/ghost/core/core/server/api/endpoints/users.js
+@@ -6,7 +6,7 @@ const dbBackup = require('../../data/db/backup');
+ const auth = require('../../services/auth');
+ const apiMail = require('./index').mail;
+ const apiSettings = require('./index').settings;
+-const UsersService = require('../../services/Users');
++const UsersService = require('../../services/users');
+ const userService = new UsersService({dbBackup, models, auth, apiMail, apiSettings});
+ const ALLOWED_INCLUDES = ['count.posts', 'permissions', 'roles', 'roles.permissions'];
+ const UNSAFE_ATTRS = ['status', 'roles'];
+diff --git a/ghost/core/core/server/api/endpoints/utils/validators/input/settings.js b/ghost/core/core/server/api/endpoints/utils/validators/input/settings.js
+index 3e4ebb341998..0f2cbd322756 100644
+--- a/ghost/core/core/server/api/endpoints/utils/validators/input/settings.js
++++ b/ghost/core/core/server/api/endpoints/utils/validators/input/settings.js
+@@ -2,7 +2,7 @@ const _ = require('lodash');
+ const {ValidationError} = require('@tryghost/errors');
+ const validator = require('@tryghost/validator');
+ const tpl = require('@tryghost/tpl');
+-const AnnouncementBarSettings = require('../../../../../services/announcement-bar-service/AnnouncementBarSettings');
++const AnnouncementBarSettings = require('../../../../../services/announcement-bar-service/announcement-bar-settings');
+ 
+ const messages = {
+     invalidEmailReceived: 'Please send a valid email',
+diff --git a/ghost/core/core/server/services/activitypub/activity-pub-service.ts b/ghost/core/core/server/services/activitypub/activity-pub-service.ts
+index bbfa4a1eaac6..d8c290f43549 100644
+--- a/ghost/core/core/server/services/activitypub/activity-pub-service.ts
++++ b/ghost/core/core/server/services/activitypub/activity-pub-service.ts
+@@ -1,6 +1,6 @@
+ import ObjectID from 'bson-objectid';
+ import {Knex} from 'knex';
+-import {IdentityTokenService} from '../identity-tokens/IdentityTokenService';
++import {IdentityTokenService} from '../identity-tokens/identity-token-service';
+ import fetch from 'node-fetch';
+ 
+ type ExpectedWebhook = {
+diff --git a/ghost/core/core/server/services/adapter-manager/AdapterManager.js b/ghost/core/core/server/services/adapter-manager/adapter-manager.js
+similarity index 100%
+rename from ghost/core/core/server/services/adapter-manager/AdapterManager.js
+rename to ghost/core/core/server/services/adapter-manager/adapter-manager.js
+diff --git a/ghost/core/core/server/services/adapter-manager/index.js b/ghost/core/core/server/services/adapter-manager/index.js
+index 940ac96b429a..ff977c27d3d7 100644
+--- a/ghost/core/core/server/services/adapter-manager/index.js
++++ b/ghost/core/core/server/services/adapter-manager/index.js
+@@ -1,4 +1,4 @@
+-const AdapterManager = require('./AdapterManager');
++const AdapterManager = require('./adapter-manager');
+ const getAdapterServiceConfig = require('./config');
+ const resolveAdapterOptions = require('./options-resolver');
+ const config = require('../../../shared/config');
+diff --git a/ghost/core/core/server/services/announcement-bar-service/AnnouncementBarSettings.js b/ghost/core/core/server/services/announcement-bar-service/announcement-bar-settings.js
+similarity index 95%
+rename from ghost/core/core/server/services/announcement-bar-service/AnnouncementBarSettings.js
+rename to ghost/core/core/server/services/announcement-bar-service/announcement-bar-settings.js
+index d7088a68b2e5..1380197d4137 100644
+--- a/ghost/core/core/server/services/announcement-bar-service/AnnouncementBarSettings.js
++++ b/ghost/core/core/server/services/announcement-bar-service/announcement-bar-settings.js
+@@ -1,4 +1,4 @@
+-const AnnouncementVisibilityValues = require('./AnnouncementVisibilityValues');
++const AnnouncementVisibilityValues = require('./announcement-visibility-values');
+ 
+ class AnnouncementBarSettings {
+     #getAnnouncementSettings;
+diff --git a/ghost/core/core/server/services/announcement-bar-service/AnnouncementVisibilityValues.js b/ghost/core/core/server/services/announcement-bar-service/announcement-visibility-values.js
+similarity index 100%
+rename from ghost/core/core/server/services/announcement-bar-service/AnnouncementVisibilityValues.js
+rename to ghost/core/core/server/services/announcement-bar-service/announcement-visibility-values.js
+diff --git a/ghost/core/core/server/services/announcement-bar-service/index.js b/ghost/core/core/server/services/announcement-bar-service/index.js
+index 25563c1bcc7b..76c1bdf3ea98 100644
+--- a/ghost/core/core/server/services/announcement-bar-service/index.js
++++ b/ghost/core/core/server/services/announcement-bar-service/index.js
+@@ -1,5 +1,5 @@
+ const settingsCache = require('../../../shared/settings-cache');
+-const AnnouncementBarSettings = require('./AnnouncementBarSettings');
++const AnnouncementBarSettings = require('./announcement-bar-settings');
+ 
+ const announcementBarService = new AnnouncementBarSettings({
+     getAnnouncementSettings: () => ({
+diff --git a/ghost/core/core/server/services/audience-feedback/AudienceFeedbackController.js b/ghost/core/core/server/services/audience-feedback/audience-feedback-controller.js
+similarity index 96%
+rename from ghost/core/core/server/services/audience-feedback/AudienceFeedbackController.js
+rename to ghost/core/core/server/services/audience-feedback/audience-feedback-controller.js
+index 8cdb7755191a..c01001abbb63 100644
+--- a/ghost/core/core/server/services/audience-feedback/AudienceFeedbackController.js
++++ b/ghost/core/core/server/services/audience-feedback/audience-feedback-controller.js
+@@ -1,4 +1,4 @@
+-const Feedback = require('./Feedback');
++const Feedback = require('./feedback');
+ const errors = require('@tryghost/errors');
+ const tpl = require('@tryghost/tpl');
+ 
+@@ -74,8 +74,8 @@ class AudienceFeedbackController {
+         }
+ 
+         const feedback = new Feedback({
+-            memberId: member.id, 
+-            postId: post.id, 
++            memberId: member.id,
++            postId: post.id,
+             score
+         });
+         await this.#repository.add(feedback);
+diff --git a/ghost/core/core/server/services/audience-feedback/AudienceFeedbackService.js b/ghost/core/core/server/services/audience-feedback/audience-feedback-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/audience-feedback/AudienceFeedbackService.js
+rename to ghost/core/core/server/services/audience-feedback/audience-feedback-service.js
+diff --git a/ghost/core/core/server/services/audience-feedback/FeedbackRepository.js b/ghost/core/core/server/services/audience-feedback/feedback-repository.js
+similarity index 100%
+rename from ghost/core/core/server/services/audience-feedback/FeedbackRepository.js
+rename to ghost/core/core/server/services/audience-feedback/feedback-repository.js
+diff --git a/ghost/core/core/server/services/audience-feedback/Feedback.js b/ghost/core/core/server/services/audience-feedback/feedback.js
+similarity index 100%
+rename from ghost/core/core/server/services/audience-feedback/Feedback.js
+rename to ghost/core/core/server/services/audience-feedback/feedback.js
+diff --git a/ghost/core/core/server/services/audience-feedback/index.js b/ghost/core/core/server/services/audience-feedback/index.js
+index 084d2dfb259c..3931bbb88a0f 100644
+--- a/ghost/core/core/server/services/audience-feedback/index.js
++++ b/ghost/core/core/server/services/audience-feedback/index.js
+@@ -1,10 +1,10 @@
+ const urlUtils = require('../../../shared/url-utils');
+ const urlService = require('../../services/url');
+ 
+-const AudienceFeedbackService = require('./AudienceFeedbackService');
+-const AudienceFeedbackController = require('./AudienceFeedbackController');
+-const Feedback = require('./Feedback');
+-const FeedbackRepository = require('./FeedbackRepository');
++const AudienceFeedbackService = require('./audience-feedback-service');
++const AudienceFeedbackController = require('./audience-feedback-controller');
++const Feedback = require('./feedback');
++const FeedbackRepository = require('./feedback-repository');
+ 
+ class AudienceFeedbackServiceWrapper {
+     async init() {
+diff --git a/ghost/core/core/server/services/auth/session/express-session.js b/ghost/core/core/server/services/auth/session/express-session.js
+index f175b3a22e97..324be6ae21fa 100644
+--- a/ghost/core/core/server/services/auth/session/express-session.js
++++ b/ghost/core/core/server/services/auth/session/express-session.js
+@@ -5,7 +5,7 @@ const settingsCache = require('../../../../shared/settings-cache');
+ const models = require('../../../models');
+ const urlUtils = require('../../../../shared/url-utils');
+ 
+-const SessionStore = require('./SessionStore');
++const SessionStore = require('./session-store');
+ const sessionStore = new SessionStore(models.Session);
+ 
+ let unoExpressSessionMiddleware;
+diff --git a/ghost/core/core/server/services/auth/session/SessionStore.js b/ghost/core/core/server/services/auth/session/session-store.js
+similarity index 100%
+rename from ghost/core/core/server/services/auth/session/SessionStore.js
+rename to ghost/core/core/server/services/auth/session/session-store.js
+diff --git a/ghost/core/core/server/services/comments/CommentsController.js b/ghost/core/core/server/services/comments/comments-controller.js
+similarity index 99%
+rename from ghost/core/core/server/services/comments/CommentsController.js
+rename to ghost/core/core/server/services/comments/comments-controller.js
+index eb1ca380d00c..3b8411e23b13 100644
+--- a/ghost/core/core/server/services/comments/CommentsController.js
++++ b/ghost/core/core/server/services/comments/comments-controller.js
+@@ -17,8 +17,8 @@ const messages = {
+ 
+ module.exports = class CommentsController {
+     /**
+-     * @param {import('./CommentsService')} service
+-     * @param {import('./CommentsStatsService')} stats
++     * @param {import('./comments-service')} service
++     * @param {import('./comments-stats-service')} stats
+      */
+     constructor(service, stats) {
+         this.service = service;
+diff --git a/ghost/core/core/server/services/comments/CommentsServiceEmailRenderer.js b/ghost/core/core/server/services/comments/comments-service-email-renderer.js
+similarity index 100%
+rename from ghost/core/core/server/services/comments/CommentsServiceEmailRenderer.js
+rename to ghost/core/core/server/services/comments/comments-service-email-renderer.js
+diff --git a/ghost/core/core/server/services/comments/CommentsServiceEmails.js b/ghost/core/core/server/services/comments/comments-service-emails.js
+similarity index 98%
+rename from ghost/core/core/server/services/comments/CommentsServiceEmails.js
+rename to ghost/core/core/server/services/comments/comments-service-emails.js
+index 98c45347cdfd..3fd715ccf831 100644
+--- a/ghost/core/core/server/services/comments/CommentsServiceEmails.js
++++ b/ghost/core/core/server/services/comments/comments-service-emails.js
+@@ -1,7 +1,7 @@
+ const moment = require('moment');
+ const htmlToPlaintext = require('@tryghost/html-to-plaintext');
+ const emailService = require('../email-service');
+-const CommentsServiceEmailRenderer = require('./CommentsServiceEmailRenderer');
++const CommentsServiceEmailRenderer = require('./comments-service-email-renderer');
+ const {t} = require('../i18n');
+ 
+ class CommentsServiceEmails {
+diff --git a/ghost/core/core/server/services/comments/CommentsService.js b/ghost/core/core/server/services/comments/comments-service.js
+similarity index 99%
+rename from ghost/core/core/server/services/comments/CommentsService.js
+rename to ghost/core/core/server/services/comments/comments-service.js
+index c00b46c18c5e..513646fdf70a 100644
+--- a/ghost/core/core/server/services/comments/CommentsService.js
++++ b/ghost/core/core/server/services/comments/comments-service.js
+@@ -25,7 +25,7 @@ class CommentsService {
+         /** @private */
+         this.contentGating = contentGating;
+ 
+-        const Emails = require('./CommentsServiceEmails');
++        const Emails = require('./comments-service-emails');
+         /** @private */
+         this.emails = new Emails({
+             config,
+diff --git a/ghost/core/core/server/services/comments/CommentsStatsService.js b/ghost/core/core/server/services/comments/comments-stats-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/comments/CommentsStatsService.js
+rename to ghost/core/core/server/services/comments/comments-stats-service.js
+diff --git a/ghost/core/core/server/services/comments/index.js b/ghost/core/core/server/services/comments/index.js
+index e5ac1d6b9b60..cd83574f210d 100644
+--- a/ghost/core/core/server/services/comments/index.js
++++ b/ghost/core/core/server/services/comments/index.js
+@@ -1,8 +1,8 @@
+ class CommentsServiceWrapper {
+     init() {
+-        const CommentsService = require('./CommentsService');
+-        const CommentsController = require('./CommentsController');
+-        const CommentsStats = require('./CommentsStatsService');
++        const CommentsService = require('./comments-service');
++        const CommentsController = require('./comments-controller');
++        const CommentsStats = require('./comments-stats-service');
+ 
+         const config = require('../../../shared/config');
+         const logging = require('@tryghost/logging');
+diff --git a/ghost/core/core/server/services/custom-redirects/CustomRedirectsAPI.js b/ghost/core/core/server/services/custom-redirects/custom-redirects-api.js
+similarity index 100%
+rename from ghost/core/core/server/services/custom-redirects/CustomRedirectsAPI.js
+rename to ghost/core/core/server/services/custom-redirects/custom-redirects-api.js
+diff --git a/ghost/core/core/server/services/custom-redirects/index.js b/ghost/core/core/server/services/custom-redirects/index.js
+index 90a36fbddeea..b9bf20070854 100644
+--- a/ghost/core/core/server/services/custom-redirects/index.js
++++ b/ghost/core/core/server/services/custom-redirects/index.js
+@@ -1,8 +1,8 @@
+ const config = require('../../../shared/config');
+ const urlUtils = require('../../../shared/url-utils');
+ 
+-const DynamicRedirectManager = require('../lib/DynamicRedirectManager');
+-const CustomRedirectsAPI = require('./CustomRedirectsAPI');
++const DynamicRedirectManager = require('../lib/dynamic-redirect-manager');
++const CustomRedirectsAPI = require('./custom-redirects-api');
+ const validation = require('./validation');
+ const {getBackupRedirectsFilePath} = require('./utils');
+ 
+diff --git a/ghost/core/core/server/services/donations/DonationBookshelfRepository.ts b/ghost/core/core/server/services/donations/donation-bookshelf-repository.ts
+similarity index 97%
+rename from ghost/core/core/server/services/donations/DonationBookshelfRepository.ts
+rename to ghost/core/core/server/services/donations/donation-bookshelf-repository.ts
+index 92ef51b85297..49531a27e792 100644
+--- a/ghost/core/core/server/services/donations/DonationBookshelfRepository.ts
++++ b/ghost/core/core/server/services/donations/donation-bookshelf-repository.ts
+@@ -1,4 +1,4 @@
+-import {DonationPaymentEvent} from './DonationPaymentEvent';
++import {DonationPaymentEvent} from './donation-payment-event';
+ 
+ type DonationRepository = {
+     save(event: DonationPaymentEvent): Promise<void>;
+diff --git a/ghost/core/core/server/services/donations/DonationPaymentEvent.ts b/ghost/core/core/server/services/donations/donation-payment-event.ts
+similarity index 100%
+rename from ghost/core/core/server/services/donations/DonationPaymentEvent.ts
+rename to ghost/core/core/server/services/donations/donation-payment-event.ts
+diff --git a/ghost/core/core/server/services/donations/DonationServiceWrapper.js b/ghost/core/core/server/services/donations/donation-service-wrapper.js
+similarity index 100%
+rename from ghost/core/core/server/services/donations/DonationServiceWrapper.js
+rename to ghost/core/core/server/services/donations/donation-service-wrapper.js
+diff --git a/ghost/core/core/server/services/donations/index.js b/ghost/core/core/server/services/donations/index.js
+index ab68e396fc4d..35f99f93e3f2 100644
+--- a/ghost/core/core/server/services/donations/index.js
++++ b/ghost/core/core/server/services/donations/index.js
+@@ -1,3 +1,3 @@
+-const DonationServiceWrapper = require('./DonationServiceWrapper');
++const DonationServiceWrapper = require('./donation-service-wrapper');
+ 
+ module.exports = new DonationServiceWrapper();
+diff --git a/ghost/core/core/server/services/email-analytics/EmailAnalyticsProviderMailgun.js b/ghost/core/core/server/services/email-analytics/email-analytics-provider-mailgun.js
+similarity index 97%
+rename from ghost/core/core/server/services/email-analytics/EmailAnalyticsProviderMailgun.js
+rename to ghost/core/core/server/services/email-analytics/email-analytics-provider-mailgun.js
+index 43871330fef6..bc6df738c4f2 100644
+--- a/ghost/core/core/server/services/email-analytics/EmailAnalyticsProviderMailgun.js
++++ b/ghost/core/core/server/services/email-analytics/email-analytics-provider-mailgun.js
+@@ -1,4 +1,4 @@
+-const MailgunClient = require('../lib/MailgunClient');
++const MailgunClient = require('../lib/mailgun-client');
+ 
+ const DEFAULT_EVENT_FILTER = 'delivered OR opened OR failed OR unsubscribed OR complained';
+ const PAGE_LIMIT = 300;
+diff --git a/ghost/core/core/server/services/email-analytics/EmailAnalyticsServiceWrapper.js b/ghost/core/core/server/services/email-analytics/email-analytics-service-wrapper.js
+similarity index 95%
+rename from ghost/core/core/server/services/email-analytics/EmailAnalyticsServiceWrapper.js
+rename to ghost/core/core/server/services/email-analytics/email-analytics-service-wrapper.js
+index 3379f121d7fa..2ce0683cba03 100644
+--- a/ghost/core/core/server/services/email-analytics/EmailAnalyticsServiceWrapper.js
++++ b/ghost/core/core/server/services/email-analytics/email-analytics-service-wrapper.js
+@@ -8,12 +8,12 @@ class EmailAnalyticsServiceWrapper {
+             return;
+         }
+ 
+-        const EmailAnalyticsService = require('./EmailAnalyticsService');
+-        const EmailEventStorage = require('../email-service/EmailEventStorage');
+-        const EmailEventProcessor = require('../email-service/EmailEventProcessor');
+-        const MailgunProvider = require('./EmailAnalyticsProviderMailgun');
++        const EmailAnalyticsService = require('./email-analytics-service');
++        const EmailEventStorage = require('../email-service/email-event-storage');
++        const EmailEventProcessor = require('../email-service/email-event-processor');
++        const MailgunProvider = require('./email-analytics-provider-mailgun');
+         const {EmailRecipientFailure, EmailSpamComplaintEvent, Email} = require('../../models');
+-        const StartEmailAnalyticsJobEvent = require('./events/StartEmailAnalyticsJobEvent');
++        const StartEmailAnalyticsJobEvent = require('./events/start-email-analytics-job-event');
+         const domainEvents = require('@tryghost/domain-events');
+         const settings = require('../../../shared/settings-cache');
+         const labs = require('../../../shared/labs');
+diff --git a/ghost/core/core/server/services/email-analytics/EmailAnalyticsService.js b/ghost/core/core/server/services/email-analytics/email-analytics-service.js
+similarity index 99%
+rename from ghost/core/core/server/services/email-analytics/EmailAnalyticsService.js
+rename to ghost/core/core/server/services/email-analytics/email-analytics-service.js
+index 33dee73ddcf0..f3d95a0b4ee2 100644
+--- a/ghost/core/core/server/services/email-analytics/EmailAnalyticsService.js
++++ b/ghost/core/core/server/services/email-analytics/email-analytics-service.js
+@@ -1,4 +1,4 @@
+-const EventProcessingResult = require('./EventProcessingResult');
++const EventProcessingResult = require('./event-processing-result');
+ const logging = require('@tryghost/logging');
+ const errors = require('@tryghost/errors');
+ 
+diff --git a/ghost/core/core/server/services/email-analytics/EventProcessingResult.js b/ghost/core/core/server/services/email-analytics/event-processing-result.js
+similarity index 100%
+rename from ghost/core/core/server/services/email-analytics/EventProcessingResult.js
+rename to ghost/core/core/server/services/email-analytics/event-processing-result.js
+diff --git a/ghost/core/core/server/services/email-analytics/events/StartEmailAnalyticsJobEvent.js b/ghost/core/core/server/services/email-analytics/events/start-email-analytics-job-event.js
+similarity index 100%
+rename from ghost/core/core/server/services/email-analytics/events/StartEmailAnalyticsJobEvent.js
+rename to ghost/core/core/server/services/email-analytics/events/start-email-analytics-job-event.js
+diff --git a/ghost/core/core/server/services/email-analytics/index.js b/ghost/core/core/server/services/email-analytics/index.js
+index b6ae5ea65f73..dd7dffa36281 100644
+--- a/ghost/core/core/server/services/email-analytics/index.js
++++ b/ghost/core/core/server/services/email-analytics/index.js
+@@ -1,3 +1,3 @@
+-const EmailAnalyticsServiceWrapper = require('./EmailAnalyticsServiceWrapper');
++const EmailAnalyticsServiceWrapper = require('./email-analytics-service-wrapper');
+ 
+ module.exports = new EmailAnalyticsServiceWrapper();
+diff --git a/ghost/core/core/server/services/email-analytics/jobs/fetch-latest/index.js b/ghost/core/core/server/services/email-analytics/jobs/fetch-latest/index.js
+index f935c717260c..04146a0d3566 100644
+--- a/ghost/core/core/server/services/email-analytics/jobs/fetch-latest/index.js
++++ b/ghost/core/core/server/services/email-analytics/jobs/fetch-latest/index.js
+@@ -1,5 +1,5 @@
+ const {parentPort} = require('worker_threads');
+-const StartEmailAnalyticsJobEvent = require('../../events/StartEmailAnalyticsJobEvent');
++const StartEmailAnalyticsJobEvent = require('../../events/start-email-analytics-job-event');
+ 
+ // recurring job to fetch analytics since the most recently seen event timestamp
+ 
+diff --git a/ghost/core/core/server/services/email-service/EmailServiceWrapper.js b/ghost/core/core/server/services/email-service/EmailServiceWrapper.js
+index ad540eb7230f..9024e04a600b 100644
+--- a/ghost/core/core/server/services/email-service/EmailServiceWrapper.js
++++ b/ghost/core/core/server/services/email-service/EmailServiceWrapper.js
+@@ -25,7 +25,7 @@ class EmailServiceWrapper {
+         const {DomainWarmingService} = require('./DomainWarmingService');
+ 
+         const {Post, Newsletter, Email, EmailBatch, EmailRecipient, Member} = require('../../models');
+-        const MailgunClient = require('../lib/MailgunClient');
++        const MailgunClient = require('../lib/mailgun-client');
+         const configService = require('../../../shared/config');
+         const settingsCache = require('../../../shared/settings-cache');
+         const settingsHelpers = require('../settings-helpers');
+diff --git a/ghost/core/core/server/services/email-suppression-list/EmailSuppressionList.js b/ghost/core/core/server/services/email-suppression-list/email-suppression-list.js
+similarity index 100%
+rename from ghost/core/core/server/services/email-suppression-list/EmailSuppressionList.js
+rename to ghost/core/core/server/services/email-suppression-list/email-suppression-list.js
+diff --git a/ghost/core/core/server/services/email-suppression-list/InMemoryEmailSuppressionList.js b/ghost/core/core/server/services/email-suppression-list/in-memory-email-suppression-list.js
+similarity index 97%
+rename from ghost/core/core/server/services/email-suppression-list/InMemoryEmailSuppressionList.js
+rename to ghost/core/core/server/services/email-suppression-list/in-memory-email-suppression-list.js
+index 5c399c86f8fe..267a61796f52 100644
+--- a/ghost/core/core/server/services/email-suppression-list/InMemoryEmailSuppressionList.js
++++ b/ghost/core/core/server/services/email-suppression-list/in-memory-email-suppression-list.js
+@@ -1,4 +1,4 @@
+-const {AbstractEmailSuppressionList, EmailSuppressionData} = require('./EmailSuppressionList');
++const {AbstractEmailSuppressionList, EmailSuppressionData} = require('./email-suppression-list');
+ 
+ module.exports = class InMemoryEmailSuppressionList extends AbstractEmailSuppressionList {
+     store = ['spam@member.test', 'fail@member.test'];
+diff --git a/ghost/core/core/server/services/email-suppression-list/MailgunEmailSuppressionList.js b/ghost/core/core/server/services/email-suppression-list/mailgun-email-suppression-list.js
+similarity index 98%
+rename from ghost/core/core/server/services/email-suppression-list/MailgunEmailSuppressionList.js
+rename to ghost/core/core/server/services/email-suppression-list/mailgun-email-suppression-list.js
+index d40d53fc933d..6fbb4da7f343 100644
+--- a/ghost/core/core/server/services/email-suppression-list/MailgunEmailSuppressionList.js
++++ b/ghost/core/core/server/services/email-suppression-list/mailgun-email-suppression-list.js
+@@ -1,4 +1,4 @@
+-const {AbstractEmailSuppressionList, EmailSuppressionData, EmailSuppressedEvent} = require('./EmailSuppressionList');
++const {AbstractEmailSuppressionList, EmailSuppressionData, EmailSuppressedEvent} = require('./email-suppression-list');
+ const SpamComplaintEvent = require('../email-service/events/SpamComplaintEvent');
+ const EmailBouncedEvent = require('../email-service/events/EmailBouncedEvent');
+ const DomainEvents = require('@tryghost/domain-events');
+diff --git a/ghost/core/core/server/services/email-suppression-list/service.js b/ghost/core/core/server/services/email-suppression-list/service.js
+index 5c461aa5a17e..d96faab11e7b 100644
+--- a/ghost/core/core/server/services/email-suppression-list/service.js
++++ b/ghost/core/core/server/services/email-suppression-list/service.js
+@@ -2,8 +2,8 @@ const models = require('../../models');
+ const configService = require('../../../shared/config');
+ const settingsCache = require('../../../shared/settings-cache');
+ const labs = require('../../../shared/labs');
+-const MailgunClient = require('../lib/MailgunClient');
+-const MailgunEmailSuppressionList = require('./MailgunEmailSuppressionList');
++const MailgunClient = require('../lib/mailgun-client');
++const MailgunEmailSuppressionList = require('./mailgun-email-suppression-list');
+ 
+ const mailgunClient = new MailgunClient({
+     config: configService,
+diff --git a/ghost/core/core/server/services/explore-ping/ExplorePingService.js b/ghost/core/core/server/services/explore-ping/explore-ping-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/explore-ping/ExplorePingService.js
+rename to ghost/core/core/server/services/explore-ping/explore-ping-service.js
+diff --git a/ghost/core/core/server/services/explore-ping/index.js b/ghost/core/core/server/services/explore-ping/index.js
+index 3065f6d09ec9..08099016a86f 100644
+--- a/ghost/core/core/server/services/explore-ping/index.js
++++ b/ghost/core/core/server/services/explore-ping/index.js
+@@ -1,4 +1,4 @@
+-const ExplorePingService = require('./ExplorePingService');
++const ExplorePingService = require('./explore-ping-service');
+ const config = require('../../../shared/config');
+ const labs = require('../../../shared/labs');
+ const logging = require('@tryghost/logging');
+diff --git a/ghost/core/core/server/services/explore/ExploreService.js b/ghost/core/core/server/services/explore/explore-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/explore/ExploreService.js
+rename to ghost/core/core/server/services/explore/explore-service.js
+diff --git a/ghost/core/core/server/services/explore/index.js b/ghost/core/core/server/services/explore/index.js
+index 2bdc067b7da2..99bb608c1c57 100644
+--- a/ghost/core/core/server/services/explore/index.js
++++ b/ghost/core/core/server/services/explore/index.js
+@@ -1,4 +1,4 @@
+-const ExploreService = require('./ExploreService');
++const ExploreService = require('./explore-service');
+ 
+ const MembersService = require('../members');
+ const PostsService = require('../posts/posts-service-instance')();
+diff --git a/ghost/core/core/server/services/frontend-data-service/FrontendDataService.js b/ghost/core/core/server/services/frontend-data-service/front-end-data-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/frontend-data-service/FrontendDataService.js
+rename to ghost/core/core/server/services/frontend-data-service/front-end-data-service.js
+diff --git a/ghost/core/core/server/services/frontend-data-service/index.js b/ghost/core/core/server/services/frontend-data-service/index.js
+index 1407ff5ab2b5..1babd70f69d3 100644
+--- a/ghost/core/core/server/services/frontend-data-service/index.js
++++ b/ghost/core/core/server/services/frontend-data-service/index.js
+@@ -1,5 +1,5 @@
+ const models = require('../../models');
+-const FrontendDataService = require('./FrontendDataService');
++const FrontendDataService = require('./front-end-data-service');
+ 
+ module.exports.init = () => {
+     return new FrontendDataService({IntegrationModel: models.Integration});
+diff --git a/ghost/core/core/server/services/identity-tokens/IdentityTokenServiceWrapper.js b/ghost/core/core/server/services/identity-tokens/identity-token-service-wrapper.js
+similarity index 92%
+rename from ghost/core/core/server/services/identity-tokens/IdentityTokenServiceWrapper.js
+rename to ghost/core/core/server/services/identity-tokens/identity-token-service-wrapper.js
+index 61b745fa5803..840f0925b53b 100644
+--- a/ghost/core/core/server/services/identity-tokens/IdentityTokenServiceWrapper.js
++++ b/ghost/core/core/server/services/identity-tokens/identity-token-service-wrapper.js
+@@ -1,4 +1,4 @@
+-const {IdentityTokenService} = require('./IdentityTokenService');
++const {IdentityTokenService} = require('./identity-token-service');
+ 
+ module.exports = class IdentityTokenServiceWrapper {
+     /** @type IdentityTokenService */
+diff --git a/ghost/core/core/server/services/identity-tokens/IdentityTokenService.ts b/ghost/core/core/server/services/identity-tokens/identity-token-service.ts
+similarity index 100%
+rename from ghost/core/core/server/services/identity-tokens/IdentityTokenService.ts
+rename to ghost/core/core/server/services/identity-tokens/identity-token-service.ts
+diff --git a/ghost/core/core/server/services/identity-tokens/index.js b/ghost/core/core/server/services/identity-tokens/index.js
+index 87e68aaee208..219bea3510a3 100644
+--- a/ghost/core/core/server/services/identity-tokens/index.js
++++ b/ghost/core/core/server/services/identity-tokens/index.js
+@@ -1 +1 @@
+-module.exports = require('./IdentityTokenServiceWrapper');
++module.exports = require('./identity-token-service-wrapper');
+diff --git a/ghost/core/core/server/services/invites/index.js b/ghost/core/core/server/services/invites/index.js
+index 84aee0491f15..1716cde3a753 100644
+--- a/ghost/core/core/server/services/invites/index.js
++++ b/ghost/core/core/server/services/invites/index.js
+@@ -2,7 +2,7 @@ const settingsCache = require('../../../shared/settings-cache');
+ const settingsHelpers = require('../settings-helpers');
+ const mailService = require('../../services/mail');
+ const urlUtils = require('../../../shared/url-utils');
+-const Invites = require('./Invites');
++const Invites = require('./invites');
+ 
+ module.exports = new Invites({
+     settingsCache,
+diff --git a/ghost/core/core/server/services/invites/Invites.js b/ghost/core/core/server/services/invites/invites.js
+similarity index 100%
+rename from ghost/core/core/server/services/invites/Invites.js
+rename to ghost/core/core/server/services/invites/invites.js
+diff --git a/ghost/core/core/server/services/lib/DynamicRedirectManager.js b/ghost/core/core/server/services/lib/dynamic-redirect-manager.js
+similarity index 100%
+rename from ghost/core/core/server/services/lib/DynamicRedirectManager.js
+rename to ghost/core/core/server/services/lib/dynamic-redirect-manager.js
+diff --git a/ghost/core/core/server/services/lib/EmailContentGenerator.js b/ghost/core/core/server/services/lib/email-content-generator.js
+similarity index 100%
+rename from ghost/core/core/server/services/lib/EmailContentGenerator.js
+rename to ghost/core/core/server/services/lib/email-content-generator.js
+diff --git a/ghost/core/core/server/services/lib/InMemoryRepository.ts b/ghost/core/core/server/services/lib/in-memory-repository.ts
+similarity index 100%
+rename from ghost/core/core/server/services/lib/InMemoryRepository.ts
+rename to ghost/core/core/server/services/lib/in-memory-repository.ts
+diff --git a/ghost/core/core/server/services/lib/MailgunClient.js b/ghost/core/core/server/services/lib/mailgun-client.js
+similarity index 100%
+rename from ghost/core/core/server/services/lib/MailgunClient.js
+rename to ghost/core/core/server/services/lib/mailgun-client.js
+diff --git a/ghost/core/core/server/services/mail/GhostMailer.js b/ghost/core/core/server/services/mail/ghost-mailer.js
+similarity index 100%
+rename from ghost/core/core/server/services/mail/GhostMailer.js
+rename to ghost/core/core/server/services/mail/ghost-mailer.js
+diff --git a/ghost/core/core/server/services/mail/index.js b/ghost/core/core/server/services/mail/index.js
+index 65fe5fc80c5b..a47b7fe11e2a 100644
+--- a/ghost/core/core/server/services/mail/index.js
++++ b/ghost/core/core/server/services/mail/index.js
+@@ -1,7 +1,7 @@
+ const path = require('path');
+ const urlUtils = require('../../../shared/url-utils');
+ const settingsCache = require('../../../shared/settings-cache');
+-const EmailContentGenerator = require('../lib/EmailContentGenerator');
++const EmailContentGenerator = require('../lib/email-content-generator');
+ 
+ const emailContentGenerator = new EmailContentGenerator({
+     getSiteUrl: () => urlUtils.urlFor('home', true),
+@@ -9,7 +9,7 @@ const emailContentGenerator = new EmailContentGenerator({
+     templatesDir: path.resolve(__dirname, '..', 'mail', 'templates')
+ });
+ 
+-exports.GhostMailer = require('./GhostMailer');
++exports.GhostMailer = require('./ghost-mailer');
+ exports.utils = {
+     generateContent: emailContentGenerator.getContent.bind(emailContentGenerator)
+ };
+diff --git a/ghost/core/core/server/services/media-inliner/ExternalMediaInliner.js b/ghost/core/core/server/services/media-inliner/external-media-inliner.js
+similarity index 100%
+rename from ghost/core/core/server/services/media-inliner/ExternalMediaInliner.js
+rename to ghost/core/core/server/services/media-inliner/external-media-inliner.js
+diff --git a/ghost/core/core/server/services/media-inliner/service.js b/ghost/core/core/server/services/media-inliner/service.js
+index 6dd9b130b5eb..78bc4eaafb57 100644
+--- a/ghost/core/core/server/services/media-inliner/service.js
++++ b/ghost/core/core/server/services/media-inliner/service.js
+@@ -1,7 +1,7 @@
+ module.exports = {
+     async init() {
+         const debug = require('@tryghost/debug')('mediaInliner');
+-        const MediaInliner = require('./ExternalMediaInliner');
++        const MediaInliner = require('./external-media-inliner');
+         const models = require('../../models');
+         const jobsService = require('../jobs');
+ 
+diff --git a/ghost/core/core/server/services/member-attribution/README.md b/ghost/core/core/server/services/member-attribution/README.md
+index e3b5e2e04946..a618f8449376 100644
+--- a/ghost/core/core/server/services/member-attribution/README.md
++++ b/ghost/core/core/server/services/member-attribution/README.md
+@@ -40,26 +40,26 @@ graph TD
+ 
+ ### Components
+ 
+-#### 1. **MemberAttributionService** (`MemberAttributionService.js`)
++#### 1. **MemberAttributionService** (`member-attribution-service.js`)
+ Main service interface that coordinates all attribution logic.
+ 
+-#### 2. **AttributionBuilder** (`AttributionBuilder.js`)
++#### 2. **AttributionBuilder** (`attribution-builder.js`)
+ Converts URL history into attribution resources using the "Last Post Algorithm™️".
+ 
+ **Key Classes:**
+ - `Attribution`: Represents attribution data with methods to fetch and enrich resources
+ - `AttributionBuilder`: Factory for creating `Attribution` instances
+ 
+-#### 3. **UrlHistory** (`UrlHistory.js`)
++#### 3. **UrlHistory** (`url-history.js`)
+ Validated container for URL history arrays from the frontend.
+ 
+-#### 4. **UrlTranslator** (`UrlTranslator.js`)
++#### 4. **UrlTranslator** (`url-translator.js`)
+ Translates between URLs and Ghost resources.
+ 
+-#### 5. **ReferrerTranslator** (`ReferrerTranslator.js`)
++#### 5. **ReferrerTranslator** (`referrer-translator.js`)
+ Parses referrer information into source and medium classifications.
+ 
+-#### 6. **OutboundLinkTagger** (`OutboundLinkTagger.js`)
++#### 6. **OutboundLinkTagger** (`outbound-link-tagger.js`)
+ Adds `?ref=` parameters to external links in newsletters.
+ 
+ #### 7. **Frontend Script** (`member-attribution.js`)
+diff --git a/ghost/core/core/server/services/member-attribution/AttributionBuilder.js b/ghost/core/core/server/services/member-attribution/attribution-builder.js
+similarity index 97%
+rename from ghost/core/core/server/services/member-attribution/AttributionBuilder.js
+rename to ghost/core/core/server/services/member-attribution/attribution-builder.js
+index 2922438aa03e..e7e9acc8977f 100644
+--- a/ghost/core/core/server/services/member-attribution/AttributionBuilder.js
++++ b/ghost/core/core/server/services/member-attribution/attribution-builder.js
+@@ -15,7 +15,7 @@
+  */
+ 
+ class Attribution {
+-    /** @type {import('./UrlTranslator')} */
++    /** @type {import('./url-translator')} */
+     #urlTranslator;
+ 
+     /**
+@@ -133,9 +133,9 @@ class Attribution {
+  * Convert a UrlHistory to an attribution object
+  */
+ class AttributionBuilder {
+-    /** @type {import('./UrlTranslator')} */
++    /** @type {import('./url-translator')} */
+     urlTranslator;
+-    /** @type {import('./ReferrerTranslator')} */
++    /** @type {import('./referrer-translator')} */
+     referrerTranslator;
+ 
+     /**
+@@ -166,7 +166,7 @@ class AttributionBuilder {
+ 
+     /**
+      * Last Post Algorithm™️
+-     * @param {import('./UrlHistory').UrlHistoryArray} history
++     * @param {import('./url-history').UrlHistoryArray} history
+      * @returns {Promise<Attribution>}
+      */
+     async getAttribution(history) {
+diff --git a/ghost/core/core/server/services/member-attribution/index.js b/ghost/core/core/server/services/member-attribution/index.js
+index dcc7fa88cc3b..6af594f0da18 100644
+--- a/ghost/core/core/server/services/member-attribution/index.js
++++ b/ghost/core/core/server/services/member-attribution/index.js
+@@ -11,11 +11,11 @@ class MemberAttributionServiceWrapper {
+         }
+ 
+         // Wire up all the dependencies
+-        const MemberAttributionService = require('./MemberAttributionService');
+-        const UrlTranslator = require('./UrlTranslator');
+-        const ReferrerTranslator = require('./ReferrerTranslator');
+-        const AttributionBuilder = require('./AttributionBuilder');
+-        const OutboundLinkTagger = require('./OutboundLinkTagger');
++        const MemberAttributionService = require('./member-attribution-service');
++        const UrlTranslator = require('./url-translator');
++        const ReferrerTranslator = require('./referrer-translator');
++        const AttributionBuilder = require('./attribution-builder');
++        const OutboundLinkTagger = require('./outbound-link-tagger');
+         const models = require('../../models');
+ 
+         const urlTranslator = new UrlTranslator({
+diff --git a/ghost/core/core/server/services/member-attribution/MemberAttributionService.js b/ghost/core/core/server/services/member-attribution/member-attribution-service.js
+similarity index 92%
+rename from ghost/core/core/server/services/member-attribution/MemberAttributionService.js
+rename to ghost/core/core/server/services/member-attribution/member-attribution-service.js
+index 4083d309a2c5..590f5d5cffac 100644
+--- a/ghost/core/core/server/services/member-attribution/MemberAttributionService.js
++++ b/ghost/core/core/server/services/member-attribution/member-attribution-service.js
+@@ -1,4 +1,4 @@
+-const UrlHistory = require('./UrlHistory');
++const UrlHistory = require('./url-history');
+ 
+ class MemberAttributionService {
+     /**
+@@ -23,7 +23,7 @@ class MemberAttributionService {
+     /**
+      *
+      * @param {Object} context instance of ghost framework context object
+-     * @returns {Promise<import('./AttributionBuilder').AttributionResource|null>}
++     * @returns {Promise<import('./attribution-builder').AttributionResource|null>}
+      */
+     async getAttributionFromContext(context) {
+         if (!context || !this.isTrackingEnabled) {
+@@ -70,8 +70,8 @@ class MemberAttributionService {
+ 
+     /**
+      *
+-     * @param {import('./UrlHistory').UrlHistoryArray} historyArray
+-     * @returns {Promise<import('./AttributionBuilder').Attribution>}
++     * @param {import('./url-history').UrlHistoryArray} historyArray
++     * @returns {Promise<import('./attribution-builder').Attribution>}
+      */
+     async getAttribution(historyArray) {
+         let history = UrlHistory.create(historyArray);
+@@ -107,7 +107,7 @@ class MemberAttributionService {
+      * Returns the attribution resource for a given event model (MemberCreatedEvent / SubscriptionCreatedEvent), where the model has the required relations already loaded
+      * You need to already load the 'postAttribution', 'userAttribution', and 'tagAttribution' relations
+      * @param {Object} eventModel MemberCreatedEvent or SubscriptionCreatedEvent
+-     * @returns {import('./AttributionBuilder').AttributionResource|null}
++     * @returns {import('./attribution-builder').AttributionResource|null}
+      */
+     getEventAttribution(eventModel) {
+         const _attribution = this.attributionBuilder.build({
+@@ -139,7 +139,7 @@ class MemberAttributionService {
+     /**
+      * Returns the parsed attribution for a member creation event
+      * @param {string} memberId
+-     * @returns {Promise<import('./AttributionBuilder').AttributionResource|null>}
++     * @returns {Promise<import('./attribution-builder').AttributionResource|null>}
+      */
+     async getMemberCreatedAttribution(memberId) {
+         const memberCreatedEvent = await this.models.MemberCreatedEvent.findOne({member_id: memberId}, {require: false, withRelated: []});
+@@ -160,7 +160,7 @@ class MemberAttributionService {
+     /**
+      * Returns the last attribution for a given subscription ID
+      * @param {string} subscriptionId
+-     * @returns {Promise<import('./AttributionBuilder').AttributionResource|null>}
++     * @returns {Promise<import('./attribution-builder').AttributionResource|null>}
+      */
+     async getSubscriptionCreatedAttribution(subscriptionId) {
+         const subscriptionCreatedEvent = await this.models.SubscriptionCreatedEvent.findOne({subscription_id: subscriptionId}, {require: false, withRelated: []});
+@@ -180,8 +180,8 @@ class MemberAttributionService {
+ 
+     /**
+      * Fetches the resource for a given attribution without the use of an event model
+-     * @param {Object} attribution 
+-     * @returns {Promise<import('./AttributionBuilder').AttributionResource|null>}
++     * @param {Object} attribution
++     * @returns {Promise<import('./attribution-builder').AttributionResource|null>}
+      */
+     async fetchResource(attribution) {
+         if (!attribution) {
+diff --git a/ghost/core/core/server/services/member-attribution/OutboundLinkTagger.js b/ghost/core/core/server/services/member-attribution/outbound-link-tagger.js
+similarity index 100%
+rename from ghost/core/core/server/services/member-attribution/OutboundLinkTagger.js
+rename to ghost/core/core/server/services/member-attribution/outbound-link-tagger.js
+diff --git a/ghost/core/core/server/services/member-attribution/ReferrerTranslator.js b/ghost/core/core/server/services/member-attribution/referrer-translator.js
+similarity index 98%
+rename from ghost/core/core/server/services/member-attribution/ReferrerTranslator.js
+rename to ghost/core/core/server/services/member-attribution/referrer-translator.js
+index b75dc82109cb..76f82f64cf4d 100644
+--- a/ghost/core/core/server/services/member-attribution/ReferrerTranslator.js
++++ b/ghost/core/core/server/services/member-attribution/referrer-translator.js
+@@ -32,7 +32,7 @@ class ReferrerTranslator {
+ 
+     /**
+      * Calculate referrer details from history
+-     * @param {import('./UrlHistory').UrlHistoryArray} history
++     * @param {import('./url-history').UrlHistoryArray} history
+      * @returns {ReferrerData|null}
+      */
+     getReferrerDetails(history) {
+diff --git a/ghost/core/core/server/services/member-attribution/UrlHistory.js b/ghost/core/core/server/services/member-attribution/url-history.js
+similarity index 100%
+rename from ghost/core/core/server/services/member-attribution/UrlHistory.js
+rename to ghost/core/core/server/services/member-attribution/url-history.js
+diff --git a/ghost/core/core/server/services/member-attribution/UrlTranslator.js b/ghost/core/core/server/services/member-attribution/url-translator.js
+similarity index 98%
+rename from ghost/core/core/server/services/member-attribution/UrlTranslator.js
+rename to ghost/core/core/server/services/member-attribution/url-translator.js
+index 406c65feddec..8165108cb6d0 100644
+--- a/ghost/core/core/server/services/member-attribution/UrlTranslator.js
++++ b/ghost/core/core/server/services/member-attribution/url-translator.js
+@@ -54,7 +54,7 @@ class UrlTranslator {
+ 
+     /**
+      * Get the resource type and ID from a URLHistory item that was added by the frontend attribution script
+-     * @param {import('./UrlHistory').UrlHistoryItem} item
++     * @param {import('./url-history').UrlHistoryItem} item
+      * @returns {Promise<{type: string, id: string | null, url: string}|null>} Returns null if the item is invalid
+      */
+     async getResourceDetails(item) {
+diff --git a/ghost/core/core/server/services/member-welcome-emails/MemberWelcomeEmailRenderer.js b/ghost/core/core/server/services/member-welcome-emails/member-welcome-email-renderer.js
+similarity index 100%
+rename from ghost/core/core/server/services/member-welcome-emails/MemberWelcomeEmailRenderer.js
+rename to ghost/core/core/server/services/member-welcome-emails/member-welcome-email-renderer.js
+diff --git a/ghost/core/core/server/services/member-welcome-emails/service.js b/ghost/core/core/server/services/member-welcome-emails/service.js
+index b9bc6df79064..9f2def6d21c1 100644
+--- a/ghost/core/core/server/services/member-welcome-emails/service.js
++++ b/ghost/core/core/server/services/member-welcome-emails/service.js
+@@ -7,7 +7,7 @@ const emailAddressService = require('../email-address');
+ const mail = require('../mail');
+ // @ts-expect-error type checker has trouble with the dynamic exporting in models
+ const {AutomatedEmail} = require('../../models');
+-const MemberWelcomeEmailRenderer = require('./MemberWelcomeEmailRenderer');
++const MemberWelcomeEmailRenderer = require('./member-welcome-email-renderer');
+ const {MEMBER_WELCOME_EMAIL_LOG_KEY, MEMBER_WELCOME_EMAIL_SLUGS, MESSAGES} = require('./constants');
+ 
+ class MemberWelcomeEmailService {
+@@ -99,7 +99,7 @@ class MemberWelcomeEmailService {
+         if (!slug) {
+             return false;
+         }
+-        
++
+         const row = await AutomatedEmail.findOne({slug});
+         return Boolean(row && row.get('lexical') && row.get('status') === 'active');
+     }
+@@ -119,7 +119,7 @@ class MemberWelcomeEmailService {
+                 message: MESSAGES.MISSING_EMAIL_CONTENT
+             });
+         }
+-            
++
+         if (!subject) {
+             throw new errors.ValidationError({
+                 message: MESSAGES.MISSING_EMAIL_SUBJECT
+diff --git a/ghost/core/core/server/services/members-events/EventStorage.js b/ghost/core/core/server/services/members-events/event-storage.js
+similarity index 100%
+rename from ghost/core/core/server/services/members-events/EventStorage.js
+rename to ghost/core/core/server/services/members-events/event-storage.js
+diff --git a/ghost/core/core/server/services/members-events/index.js b/ghost/core/core/server/services/members-events/index.js
+index ff402b255008..15eb79ebc54a 100644
+--- a/ghost/core/core/server/services/members-events/index.js
++++ b/ghost/core/core/server/services/members-events/index.js
+@@ -13,9 +13,9 @@ class MembersEventsServiceWrapper {
+         }
+ 
+         // Wire up all the dependencies
+-        const EventStorage = require('./EventStorage');
+-        const LastSeenAtUpdater = require('./LastSeenAtUpdater');
+-        const LastSeenAtCache = require('./LastSeenAtCache');
++        const EventStorage = require('./event-storage');
++        const LastSeenAtUpdater = require('./last-seen-at-updater');
++        const LastSeenAtCache = require('./last-seen-at-cache');
+         const models = require('../../models');
+ 
+         // Listen for events and store them in the database
+diff --git a/ghost/core/core/server/services/members-events/LastSeenAtCache.js b/ghost/core/core/server/services/members-events/last-seen-at-cache.js
+similarity index 100%
+rename from ghost/core/core/server/services/members-events/LastSeenAtCache.js
+rename to ghost/core/core/server/services/members-events/last-seen-at-cache.js
+diff --git a/ghost/core/core/server/services/members-events/LastSeenAtUpdater.js b/ghost/core/core/server/services/members-events/last-seen-at-updater.js
+similarity index 99%
+rename from ghost/core/core/server/services/members-events/LastSeenAtUpdater.js
+rename to ghost/core/core/server/services/members-events/last-seen-at-updater.js
+index 2652220406d3..47c9733ea489 100644
+--- a/ghost/core/core/server/services/members-events/LastSeenAtUpdater.js
++++ b/ghost/core/core/server/services/members-events/last-seen-at-updater.js
+@@ -3,7 +3,7 @@ const moment = require('moment-timezone');
+ const {IncorrectUsageError} = require('@tryghost/errors');
+ const EmailOpenedEvent = require('../../services/email-service/events/EmailOpenedEvent');
+ const logging = require('@tryghost/logging');
+-const LastSeenAtCache = require('./LastSeenAtCache');
++const LastSeenAtCache = require('./last-seen-at-cache');
+ 
+ /**
+  * Listen for `MemberViewEvent` to update the `member.last_seen_at` timestamp
+diff --git a/ghost/core/core/server/services/members/api.js b/ghost/core/core/server/services/members/api.js
+index f15c9cc21063..062123959673 100644
+--- a/ghost/core/core/server/services/members/api.js
++++ b/ghost/core/core/server/services/members/api.js
+@@ -10,7 +10,7 @@ const signupEmail = require('./emails/signup');
+ const signupPaidEmail = require('./emails/signup-paid');
+ const subscribeEmail = require('./emails/subscribe');
+ const updateEmail = require('./emails/update-email');
+-const SingleUseTokenProvider = require('./SingleUseTokenProvider');
++const SingleUseTokenProvider = require('./single-use-token-provider');
+ const urlUtils = require('../../../shared/url-utils');
+ const labsService = require('../../../shared/labs');
+ const offersService = require('../offers');
+diff --git a/ghost/core/core/server/services/members/importer/index.js b/ghost/core/core/server/services/members/importer/index.js
+index 4b7c41cefbc6..5b90939a57dc 100644
+--- a/ghost/core/core/server/services/members/importer/index.js
++++ b/ghost/core/core/server/services/members/importer/index.js
+@@ -1,8 +1,8 @@
+-const MembersCSVImporter = require('./MembersCSVImporter');
+-const MembersCSVImporterStripeUtils = require('./MembersCSVImporterStripeUtils');
++const MembersCSVImporter = require('./members-csv-importer');
++const MembersCSVImporterStripeUtils = require('./members-csv-importer-stripe-utils');
+ 
+ /**
+- * @typedef {import('./MembersCSVImporter').MembersCSVImporterOptions} MembersCSVImporterOptions
++ * @typedef {import('./members-csv-importer').MembersCSVImporterOptions} MembersCSVImporterOptions
+  */
+ 
+ /**
+diff --git a/ghost/core/core/server/services/members/importer/MembersCSVImporterStripeUtils.js b/ghost/core/core/server/services/members/importer/members-csv-importer-stripe-utils.js
+similarity index 100%
+rename from ghost/core/core/server/services/members/importer/MembersCSVImporterStripeUtils.js
+rename to ghost/core/core/server/services/members/importer/members-csv-importer-stripe-utils.js
+diff --git a/ghost/core/core/server/services/members/importer/MembersCSVImporter.js b/ghost/core/core/server/services/members/importer/members-csv-importer.js
+similarity index 100%
+rename from ghost/core/core/server/services/members/importer/MembersCSVImporter.js
+rename to ghost/core/core/server/services/members/importer/members-csv-importer.js
+diff --git a/ghost/core/core/server/services/members/members-api/controllers/MemberController.js b/ghost/core/core/server/services/members/members-api/controllers/member-controller.js
+similarity index 100%
+rename from ghost/core/core/server/services/members/members-api/controllers/MemberController.js
+rename to ghost/core/core/server/services/members/members-api/controllers/member-controller.js
+diff --git a/ghost/core/core/server/services/members/members-api/controllers/RouterController.js b/ghost/core/core/server/services/members/members-api/controllers/router-controller.js
+similarity index 100%
+rename from ghost/core/core/server/services/members/members-api/controllers/RouterController.js
+rename to ghost/core/core/server/services/members/members-api/controllers/router-controller.js
+diff --git a/ghost/core/core/server/services/members/members-api/controllers/WellKnownController.js b/ghost/core/core/server/services/members/members-api/controllers/well-known-controller.js
+similarity index 100%
+rename from ghost/core/core/server/services/members/members-api/controllers/WellKnownController.js
+rename to ghost/core/core/server/services/members/members-api/controllers/well-known-controller.js
+diff --git a/ghost/core/core/server/services/members/members-api/members-api.js b/ghost/core/core/server/services/members/members-api/members-api.js
+index 9abe5cb63e09..71d5c9769435 100644
+--- a/ghost/core/core/server/services/members/members-api/members-api.js
++++ b/ghost/core/core/server/services/members/members-api/members-api.js
+@@ -1,22 +1,22 @@
+-const {Router} = require('express');
+-const body = require('body-parser');
+-const errors = require('@tryghost/errors');
+-const logging = require('@tryghost/logging');
+-
+-const PaymentsService = require('./services/PaymentsService');
+-const TokenService = require('./services/TokenService');
+-const GeolocationService = require('./services/GeolocationService');
+-const MemberBREADService = require('./services/MemberBREADService');
+-const MemberRepository = require('./repositories/MemberRepository');
+-
+-const EventRepository = require('./repositories/EventRepository');
+-const ProductRepository = require('./repositories/ProductRepository');
+-const RouterController = require('./controllers/RouterController');
+-const MemberController = require('./controllers/MemberController');
+-const WellKnownController = require('./controllers/WellKnownController');
+-
+-const {EmailSuppressedEvent} = require('../../email-suppression-list/EmailSuppressionList');
+-const MagicLink = require('../../lib/magic-link/MagicLink');
++const {Router} = require('express')
++const body = require('body-parser')
++const errors = require('@tryghost/errors')
++const logging = require('@tryghost/logging')
++
++const PaymentsService = require('./services/payments-service')
++const TokenService = require('./services/token-service')
++const GeolocationService = require('./services/geolocation-service')
++const MemberBREADService = require('./services/member-bread-service')
++const MemberRepository = require('./repositories/member-repository')
++
++const EventRepository = require('./repositories/event-repository');
++const ProductRepository = require('./repositories/product-repository');
++const RouterController = require('./controllers/router-controller');
++const MemberController = require('./controllers/member-controller');
++const WellKnownController = require('./controllers/well-known-controller');
++
++const {EmailSuppressedEvent} = require('../../email-suppression-list/email-suppression-list');
++const MagicLink = require('../../lib/magic-link/magic-link');
+ const DomainEvents = require('@tryghost/domain-events');
+ 
+ module.exports = function MembersAPI({
+diff --git a/ghost/core/core/server/services/members/members-api/repositories/EventRepository.js b/ghost/core/core/server/services/members/members-api/repositories/event-repository.js
+similarity index 100%
+rename from ghost/core/core/server/services/members/members-api/repositories/EventRepository.js
+rename to ghost/core/core/server/services/members/members-api/repositories/event-repository.js
+diff --git a/ghost/core/core/server/services/members/members-api/repositories/MemberRepository.js b/ghost/core/core/server/services/members/members-api/repositories/member-repository.js
+similarity index 99%
+rename from ghost/core/core/server/services/members/members-api/repositories/MemberRepository.js
+rename to ghost/core/core/server/services/members/members-api/repositories/member-repository.js
+index 5b77d9f97707..db057dd8193b 100644
+--- a/ghost/core/core/server/services/members/members-api/repositories/MemberRepository.js
++++ b/ghost/core/core/server/services/members/members-api/repositories/member-repository.js
+@@ -9,7 +9,7 @@ const {NotFoundError} = require('@tryghost/errors');
+ const validator = require('@tryghost/validator');
+ const crypto = require('crypto');
+ const config = require('../../../../../shared/config');
+-const StartOutboxProcessingEvent = require('../../../outbox/events/StartOutboxProcessingEvent');
++const StartOutboxProcessingEvent = require('../../../outbox/events/start-outbox-processing-event');
+ const {MEMBER_WELCOME_EMAIL_SLUGS} = require('../../../member-welcome-emails/constants');
+ const messages = {
+     noStripeConnection: 'Cannot {action} without a Stripe Connection',
+diff --git a/ghost/core/core/server/services/members/members-api/repositories/ProductRepository.js b/ghost/core/core/server/services/members/members-api/repositories/product-repository.js
+similarity index 100%
+rename from ghost/core/core/server/services/members/members-api/repositories/ProductRepository.js
+rename to ghost/core/core/server/services/members/members-api/repositories/product-repository.js
+diff --git a/ghost/core/core/server/services/members/members-api/services/GeolocationService.js b/ghost/core/core/server/services/members/members-api/services/geolocation-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/members/members-api/services/GeolocationService.js
+rename to ghost/core/core/server/services/members/members-api/services/geolocation-service.js
+diff --git a/ghost/core/core/server/services/members/members-api/services/MemberBREADService.js b/ghost/core/core/server/services/members/members-api/services/member-bread-service.js
+similarity index 99%
+rename from ghost/core/core/server/services/members/members-api/services/MemberBREADService.js
+rename to ghost/core/core/server/services/members/members-api/services/member-bread-service.js
+index 44def5be25e6..5c68e0be0c80 100644
+--- a/ghost/core/core/server/services/members/members-api/services/MemberBREADService.js
++++ b/ghost/core/core/server/services/members/members-api/services/member-bread-service.js
+@@ -30,7 +30,7 @@ const messages = {
+ module.exports = class MemberBREADService {
+     /**
+      * @param {object} deps
+-     * @param {import('../repositories/MemberRepository')} deps.memberRepository
++     * @param {import('../repositories/member-repository')} deps.memberRepository
+      * @param {import('@tryghost/members-offers/lib/application/OffersAPI')} deps.offersAPI
+      * @param {ILabsService} deps.labsService
+      * @param {IEmailService} deps.emailService
+diff --git a/ghost/core/core/server/services/members/members-api/services/PaymentsService.js b/ghost/core/core/server/services/members/members-api/services/payments-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/members/members-api/services/PaymentsService.js
+rename to ghost/core/core/server/services/members/members-api/services/payments-service.js
+diff --git a/ghost/core/core/server/services/members/members-api/services/TokenService.js b/ghost/core/core/server/services/members/members-api/services/token-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/members/members-api/services/TokenService.js
+rename to ghost/core/core/server/services/members/members-api/services/token-service.js
+diff --git a/ghost/core/core/server/services/members/MembersConfigProvider.js b/ghost/core/core/server/services/members/members-config-provider.js
+similarity index 100%
+rename from ghost/core/core/server/services/members/MembersConfigProvider.js
+rename to ghost/core/core/server/services/members/members-config-provider.js
+diff --git a/ghost/core/core/server/services/members/RequestIntegrityTokenProvider.js b/ghost/core/core/server/services/members/request-integrity-token-provider.js
+similarity index 100%
+rename from ghost/core/core/server/services/members/RequestIntegrityTokenProvider.js
+rename to ghost/core/core/server/services/members/request-integrity-token-provider.js
+diff --git a/ghost/core/core/server/services/members/service.js b/ghost/core/core/server/services/members/service.js
+index 92968e496e26..aed339226c6d 100644
+--- a/ghost/core/core/server/services/members/service.js
++++ b/ghost/core/core/server/services/members/service.js
+@@ -3,9 +3,9 @@ const errors = require('@tryghost/errors');
+ const tpl = require('@tryghost/tpl');
+ const MembersSSR = require('./members-ssr');
+ const db = require('../../data/db');
+-const MembersConfigProvider = require('./MembersConfigProvider');
++const MembersConfigProvider = require('./members-config-provider');
+ const makeMembersCSVImporter = require('./importer');
+-const MembersStats = require('./stats/MembersStats');
++const MembersStats = require('./stats/members-stats');
+ const memberJobs = require('./jobs');
+ const logging = require('@tryghost/logging');
+ const urlUtils = require('../../../shared/url-utils');
+@@ -16,10 +16,10 @@ const models = require('../../models');
+ const {GhostMailer} = require('../mail');
+ const jobsService = require('../jobs');
+ const tiersService = require('../tiers');
+-const VerificationTrigger = require('../VerificationTrigger');
++const VerificationTrigger = require('../verification-trigger');
+ const DatabaseInfo = require('@tryghost/database-info');
+ const settingsHelpers = require('../settings-helpers');
+-const RequestIntegrityTokenProvider = require('./RequestIntegrityTokenProvider');
++const RequestIntegrityTokenProvider = require('./request-integrity-token-provider');
+ 
+ const messages = {
+     noLiveKeysInDevelopment: 'Cannot use live stripe keys in development. Please restart in production mode.',
+diff --git a/ghost/core/core/server/services/members/SingleUseTokenProvider.js b/ghost/core/core/server/services/members/single-use-token-provider.js
+similarity index 100%
+rename from ghost/core/core/server/services/members/SingleUseTokenProvider.js
+rename to ghost/core/core/server/services/members/single-use-token-provider.js
+diff --git a/ghost/core/core/server/services/members/stats/MembersStats.js b/ghost/core/core/server/services/members/stats/members-stats.js
+similarity index 100%
+rename from ghost/core/core/server/services/members/stats/MembersStats.js
+rename to ghost/core/core/server/services/members/stats/members-stats.js
+diff --git a/ghost/core/core/server/services/mentions-email-report/job.js b/ghost/core/core/server/services/mentions-email-report/job.js
+index 1e66edb7c85d..10849b0fb825 100644
+--- a/ghost/core/core/server/services/mentions-email-report/job.js
++++ b/ghost/core/core/server/services/mentions-email-report/job.js
+@@ -1,5 +1,5 @@
+ const {parentPort} = require('worker_threads');
+-const StartMentionEmailReportJob = require('./StartMentionEmailReportJob');
++const StartMentionEmailReportJob = require('./start-mention-email-report-job');
+ 
+ if (parentPort) {
+     parentPort.postMessage({
+diff --git a/ghost/core/core/server/services/mentions-email-report/MentionEmailReportJob.js b/ghost/core/core/server/services/mentions-email-report/mention-email-report-job.js
+similarity index 100%
+rename from ghost/core/core/server/services/mentions-email-report/MentionEmailReportJob.js
+rename to ghost/core/core/server/services/mentions-email-report/mention-email-report-job.js
+diff --git a/ghost/core/core/server/services/mentions-email-report/service.js b/ghost/core/core/server/services/mentions-email-report/service.js
+index 048ac9b84860..d8eb8091554f 100644
+--- a/ghost/core/core/server/services/mentions-email-report/service.js
++++ b/ghost/core/core/server/services/mentions-email-report/service.js
+@@ -1,4 +1,4 @@
+-const MentionEmailReportJob = require('./MentionEmailReportJob');
++const MentionEmailReportJob = require('./mention-email-report-job');
+ 
+ /**
+  * @typedef {MentionEmailReportJob.MentionReport} MentionReport
+@@ -140,7 +140,7 @@ module.exports = {
+         const mentionsJobs = require('../mentions-jobs');
+ 
+         const DomainEvents = require('@tryghost/domain-events');
+-        const StartMentionEmailReportJob = require('./StartMentionEmailReportJob');
++        const StartMentionEmailReportJob = require('./start-mention-email-report-job');
+ 
+         const labs = require('../../../shared/labs');
+         DomainEvents.subscribe(StartMentionEmailReportJob, () => {
+diff --git a/ghost/core/core/server/services/mentions-email-report/StartMentionEmailReportJob.js b/ghost/core/core/server/services/mentions-email-report/start-mention-email-report-job.js
+similarity index 100%
+rename from ghost/core/core/server/services/mentions-email-report/StartMentionEmailReportJob.js
+rename to ghost/core/core/server/services/mentions-email-report/start-mention-email-report-job.js
+diff --git a/ghost/core/core/server/services/newsletters/index.js b/ghost/core/core/server/services/newsletters/index.js
+index 30d89e5c8bc8..31b8b55fb8d1 100644
+--- a/ghost/core/core/server/services/newsletters/index.js
++++ b/ghost/core/core/server/services/newsletters/index.js
+@@ -1,5 +1,5 @@
+-const NewslettersService = require('./NewslettersService.js');
+-const SingleUseTokenProvider = require('../members/SingleUseTokenProvider');
++const NewslettersService = require('./newsletters-service.js');
++const SingleUseTokenProvider = require('../members/single-use-token-provider');
+ const mail = require('../mail');
+ const models = require('../../models');
+ const urlUtils = require('../../../shared/url-utils');
+diff --git a/ghost/core/core/server/services/newsletters/NewslettersService.js b/ghost/core/core/server/services/newsletters/newsletters-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/newsletters/NewslettersService.js
+rename to ghost/core/core/server/services/newsletters/newsletters-service.js
+diff --git a/ghost/core/core/server/services/notifications/index.js b/ghost/core/core/server/services/notifications/index.js
+index d3230943d4d5..9fee2240e432 100644
+--- a/ghost/core/core/server/services/notifications/index.js
++++ b/ghost/core/core/server/services/notifications/index.js
+@@ -1,5 +1,5 @@
+ const settingsCache = require('../../../shared/settings-cache');
+-const Notifications = require('./Notifications');
++const Notifications = require('./notifications');
+ const models = require('../../models');
+ 
+ module.exports.notifications = new Notifications({
+diff --git a/ghost/core/core/server/services/notifications/Notifications.js b/ghost/core/core/server/services/notifications/notifications.js
+similarity index 100%
+rename from ghost/core/core/server/services/notifications/Notifications.js
+rename to ghost/core/core/server/services/notifications/notifications.js
+diff --git a/ghost/core/core/server/services/offers/service.js b/ghost/core/core/server/services/offers/service.js
+index 4a6e925b967b..002c1543b563 100644
+--- a/ghost/core/core/server/services/offers/service.js
++++ b/ghost/core/core/server/services/offers/service.js
+@@ -1,4 +1,4 @@
+-const DynamicRedirectManager = require('../lib/DynamicRedirectManager');
++const DynamicRedirectManager = require('../lib/dynamic-redirect-manager');
+ const config = require('../../../shared/config');
+ const urlUtils = require('../../../shared/url-utils');
+ const models = require('../../models');
+diff --git a/ghost/core/core/server/services/outbox/events/StartOutboxProcessingEvent.js b/ghost/core/core/server/services/outbox/events/start-outbox-processing-event.js
+similarity index 100%
+rename from ghost/core/core/server/services/outbox/events/StartOutboxProcessingEvent.js
+rename to ghost/core/core/server/services/outbox/events/start-outbox-processing-event.js
+diff --git a/ghost/core/core/server/services/outbox/index.js b/ghost/core/core/server/services/outbox/index.js
+index 866dc3a1a9cd..22a00296d199 100644
+--- a/ghost/core/core/server/services/outbox/index.js
++++ b/ghost/core/core/server/services/outbox/index.js
+@@ -1,6 +1,6 @@
+ const logging = require('@tryghost/logging');
+ const jobs = require('./jobs');
+-const StartOutboxProcessingEvent = require('./events/StartOutboxProcessingEvent');
++const StartOutboxProcessingEvent = require('./events/start-outbox-processing-event');
+ const domainEvents = require('@tryghost/domain-events');
+ const processOutbox = require('./jobs/lib/process-outbox');
+ const {OUTBOX_LOG_KEY} = require('./jobs/lib/constants');
+@@ -40,4 +40,4 @@ class OutboxServiceWrapper {
+     }
+ }
+ 
+-module.exports = new OutboxServiceWrapper();
+\ No newline at end of file
++module.exports = new OutboxServiceWrapper();
+diff --git a/ghost/core/core/server/services/outbox/jobs/outbox-job.js b/ghost/core/core/server/services/outbox/jobs/outbox-job.js
+index 78d44381f734..02e5ea65786b 100644
+--- a/ghost/core/core/server/services/outbox/jobs/outbox-job.js
++++ b/ghost/core/core/server/services/outbox/jobs/outbox-job.js
+@@ -1,5 +1,5 @@
+ const {parentPort} = require('worker_threads');
+-const StartOutboxProcessingEvent = require('../events/StartOutboxProcessingEvent');
++const StartOutboxProcessingEvent = require('../events/start-outbox-processing-event');
+ 
+ function cancel() {
+     if (parentPort) {
+@@ -33,4 +33,4 @@ if (parentPort) {
+             process.exit(0);
+         }, 1000);
+     }
+-})();
+\ No newline at end of file
++})();
+diff --git a/ghost/core/core/server/services/recommendations/recommendation-enabler-service.js b/ghost/core/core/server/services/recommendations/recommendation-enabler-service.js
+index ebbf84b2f387..e57e9fe65072 100644
+--- a/ghost/core/core/server/services/recommendations/recommendation-enabler-service.js
++++ b/ghost/core/core/server/services/recommendations/recommendation-enabler-service.js
+@@ -1,10 +1,10 @@
+ module.exports = class RecommendationEnablerService {
+-    /** @type {import('../settings/SettingsBREADService')} */
++    /** @type {import('../settings/settings-bread-service')} */
+     #settingsService;
+ 
+     /**
+      * @param {object} deps
+-     * @param {import('../settings/SettingsBREADService')} deps.settingsService
++     * @param {import('../settings/settings-bread-service')} deps.settingsService
+      */
+     constructor(deps) {
+         this.#settingsService = deps.settingsService;
+diff --git a/ghost/core/core/server/services/recommendations/service/in-memory-recommendation-repository.ts b/ghost/core/core/server/services/recommendations/service/in-memory-recommendation-repository.ts
+index 7ab0286d2931..70f88f98e62c 100644
+--- a/ghost/core/core/server/services/recommendations/service/in-memory-recommendation-repository.ts
++++ b/ghost/core/core/server/services/recommendations/service/in-memory-recommendation-repository.ts
+@@ -1,6 +1,6 @@
+ import {Recommendation} from './recommendation';
+ import {RecommendationRepository} from './recommendation-repository';
+-import {InMemoryRepository} from '../../lib/InMemoryRepository';
++import {InMemoryRepository} from '../../lib/in-memory-repository';
+ 
+ export class InMemoryRecommendationRepository extends InMemoryRepository<string, Recommendation> implements RecommendationRepository {
+     toPrimitive(entity: Recommendation): object {
+diff --git a/ghost/core/core/server/services/recommendations/service/recommendation-service.ts b/ghost/core/core/server/services/recommendations/service/recommendation-service.ts
+index a079f8e87eae..0bdc00ee81b7 100644
+--- a/ghost/core/core/server/services/recommendations/service/recommendation-service.ts
++++ b/ghost/core/core/server/services/recommendations/service/recommendation-service.ts
+@@ -1,5 +1,5 @@
+ import errors from '@tryghost/errors';
+-import {InMemoryRepository} from '../../lib/InMemoryRepository';
++import {InMemoryRepository} from '../../lib/in-memory-repository';
+ import logging from '@tryghost/logging';
+ import tpl from '@tryghost/tpl';
+ 
+diff --git a/ghost/core/core/server/services/settings-helpers/index.js b/ghost/core/core/server/services/settings-helpers/index.js
+index 154bb3e1d09a..878f228935a9 100644
+--- a/ghost/core/core/server/services/settings-helpers/index.js
++++ b/ghost/core/core/server/services/settings-helpers/index.js
+@@ -1,7 +1,7 @@
+ const settingsCache = require('../../../shared/settings-cache');
+ const urlUtils = require('../../../shared/url-utils');
+ const config = require('../../../shared/config');
+-const SettingsHelpers = require('./SettingsHelpers');
++const SettingsHelpers = require('./settings-helpers');
+ const labs = require('../../../shared/labs');
+ const limitService = require('../limits');
+ 
+diff --git a/ghost/core/core/server/services/settings-helpers/SettingsHelpers.js b/ghost/core/core/server/services/settings-helpers/settings-helpers.js
+similarity index 100%
+rename from ghost/core/core/server/services/settings-helpers/SettingsHelpers.js
+rename to ghost/core/core/server/services/settings-helpers/settings-helpers.js
+diff --git a/ghost/core/core/server/services/settings/SettingsBREADService.js b/ghost/core/core/server/services/settings/settings-bread-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/settings/SettingsBREADService.js
+rename to ghost/core/core/server/services/settings/settings-bread-service.js
+diff --git a/ghost/core/core/server/services/settings/settings-service.js b/ghost/core/core/server/services/settings/settings-service.js
+index 628f1f51a735..8e2745c43734 100644
+--- a/ghost/core/core/server/services/settings/settings-service.js
++++ b/ghost/core/core/server/services/settings/settings-service.js
+@@ -9,10 +9,10 @@ const limits = require('../limits');
+ const config = require('../../../shared/config');
+ const adapterManager = require('../adapter-manager');
+ const SettingsCache = require('../../../shared/settings-cache');
+-const SettingsBREADService = require('./SettingsBREADService');
++const SettingsBREADService = require('./settings-bread-service');
+ const {obfuscatedSetting, isSecretSetting, hideValueIfSecret} = require('./settings-utils');
+ const mail = require('../mail');
+-const SingleUseTokenProvider = require('../members/SingleUseTokenProvider');
++const SingleUseTokenProvider = require('../members/single-use-token-provider');
+ const urlUtils = require('../../../shared/url-utils');
+ 
+ const ObjectId = require('bson-objectid').default;
+diff --git a/ghost/core/core/server/services/staff/staff-service-emails.js b/ghost/core/core/server/services/staff/staff-service-emails.js
+index e3eff09a83af..d3dbf913cb1f 100644
+--- a/ghost/core/core/server/services/staff/staff-service-emails.js
++++ b/ghost/core/core/server/services/staff/staff-service-emails.js
+@@ -263,7 +263,7 @@ class StaffServiceEmails {
+     /**
+      *
+      * @param {object} eventData
+-     * @param {import('../donations/DonationPaymentEvent').DonationPaymentEvent} eventData.donationPaymentEvent
++     * @param {import('../donations/donation-payment-event').DonationPaymentEvent} eventData.donationPaymentEvent
+      *
+      * @returns {Promise<void>}
+      */
+diff --git a/ghost/core/core/server/services/stats/ContentStatsService.js b/ghost/core/core/server/services/stats/content-stats-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/stats/ContentStatsService.js
+rename to ghost/core/core/server/services/stats/content-stats-service.js
+diff --git a/ghost/core/core/server/services/stats/MembersStatsService.js b/ghost/core/core/server/services/stats/members-stats-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/stats/MembersStatsService.js
+rename to ghost/core/core/server/services/stats/members-stats-service.js
+diff --git a/ghost/core/core/server/services/stats/MrrStatsService.js b/ghost/core/core/server/services/stats/mrr-stats-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/stats/MrrStatsService.js
+rename to ghost/core/core/server/services/stats/mrr-stats-service.js
+diff --git a/ghost/core/core/server/services/stats/PostsStatsService.js b/ghost/core/core/server/services/stats/posts-stats-service.js
+similarity index 99%
+rename from ghost/core/core/server/services/stats/PostsStatsService.js
+rename to ghost/core/core/server/services/stats/posts-stats-service.js
+index 1c25a2170977..a7f48a3c741c 100644
+--- a/ghost/core/core/server/services/stats/PostsStatsService.js
++++ b/ghost/core/core/server/services/stats/posts-stats-service.js
+@@ -3,7 +3,7 @@ const errors = require('@tryghost/errors');
+ const urlUtils = require('../../../shared/url-utils');
+ 
+ // Import source normalization from ReferrersStatsService
+-const {normalizeSource} = require('./ReferrersStatsService');
++const {normalizeSource} = require('./referrers-stats-service');
+ // Import centralized date utilities
+ const {getDateBoundaries, applyDateFilter} = require('./utils/date-utils');
+ 
+@@ -147,7 +147,7 @@ class PostsStatsService {
+                                 .from('members_created_events')
+                                 .whereNotNull('attribution_url');
+                             applyDateFilter(subquery1, dateFrom, dateTo, 'created_at');
+-                            
++
+                             subquery1.union(function () {
+                                 const subquery2 = this.select('attribution_url', 'attribution_type', 'attribution_id')
+                                     .from('members_subscription_created_events')
+@@ -215,10 +215,10 @@ class PostsStatsService {
+         // Transform results and enrich with titles and URL existence validation
+         return results.map((row) => {
+             const title = row.title || this._generateTitleFromPath(row.attribution_url);
+-            
++
+             // Check if URL exists using the URL service
+             let urlExists = true; // Default to true for backward compatibility
+-            
++
+             if (this.urlService && row.attribution_url) {
+                 try {
+                     // Check if URL service is ready
+@@ -253,7 +253,7 @@ class PostsStatsService {
+         if (!path) {
+             return 'Unknown';
+         }
+-        
++
+         // Handle common Ghost paths
+         if (path === '/') {
+             return 'Homepage';
+@@ -269,12 +269,12 @@ class PostsStatsService {
+         if (path.startsWith('/author/')) {
+             const segments = path.split('/');
+             return segments.length > 2 && segments[2] ? `author/${segments[2]}` : 'author/unknown';
+-        }  
++        }
+         if (path.startsWith('/authors/')) {
+             const segments = path.split('/');
+             return segments.length > 2 && segments[2] ? `author/${segments[2]}` : 'author/unknown';
+         }
+-        
++
+         // For other paths, just return the path itself
+         return path;
+     }
+@@ -362,7 +362,7 @@ class PostsStatsService {
+ 
+             // Apply source normalization and group by normalized source
+             const normalizedResults = new Map();
+-            
++
+             results.forEach((row) => {
+                 const normalizedSource = normalizeSource(row.source);
+                 const existing = normalizedResults.get(normalizedSource) || {
+@@ -372,11 +372,11 @@ class PostsStatsService {
+                     paid_members: 0,
+                     mrr: 0
+                 };
+-                
++
+                 existing.free_members += row.free_members;
+                 existing.paid_members += row.paid_members;
+                 existing.mrr += row.mrr;
+-                
++
+                 normalizedResults.set(normalizedSource, existing);
+             });
+ 
+@@ -453,7 +453,7 @@ class PostsStatsService {
+         const groupByField = groupByUrl ? 'mce.attribution_url' : 'mce.attribution_id';
+         const joinCondition = groupByUrl ? 'mce.attribution_url' : 'mce.attribution_id';
+         const {dateFrom, dateTo} = getDateBoundaries(options);
+-        
++
+         let subquery = knex('members_created_events as mce')
+             .select(selectField)
+             .countDistinct('mce.member_id as free_members')
+@@ -515,7 +515,7 @@ class PostsStatsService {
+         const selectField = groupByUrl ? 'msce.attribution_url' : 'msce.attribution_id as post_id';
+         const groupByField = groupByUrl ? 'msce.attribution_url' : 'msce.attribution_id';
+         const {dateFrom, dateTo} = getDateBoundaries(options);
+-        
++
+         let subquery = knex('members_subscription_created_events as msce')
+             .select(selectField)
+             .countDistinct('msce.member_id as paid_members')
+@@ -559,7 +559,7 @@ class PostsStatsService {
+         const selectField = groupByUrl ? 'msce.attribution_url' : 'msce.attribution_id as post_id';
+         const groupByField = groupByUrl ? 'msce.attribution_url' : 'msce.attribution_id';
+         const {dateFrom, dateTo} = getDateBoundaries(options);
+-        
++
+         let subquery = this.knex('members_subscription_created_events as msce')
+             .select(selectField)
+             .sum('mpse.mrr_delta as mrr')
+@@ -841,7 +841,7 @@ class PostsStatsService {
+                     .whereIn('p.status', ['sent', 'published'])
+                     .orderBy(orderFieldMap[orderField], orderDirection)
+                     .limit(limit);
+-                    
++
+                 // Apply centralized date filtering
+                 applyDateFilter(query, dateFrom, dateTo, 'p.published_at');
+             } else {
+@@ -861,7 +861,7 @@ class PostsStatsService {
+                     .whereIn('p.status', ['sent', 'published'])
+                     .orderBy(orderFieldMap[orderField], orderDirection)
+                     .limit(limit);
+-                    
++
+                 // Apply centralized date filtering
+                 applyDateFilter(query, dateFrom, dateTo, 'p.published_at');
+             }
+@@ -1119,7 +1119,7 @@ class PostsStatsService {
+             if (!postId || postId.trim() === '') {
+                 return {data: []};
+             }
+-            
++
+             // Get basic post info for stats calculations
+             const postData = await this.knex('posts')
+                 .select('posts.id', 'posts.uuid', 'posts.published_at', 'e.email_count', 'e.opened_count')
+@@ -1127,7 +1127,7 @@ class PostsStatsService {
+                 .where('posts.id', postId)
+                 .where('posts.status', 'published')
+                 .first();
+-                
++
+             if (!postData) {
+                 return {data: []};
+             }
+@@ -1135,14 +1135,14 @@ class PostsStatsService {
+             // Get member attribution counts
+             const memberAttributionCounts = await this._getMemberAttributionCounts([postData.id]);
+             const attributionCount = memberAttributionCounts.find(ac => ac.post_id === postData.id);
+-            
++
+             const freeMembers = attributionCount ? attributionCount.free_members : 0;
+             const paidMembers = attributionCount ? attributionCount.paid_members : 0;
+             const totalMembers = freeMembers + paidMembers;
+ 
+             // Calculate open rate
+-            const openRate = postData.email_count ? 
+-                (postData.opened_count / postData.email_count) * 100 : 
++            const openRate = postData.email_count ?
++                (postData.opened_count / postData.email_count) * 100 :
+                 null;
+ 
+             // Get visitor count from Tinybird
+@@ -1208,7 +1208,7 @@ class PostsStatsService {
+ 
+             // Filter out any rows without post_uuid and get unique UUIDs
+             const postUuids = [...new Set(viewsData.filter(row => row.post_uuid).map(row => row.post_uuid))];
+-            
++
+             // Get posts data from Ghost DB - prioritize posts that were sent as newsletters
+             const posts = await this.knex('posts as p')
+                 .select(
+@@ -1300,7 +1300,7 @@ class PostsStatsService {
+             if (remainingCount > 0) {
+                 // Get post IDs that we already have to exclude them
+                 const existingPostIds = postsWithViews.map(p => p.post_id);
+-                
++
+                 additionalPosts = await this.knex('posts as p')
+                     .select(
+                         'p.id as post_id',
+@@ -1474,7 +1474,7 @@ class PostsStatsService {
+     async getPostsMemberCounts(postIds, options = {}) {
+         try {
+             const attributionCounts = await this._getMemberAttributionCounts(postIds, options);
+-            
++
+             // Convert array to object mapping post_id -> counts
+             const memberCounts = {};
+             attributionCounts.forEach((count) => {
+@@ -1483,7 +1483,7 @@ class PostsStatsService {
+                     paid_members: count.paid_members
+                 };
+             });
+-            
++
+             return memberCounts;
+         } catch (error) {
+             logging.error('Error fetching member counts:', error);
+@@ -1568,4 +1568,4 @@ class PostsStatsService {
+     }
+ }
+ 
+-module.exports = PostsStatsService;
+\ No newline at end of file
++module.exports = PostsStatsService;
+diff --git a/ghost/core/core/server/services/stats/ReferrersStatsService.js b/ghost/core/core/server/services/stats/referrers-stats-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/stats/ReferrersStatsService.js
+rename to ghost/core/core/server/services/stats/referrers-stats-service.js
+diff --git a/ghost/core/core/server/services/stats/service.js b/ghost/core/core/server/services/stats/service.js
+index d5e68c05951f..7c142cd2646f 100644
+--- a/ghost/core/core/server/services/stats/service.js
++++ b/ghost/core/core/server/services/stats/service.js
+@@ -10,7 +10,7 @@ class StatsServiceWrapper {
+             return;
+         }
+ 
+-        const StatsService = require('./StatsService');
++        const StatsService = require('./stats-service');
+         const db = require('../../data/db');
+         const models = require('../../models');
+         const urlService = require('../url');
+diff --git a/ghost/core/core/server/services/stats/StatsService.js b/ghost/core/core/server/services/stats/stats-service.js
+similarity index 91%
+rename from ghost/core/core/server/services/stats/StatsService.js
+rename to ghost/core/core/server/services/stats/stats-service.js
+index 98e5228a1e2a..a9e0060b13f0 100644
+--- a/ghost/core/core/server/services/stats/StatsService.js
++++ b/ghost/core/core/server/services/stats/stats-service.js
+@@ -1,9 +1,9 @@
+-const MRRService = require('./MrrStatsService');
+-const MembersService = require('./MembersStatsService');
+-const SubscriptionStatsService = require('./SubscriptionStatsService');
+-const ReferrersStatsService = require('./ReferrersStatsService');
+-const PostsStatsService = require('./PostsStatsService');
+-const ContentStatsService = require('./ContentStatsService');
++const MRRService = require('./mrr-stats-service');
++const MembersService = require('./members-stats-service');
++const SubscriptionStatsService = require('./subscription-stats-service');
++const ReferrersStatsService = require('./referrers-stats-service');
++const PostsStatsService = require('./posts-stats-service');
++const ContentStatsService = require('./content-stats-service');
+ class StatsService {
+     /**
+      * @param {object} deps
+@@ -78,8 +78,8 @@ class StatsService {
+ 
+     /**
+      * Get top posts by attribution metrics (includes all content that drove conversions)
+-     * @param {import('./PostsStatsService').TopPostsOptions} options
+-     * @returns {Promise<{data: import('./PostsStatsService').AttributionResult[]}>}
++     * @param {import('./posts-stats-service').TopPostsOptions} options
++     * @returns {Promise<{data: import('./posts-stats-service').AttributionResult[]}>}
+      */
+     async getTopPosts(options = {}) {
+         // Return the original { data: results } structure
+@@ -94,7 +94,7 @@ class StatsService {
+      * @param {string} options.date_to - End date in YYYY-MM-DD format
+      * @param {string} options.timezone - Timezone to use for date interpretation
+      * @param {number} [options.limit=5] - Maximum number of posts to return
+-     * @returns {Promise<{data: import('./PostsStatsService').TopPostResult[]}>}
++     * @returns {Promise<{data: import('./posts-stats-service').TopPostResult[]}>}
+      */
+     async getTopPostsViews(options) {
+         const result = await this.posts.getTopPostsViews(options);
+@@ -124,17 +124,17 @@ class StatsService {
+      * @param {string} [options.date_from] - Start date filter in YYYY-MM-DD format
+      * @param {string} [options.date_to] - End date filter in YYYY-MM-DD format
+      * @param {string} [options.timezone] - Timezone to use for date interpretation
+-     * @returns {Promise<{data: import('./PostsStatsService').NewsletterStatResult[]}>}
++     * @returns {Promise<{data: import('./posts-stats-service').NewsletterStatResult[]}>}
+      */
+     async getNewsletterStats(options = {}) {
+         // Extract newsletter_id from options
+         const {newsletter_id: newsletterId, ...otherOptions} = options;
+-        
++
+         // If no newsletterId is provided, we can't get specific stats
+         if (!newsletterId) {
+             return {data: []};
+         }
+-        
++
+         // Return newsletter stats for the specific newsletter
+         const result = await this.posts.getNewsletterStats(newsletterId, otherOptions);
+         return result;
+@@ -142,23 +142,23 @@ class StatsService {
+ 
+     /**
+      * Get newsletter subscriber statistics including total count and daily deltas
+-     * 
++     *
+      * @param {Object} options
+      * @param {string} [options.newsletter_id] - ID of the specific newsletter to get stats for
+      * @param {string} [options.date_from] - Start date filter in YYYY-MM-DD format
+      * @param {string} [options.date_to] - End date filter in YYYY-MM-DD format
+      * @param {string} [options.timezone] - Timezone to use for date interpretation
+-     * @returns {Promise<{data: import('./PostsStatsService').NewsletterSubscriberStats[]}>}
++     * @returns {Promise<{data: import('./posts-stats-service').NewsletterSubscriberStats[]}>}
+      */
+     async getNewsletterSubscriberStats(options = {}) {
+         // Extract newsletter_id from options
+         const {newsletter_id: newsletterId, ...otherOptions} = options;
+-        
++
+         // If no newsletterId is provided, we can't get specific stats
+         if (!newsletterId) {
+             return {data: [{total: 0, values: []}]};
+         }
+-        
++
+         const result = await this.posts.getNewsletterSubscriberStats(newsletterId, otherOptions);
+         return result;
+     }
+@@ -195,17 +195,17 @@ class StatsService {
+      * @param {string} [options.timezone] - Timezone to use for date interpretation
+      * @param {string} [options.date_from] - Start date filter in YYYY-MM-DD format
+      * @param {string} [options.date_to] - End date filter in YYYY-MM-DD format
+-     * @returns {Promise<{data: import('./PostsStatsService').NewsletterStatResult[]}>}
++     * @returns {Promise<{data: import('./posts-stats-service').NewsletterStatResult[]}>}
+      */
+     async getNewsletterBasicStats(options = {}) {
+         // Extract newsletter_id from options
+         const {newsletter_id: newsletterId, ...otherOptions} = options;
+-        
++
+         // If no newsletterId is provided, we can't get specific stats
+         if (!newsletterId) {
+             return {data: []};
+         }
+-        
++
+         // Return newsletter basic stats for the specific newsletter
+         const result = await this.posts.getNewsletterBasicStats(newsletterId, otherOptions);
+         return result;
+@@ -221,12 +221,12 @@ class StatsService {
+     async getNewsletterClickStats(options = {}) {
+         // Extract newsletter_id and post_ids from options
+         const {newsletter_id: newsletterId, post_ids: postIds} = options;
+-        
++
+         // If no newsletterId is provided, we can't get specific stats
+         if (!newsletterId) {
+             return {data: []};
+         }
+-        
++
+         // Return newsletter click stats for the specific newsletter and posts
+         const result = await this.posts.getNewsletterClickStats(newsletterId, postIds);
+         return result;
+@@ -255,7 +255,7 @@ class StatsService {
+      * @param {string} [options.date_to] - End date in YYYY-MM-DD format
+      * @param {string} [options.timezone] - Timezone to use for date interpretation
+      * @param {string} [options.post_id] - Optional filter by post ID
+-     * @returns {Promise<{data: import('./ReferrersStatsService').UtmGrowthStat[], meta: {}}>}
++     * @returns {Promise<{data: import('./referrers-stats-service').UtmGrowthStat[], meta: {}}>}
+      */
+     async getUtmGrowthStats(options = {}) {
+         return this.referrers.getUtmGrowthStats(options);
+diff --git a/ghost/core/core/server/services/stats/SubscriptionStatsService.js b/ghost/core/core/server/services/stats/subscription-stats-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/stats/SubscriptionStatsService.js
+rename to ghost/core/core/server/services/stats/subscription-stats-service.js
+diff --git a/ghost/core/core/server/services/stripe/services/webhook/CheckoutSessionEventService.js b/ghost/core/core/server/services/stripe/services/webhook/CheckoutSessionEventService.js
+index 102bed442123..d7b77a6e4472 100644
+--- a/ghost/core/core/server/services/stripe/services/webhook/CheckoutSessionEventService.js
++++ b/ghost/core/core/server/services/stripe/services/webhook/CheckoutSessionEventService.js
+@@ -62,7 +62,7 @@ module.exports = class CheckoutSessionEventService {
+         const memberRepository = this.deps.memberRepository;
+         const member = session.customer ? (await memberRepository.get({customer_id: session.customer})) : null;
+ 
+-        const {DonationPaymentEvent} = require('../../../donations/DonationPaymentEvent');
++        const {DonationPaymentEvent} = require('../../../donations/donation-payment-event');
+         const data = DonationPaymentEvent.create({
+             name: member?.get('name') ?? session.customer_details.name,
+             email: member?.get('email') ?? session.customer_details.email,
+diff --git a/ghost/core/core/server/services/themes/storage.js b/ghost/core/core/server/services/themes/storage.js
+index f087e37e1339..d93a329e8175 100644
+--- a/ghost/core/core/server/services/themes/storage.js
++++ b/ghost/core/core/server/services/themes/storage.js
+@@ -8,7 +8,7 @@ const errors = require('@tryghost/errors');
+ 
+ const validate = require('./validate');
+ const list = require('./list');
+-const ThemeStorage = require('./ThemeStorage');
++const ThemeStorage = require('./theme-storage');
+ const themeLoader = require('./loader');
+ const activator = require('./activation-bridge');
+ const toJSON = require('./to-json');
+diff --git a/ghost/core/core/server/services/themes/ThemeStorage.js b/ghost/core/core/server/services/themes/theme-storage.js
+similarity index 100%
+rename from ghost/core/core/server/services/themes/ThemeStorage.js
+rename to ghost/core/core/server/services/themes/theme-storage.js
+diff --git a/ghost/core/core/server/services/update-check/index.js b/ghost/core/core/server/services/update-check/index.js
+index 2ad0b5dd19b0..37cebf81e708 100644
+--- a/ghost/core/core/server/services/update-check/index.js
++++ b/ghost/core/core/server/services/update-check/index.js
+@@ -10,7 +10,7 @@ const databaseInfo = require('../../data/db/info');
+ 
+ const request = require('@tryghost/request');
+ const ghostVersion = require('@tryghost/version');
+-const UpdateCheckService = require('./UpdateCheckService');
++const UpdateCheckService = require('./update-check-service');
+ 
+ /**
+  * Initializes and triggers update check
+diff --git a/ghost/core/core/server/services/update-check/UpdateCheckService.js b/ghost/core/core/server/services/update-check/update-check-service.js
+similarity index 100%
+rename from ghost/core/core/server/services/update-check/UpdateCheckService.js
+rename to ghost/core/core/server/services/update-check/update-check-service.js
+diff --git a/ghost/core/core/server/services/Users.js b/ghost/core/core/server/services/users.js
+similarity index 100%
+rename from ghost/core/core/server/services/Users.js
+rename to ghost/core/core/server/services/users.js
+diff --git a/ghost/core/core/server/services/VerificationTrigger.js b/ghost/core/core/server/services/verification-trigger.js
+similarity index 100%
+rename from ghost/core/core/server/services/VerificationTrigger.js
+rename to ghost/core/core/server/services/verification-trigger.js
+diff --git a/ghost/core/core/server/services/webhooks/listen.js b/ghost/core/core/server/services/webhooks/listen.js
+index 4ce8817a8aa2..2caf1e5cdf23 100644
+--- a/ghost/core/core/server/services/webhooks/listen.js
++++ b/ghost/core/core/server/services/webhooks/listen.js
+@@ -1,6 +1,6 @@
+ const _ = require('lodash');
+ const limitService = require('../../services/limits');
+-const WebhookTrigger = require('./WebhookTrigger');
++const WebhookTrigger = require('./webhook-trigger');
+ const models = require('../../models');
+ const payload = require('./payload');
+ 
+diff --git a/ghost/core/core/server/services/webhooks/WebhookTrigger.js b/ghost/core/core/server/services/webhooks/webhook-trigger.js
+similarity index 100%
+rename from ghost/core/core/server/services/webhooks/WebhookTrigger.js
+rename to ghost/core/core/server/services/webhooks/webhook-trigger.js
+diff --git a/ghost/core/test/e2e-api/admin/settings.test.js b/ghost/core/test/e2e-api/admin/settings.test.js
+index 24bd05023b42..686c1dc3dd75 100644
+--- a/ghost/core/test/e2e-api/admin/settings.test.js
++++ b/ghost/core/test/e2e-api/admin/settings.test.js
+@@ -1,7 +1,7 @@
+ const assert = require('assert/strict');
+ const sinon = require('sinon');
+ const logging = require('@tryghost/logging');
+-const SingleUseTokenProvider = require('../../../core/server/services/members/SingleUseTokenProvider');
++const SingleUseTokenProvider = require('../../../core/server/services/members/single-use-token-provider');
+ const settingsCache = require('../../../core/shared/settings-cache');
+ const {agentProvider, fixtureManager, mockManager, matchers, configUtils} = require('../../utils/e2e-framework');
+ const {stringMatching, anyEtag, anyUuid, anyContentLength, anyContentVersion} = matchers;
+diff --git a/ghost/core/test/e2e-api/members/send-magic-link.test.js b/ghost/core/test/e2e-api/members/send-magic-link.test.js
+index 81118b1432f6..69f66f34c8c7 100644
+--- a/ghost/core/test/e2e-api/members/send-magic-link.test.js
++++ b/ghost/core/test/e2e-api/members/send-magic-link.test.js
+@@ -876,7 +876,7 @@ describe('sendMagicLink', function () {
+         });
+ 
+         it('Should gracefully handle OTC generation failures', async function () {
+-            const tokenProvider = require('../../../core/server/services/members/SingleUseTokenProvider');
++            const tokenProvider = require('../../../core/server/services/members/single-use-token-provider');
+             const deriveOTCStub = sinon.stub(tokenProvider.prototype, 'deriveOTC').throws(new Error('OTC generation failed'));
+ 
+             try {
+diff --git a/ghost/core/test/e2e-browser/fixtures/ghost-test.js b/ghost/core/test/e2e-browser/fixtures/ghost-test.js
+index 292b34137e4e..cccd8f08ce71 100644
+--- a/ghost/core/test/e2e-browser/fixtures/ghost-test.js
++++ b/ghost/core/test/e2e-browser/fixtures/ghost-test.js
+@@ -8,7 +8,7 @@ const sinon = require('sinon');
+ const ObjectID = require('bson-objectid').default;
+ const Stripe = require('stripe').Stripe;
+ const configUtils = require('../../utils/config-utils');
+-const MailgunClient = require('../../../core/server/services/lib/MailgunClient');
++const MailgunClient = require('../../../core/server/services/lib/mailgun-client');
+ 
+ const startWebhookServer = (port) => {
+     const isCI = process.env.CI;
+diff --git a/ghost/core/test/integration/services/email-service/email-event-storage.test.js b/ghost/core/test/integration/services/email-service/email-event-storage.test.js
+index 1a07a6d23336..1064a9629618 100644
+--- a/ghost/core/test/integration/services/email-service/email-event-storage.test.js
++++ b/ghost/core/test/integration/services/email-service/email-event-storage.test.js
+@@ -1,7 +1,7 @@
+ const sinon = require('sinon');
+ const {agentProvider, fixtureManager, configUtils} = require('../../../utils/e2e-framework');
+ const assert = require('assert/strict');
+-const MailgunClient = require('../../../../core/server/services/lib/MailgunClient');
++const MailgunClient = require('../../../../core/server/services/lib/mailgun-client');
+ const DomainEvents = require('@tryghost/domain-events');
+ const emailAnalytics = require('../../../../core/server/services/email-analytics');
+ 
+diff --git a/ghost/core/test/integration/services/mailgun-email-suppression-list.test.js b/ghost/core/test/integration/services/mailgun-email-suppression-list.test.js
+index 04c9cbe7daad..f5ec254d7768 100644
+--- a/ghost/core/test/integration/services/mailgun-email-suppression-list.test.js
++++ b/ghost/core/test/integration/services/mailgun-email-suppression-list.test.js
+@@ -3,7 +3,7 @@ const {agentProvider, fixtureManager} = require('../../utils/e2e-framework');
+ const assert = require('assert/strict');
+ const DomainEvents = require('@tryghost/domain-events');
+ 
+-const MailgunClient = require('../../../core/server/services/lib/MailgunClient');
++const MailgunClient = require('../../../core/server/services/lib/mailgun-client');
+ const emailAnalytics = require('../../../core/server/services/email-analytics');
+ 
+ describe('MailgunEmailSuppressionList', function () {
+diff --git a/ghost/core/test/unit/server/services/activitypub/activity-pub-service.test.ts b/ghost/core/test/unit/server/services/activitypub/activity-pub-service.test.ts
+index e9fd181f604a..a76fcd3ec573 100644
+--- a/ghost/core/test/unit/server/services/activitypub/activity-pub-service.test.ts
++++ b/ghost/core/test/unit/server/services/activitypub/activity-pub-service.test.ts
+@@ -1,7 +1,7 @@
+ import assert from 'assert/strict';
+ import {ActivityPubService} from '../../../../../core/server/services/activitypub/activity-pub-service';
+ import knex, {Knex} from 'knex';
+-import type {IdentityTokenService} from '../../../../../core/server/services/identity-tokens/IdentityTokenService';
++import type {IdentityTokenService} from '../../../../../core/server/services/identity-tokens/identity-token-service';
+ import nock from 'nock';
+ 
+ async function getKnexInstance() {
+diff --git a/ghost/core/test/unit/server/services/adapter-manager/adapter-manager.test.js b/ghost/core/test/unit/server/services/adapter-manager/adapter-manager.test.js
+index e6522fb3ce89..a3f9f17c2c06 100644
+--- a/ghost/core/test/unit/server/services/adapter-manager/adapter-manager.test.js
++++ b/ghost/core/test/unit/server/services/adapter-manager/adapter-manager.test.js
+@@ -1,6 +1,6 @@
+ const sinon = require('sinon');
+ const should = require('should');
+-const AdapterManager = require('../../../../../core/server/services/adapter-manager/AdapterManager');
++const AdapterManager = require('../../../../../core/server/services/adapter-manager/adapter-manager');
+ 
+ class BaseMailAdapter {
+     constructor() {
+diff --git a/ghost/core/test/unit/server/services/announcement-bar/announcement-bar-settings.test.js b/ghost/core/test/unit/server/services/announcement-bar/announcement-bar-settings.test.js
+index 08cc2dfee29c..478432972110 100644
+--- a/ghost/core/test/unit/server/services/announcement-bar/announcement-bar-settings.test.js
++++ b/ghost/core/test/unit/server/services/announcement-bar/announcement-bar-settings.test.js
+@@ -1,5 +1,5 @@
+ const assert = require('assert/strict');
+-const AnnouncementBarSettings = require('../../../../../core/server/services/announcement-bar-service/AnnouncementBarSettings');
++const AnnouncementBarSettings = require('../../../../../core/server/services/announcement-bar-service/announcement-bar-settings');
+ 
+ describe('AnnouncementBarSettings', function () {
+     it('can initialize', function () {
+diff --git a/ghost/core/test/unit/server/services/audience-feedback/audience-feedback-service.test.js b/ghost/core/test/unit/server/services/audience-feedback/audience-feedback-service.test.js
+index ae7270126fbc..c30643dc58a4 100644
+--- a/ghost/core/test/unit/server/services/audience-feedback/audience-feedback-service.test.js
++++ b/ghost/core/test/unit/server/services/audience-feedback/audience-feedback-service.test.js
+@@ -1,5 +1,5 @@
+ const assert = require('assert/strict');
+-const AudienceFeedbackService = require('../../../../../core/server/services/audience-feedback/AudienceFeedbackService');
++const AudienceFeedbackService = require('../../../../../core/server/services/audience-feedback/audience-feedback-service');
+ 
+ describe('audienceFeedbackService', function () {
+     const mockData = {
+diff --git a/ghost/core/test/unit/server/services/auth/session/store.test.js b/ghost/core/test/unit/server/services/auth/session/store.test.js
+index 7b2119fcd4b3..70987060bf78 100644
+--- a/ghost/core/test/unit/server/services/auth/session/store.test.js
++++ b/ghost/core/test/unit/server/services/auth/session/store.test.js
+@@ -1,4 +1,4 @@
+-const SessionStore = require('../../../../../../core/server/services/auth/session/SessionStore');
++const SessionStore = require('../../../../../../core/server/services/auth/session/session-store');
+ const models = require('../../../../../../core/server/models');
+ const EventEmitter = require('events');
+ const {Store} = require('express-session');
+diff --git a/ghost/core/test/unit/server/services/comments/comments-service-emails-renderer.test.js b/ghost/core/test/unit/server/services/comments/comments-service-emails-renderer.test.js
+index 8a9934a79330..266327c516bd 100644
+--- a/ghost/core/test/unit/server/services/comments/comments-service-emails-renderer.test.js
++++ b/ghost/core/test/unit/server/services/comments/comments-service-emails-renderer.test.js
+@@ -1,6 +1,6 @@
+ const i18nLib = require('@tryghost/i18n');
+ const should = require('should');
+-const CommentsServiceEmailRenderer = require('../../../../../core/server/services/comments/CommentsServiceEmailRenderer');
++const CommentsServiceEmailRenderer = require('../../../../../core/server/services/comments/comments-service-email-renderer');
+ 
+ describe('Comments Service Email Renderer', function () {
+     describe('renderEmail Template with different locales', function () {
+diff --git a/ghost/core/test/unit/server/services/custom-redirects/api.test.js b/ghost/core/test/unit/server/services/custom-redirects/api.test.js
+index 8b69e4100008..d743dad6105c 100644
+--- a/ghost/core/test/unit/server/services/custom-redirects/api.test.js
++++ b/ghost/core/test/unit/server/services/custom-redirects/api.test.js
+@@ -4,7 +4,7 @@ const path = require('path');
+ const fs = require('fs-extra');
+ 
+ const logging = require('@tryghost/logging');
+-const CustomRedirectsAPI = require('../../../../../core/server/services/custom-redirects/CustomRedirectsAPI');
++const CustomRedirectsAPI = require('../../../../../core/server/services/custom-redirects/custom-redirects-api');
+ 
+ describe('UNIT: redirects CustomRedirectsAPI class', function () {
+     let customRedirectsAPI;
+diff --git a/ghost/core/test/unit/server/services/email-analytics/email-analytics-provider-mailgun.test.js b/ghost/core/test/unit/server/services/email-analytics/email-analytics-provider-mailgun.test.js
+index f56adc34227f..eded30d19c27 100644
+--- a/ghost/core/test/unit/server/services/email-analytics/email-analytics-provider-mailgun.test.js
++++ b/ghost/core/test/unit/server/services/email-analytics/email-analytics-provider-mailgun.test.js
+@@ -1,7 +1,7 @@
+ const sinon = require('sinon');
+ 
+-const EventProcessingResult = require('../../../../../core/server/services/email-analytics/EventProcessingResult');
+-const EmailAnalyticsProviderMailgun = require('../../../../../core/server/services/email-analytics/EmailAnalyticsProviderMailgun');
++const EventProcessingResult = require('../../../../../core/server/services/email-analytics/event-processing-result');
++const EmailAnalyticsProviderMailgun = require('../../../../../core/server/services/email-analytics/email-analytics-provider-mailgun');
+ 
+ const SAMPLE_EVENTS = [
+     new EventProcessingResult({
+diff --git a/ghost/core/test/unit/server/services/email-analytics/email-analytics-service.test.js b/ghost/core/test/unit/server/services/email-analytics/email-analytics-service.test.js
+index e814a7cc7fa3..da2c9048c09e 100644
+--- a/ghost/core/test/unit/server/services/email-analytics/email-analytics-service.test.js
++++ b/ghost/core/test/unit/server/services/email-analytics/email-analytics-service.test.js
+@@ -3,8 +3,8 @@ require('should');
+ const sinon = require('sinon');
+ const configUtils = require('../../../../utils/config-utils');
+ 
+-const EmailAnalyticsService = require('../../../../../core/server/services/email-analytics/EmailAnalyticsService');
+-const EventProcessingResult = require('../../../../../core/server/services/email-analytics/EventProcessingResult');
++const EmailAnalyticsService = require('../../../../../core/server/services/email-analytics/email-analytics-service');
++const EventProcessingResult = require('../../../../../core/server/services/email-analytics/event-processing-result');
+ 
+ /**
+  * Create a mock config object that reads from configUtils
+diff --git a/ghost/core/test/unit/server/services/email-analytics/event-processing-result.test.js b/ghost/core/test/unit/server/services/email-analytics/event-processing-result.test.js
+index e852104f45e8..908e380c79bb 100644
+--- a/ghost/core/test/unit/server/services/email-analytics/event-processing-result.test.js
++++ b/ghost/core/test/unit/server/services/email-analytics/event-processing-result.test.js
+@@ -1,6 +1,6 @@
+ const assert = require('assert/strict');
+ 
+-const EventProcessingResult = require('../../../../../core/server/services/email-analytics/EventProcessingResult');
++const EventProcessingResult = require('../../../../../core/server/services/email-analytics/event-processing-result');
+ 
+ describe('EventProcessingResult', function () {
+     it('has expected initial state', function () {
+diff --git a/ghost/core/test/unit/server/services/email-suppression-list/email-suppression-list.test.js b/ghost/core/test/unit/server/services/email-suppression-list/email-suppression-list.test.js
+index 4cd7c65f61bf..5516c416aa57 100644
+--- a/ghost/core/test/unit/server/services/email-suppression-list/email-suppression-list.test.js
++++ b/ghost/core/test/unit/server/services/email-suppression-list/email-suppression-list.test.js
+@@ -1,5 +1,5 @@
+ const assert = require('assert/strict');
+-const {EmailSuppressionData, EmailSuppressedEvent} = require('../../../../../core/server/services/email-suppression-list/EmailSuppressionList');
++const {EmailSuppressionData, EmailSuppressedEvent} = require('../../../../../core/server/services/email-suppression-list/email-suppression-list');
+ 
+ describe('EmailSuppressionData', function () {
+     it('Has null info when not suppressed', function () {
+diff --git a/ghost/core/test/unit/server/services/explore-ping/explore-ping-service.test.js b/ghost/core/test/unit/server/services/explore-ping/explore-ping-service.test.js
+index 729154a80b97..863d379f264e 100644
+--- a/ghost/core/test/unit/server/services/explore-ping/explore-ping-service.test.js
++++ b/ghost/core/test/unit/server/services/explore-ping/explore-ping-service.test.js
+@@ -1,6 +1,6 @@
+ const sinon = require('sinon');
+ const assert = require('assert/strict');
+-const ExplorePingService = require('../../../../../core/server/services/explore-ping/ExplorePingService');
++const ExplorePingService = require('../../../../../core/server/services/explore-ping/explore-ping-service');
+ 
+ describe('ExplorePingService', function () {
+     let explorePingService;
+diff --git a/ghost/core/test/unit/server/services/frontend-data-service/frontend-data-service.test.js b/ghost/core/test/unit/server/services/frontend-data-service/frontend-data-service.test.js
+index a1cfa8f702a6..f59415a3417c 100644
+--- a/ghost/core/test/unit/server/services/frontend-data-service/frontend-data-service.test.js
++++ b/ghost/core/test/unit/server/services/frontend-data-service/frontend-data-service.test.js
+@@ -3,7 +3,7 @@ const sinon = require('sinon');
+ 
+ const models = require('../../../../../core/server/models');
+ 
+-const FrontendDataService = require('../../../../../core/server/services/frontend-data-service/FrontendDataService');
++const FrontendDataService = require('../../../../../core/server/services/frontend-data-service/front-end-data-service');
+ 
+ const logging = require('@tryghost/logging');
+ 
+diff --git a/ghost/core/test/unit/server/services/identity-tokens/identity-token-service.test.ts b/ghost/core/test/unit/server/services/identity-tokens/identity-token-service.test.ts
+index 2897845a497f..6bc4c7e2b725 100644
+--- a/ghost/core/test/unit/server/services/identity-tokens/identity-token-service.test.ts
++++ b/ghost/core/test/unit/server/services/identity-tokens/identity-token-service.test.ts
+@@ -1,5 +1,5 @@
+ import assert from 'assert/strict';
+-import {IdentityTokenService} from '../../../../../core/server/services/identity-tokens/IdentityTokenService';
++import {IdentityTokenService} from '../../../../../core/server/services/identity-tokens/identity-token-service';
+ import {JWK} from 'node-jose';
+ import {verify} from 'jsonwebtoken';
+ 
+diff --git a/ghost/core/test/unit/server/services/lib/dynamic-redirect-manager.test.js b/ghost/core/test/unit/server/services/lib/dynamic-redirect-manager.test.js
+index 55c90755450f..8e5c042a99dc 100644
+--- a/ghost/core/test/unit/server/services/lib/dynamic-redirect-manager.test.js
++++ b/ghost/core/test/unit/server/services/lib/dynamic-redirect-manager.test.js
+@@ -1,5 +1,5 @@
+ const should = require('should');
+-const DynamicRedirectManager = require('../../../../../core/server/services/lib/DynamicRedirectManager');
++const DynamicRedirectManager = require('../../../../../core/server/services/lib/dynamic-redirect-manager');
+ 
+ const urlJoin = (...parts) => {
+     let url = parts.join('/');
+diff --git a/ghost/core/test/unit/server/services/lib/email-content-generator.test.js b/ghost/core/test/unit/server/services/lib/email-content-generator.test.js
+index d63369850570..d0b33027c325 100644
+--- a/ghost/core/test/unit/server/services/lib/email-content-generator.test.js
++++ b/ghost/core/test/unit/server/services/lib/email-content-generator.test.js
+@@ -1,7 +1,7 @@
+ const assert = require('assert/strict');
+ const path = require('path');
+ 
+-const EmailContentGenerator = require('../../../../../core/server/services/lib/EmailContentGenerator');
++const EmailContentGenerator = require('../../../../../core/server/services/lib/email-content-generator');
+ 
+ describe('Mail: EmailContentGenerator', function () {
+     it('generate welcome', async function () {
+diff --git a/ghost/core/test/unit/server/services/lib/in-memory-repository.test.ts b/ghost/core/test/unit/server/services/lib/in-memory-repository.test.ts
+index a5c1702d0996..41c67147cab4 100644
+--- a/ghost/core/test/unit/server/services/lib/in-memory-repository.test.ts
++++ b/ghost/core/test/unit/server/services/lib/in-memory-repository.test.ts
+@@ -1,5 +1,5 @@
+ import assert from 'assert/strict';
+-import {InMemoryRepository} from '../../../../../core/server/services/lib/InMemoryRepository';
++import {InMemoryRepository} from '../../../../../core/server/services/lib/in-memory-repository';
+ 
+ type SimpleEntity = {
+     id: string;
+diff --git a/ghost/core/test/unit/server/services/lib/mailgun-client.test.js b/ghost/core/test/unit/server/services/lib/mailgun-client.test.js
+index 54806f455814..e606ea8bbb4e 100644
+--- a/ghost/core/test/unit/server/services/lib/mailgun-client.test.js
++++ b/ghost/core/test/unit/server/services/lib/mailgun-client.test.js
+@@ -3,7 +3,7 @@ const nock = require('nock');
+ const sinon = require('sinon');
+ 
+ // module under test
+-const MailgunClient = require('../../../../../core/server/services/lib/MailgunClient');
++const MailgunClient = require('../../../../../core/server/services/lib/mailgun-client');
+ 
+ // Some sample Mailgun API options we might want to use
+ const MAILGUN_OPTIONS = {
+diff --git a/ghost/core/test/unit/server/services/media-inliner/test/external-media-inliner.test.js b/ghost/core/test/unit/server/services/media-inliner/test/external-media-inliner.test.js
+index d98bf38fc685..005a5baa8117 100644
+--- a/ghost/core/test/unit/server/services/media-inliner/test/external-media-inliner.test.js
++++ b/ghost/core/test/unit/server/services/media-inliner/test/external-media-inliner.test.js
+@@ -5,7 +5,7 @@ const sinon = require('sinon');
+ const nock = require('nock');
+ const path = require('path');
+ const loggingLib = require('@tryghost/logging');
+-const ExternalMediaInliner = require('../../../../../../core/server/services/media-inliner/ExternalMediaInliner');
++const ExternalMediaInliner = require('../../../../../../core/server/services/media-inliner/external-media-inliner');
+ 
+ describe('ExternalMediaInliner', function () {
+     let logging;
+diff --git a/ghost/core/test/unit/server/services/member-attribution/attribution.test.js b/ghost/core/test/unit/server/services/member-attribution/attribution.test.js
+index a6c537bf15b4..b3ed448fcab8 100644
+--- a/ghost/core/test/unit/server/services/member-attribution/attribution.test.js
++++ b/ghost/core/test/unit/server/services/member-attribution/attribution.test.js
+@@ -1,7 +1,7 @@
+ const should = require('should');
+ 
+-const UrlHistory = require('../../../../../core/server/services/member-attribution/UrlHistory');
+-const AttributionBuilder = require('../../../../../core/server/services/member-attribution/AttributionBuilder');
++const UrlHistory = require('../../../../../core/server/services/member-attribution/url-history');
++const AttributionBuilder = require('../../../../../core/server/services/member-attribution/attribution-builder');
+ 
+ describe('AttributionBuilder', function () {
+     let attributionBuilder;
+diff --git a/ghost/core/test/unit/server/services/member-attribution/history.test.js b/ghost/core/test/unit/server/services/member-attribution/history.test.js
+index d9493ec7a65f..5e667dd659cc 100644
+--- a/ghost/core/test/unit/server/services/member-attribution/history.test.js
++++ b/ghost/core/test/unit/server/services/member-attribution/history.test.js
+@@ -1,6 +1,6 @@
+ const should = require('should');
+ 
+-const UrlHistory = require('../../../../../core/server/services/member-attribution/UrlHistory');
++const UrlHistory = require('../../../../../core/server/services/member-attribution/url-history');
+ 
+ describe('UrlHistory', function () {
+     it('sets history to empty array if invalid', function () {
+diff --git a/ghost/core/test/unit/server/services/member-attribution/outbound-link-tagger.test.js b/ghost/core/test/unit/server/services/member-attribution/outbound-link-tagger.test.js
+index a870c6a6be6c..1194b81a9484 100644
+--- a/ghost/core/test/unit/server/services/member-attribution/outbound-link-tagger.test.js
++++ b/ghost/core/test/unit/server/services/member-attribution/outbound-link-tagger.test.js
+@@ -1,7 +1,7 @@
+ const assert = require('assert/strict');
+ const should = require('should');
+ 
+-const OutboundLinkTagger = require('../../../../../core/server/services/member-attribution/OutboundLinkTagger');
++const OutboundLinkTagger = require('../../../../../core/server/services/member-attribution/outbound-link-tagger');
+ 
+ describe('OutboundLinkTagger', function () {
+     describe('Constructor', function () {
+diff --git a/ghost/core/test/unit/server/services/member-attribution/referrer-translator.test.js b/ghost/core/test/unit/server/services/member-attribution/referrer-translator.test.js
+index b451ce2efeaf..8a91f9832d6e 100644
+--- a/ghost/core/test/unit/server/services/member-attribution/referrer-translator.test.js
++++ b/ghost/core/test/unit/server/services/member-attribution/referrer-translator.test.js
+@@ -1,6 +1,6 @@
+ const should = require('should');
+ 
+-const ReferrerTranslator = require('../../../../../core/server/services/member-attribution/ReferrerTranslator');
++const ReferrerTranslator = require('../../../../../core/server/services/member-attribution/referrer-translator');
+ 
+ describe('ReferrerTranslator', function () {
+     describe('Constructor', function () {
+diff --git a/ghost/core/test/unit/server/services/member-attribution/service.test.js b/ghost/core/test/unit/server/services/member-attribution/service.test.js
+index 251c5f78e3c8..1c973af25ef6 100644
+--- a/ghost/core/test/unit/server/services/member-attribution/service.test.js
++++ b/ghost/core/test/unit/server/services/member-attribution/service.test.js
+@@ -1,6 +1,6 @@
+ const should = require('should');
+ 
+-const MemberAttributionService = require('../../../../../core/server/services/member-attribution/MemberAttributionService');
++const MemberAttributionService = require('../../../../../core/server/services/member-attribution/member-attribution-service');
+ 
+ describe('MemberAttributionService', function () {
+     describe('Constructor', function () {
+diff --git a/ghost/core/test/unit/server/services/member-attribution/url-translator.test.js b/ghost/core/test/unit/server/services/member-attribution/url-translator.test.js
+index 02d1f6327d7f..17ca90a022dd 100644
+--- a/ghost/core/test/unit/server/services/member-attribution/url-translator.test.js
++++ b/ghost/core/test/unit/server/services/member-attribution/url-translator.test.js
+@@ -1,6 +1,6 @@
+ const should = require('should');
+ 
+-const UrlTranslator = require('../../../../../core/server/services/member-attribution/UrlTranslator');
++const UrlTranslator = require('../../../../../core/server/services/member-attribution/url-translator');
+ 
+ const models = {
+     Post: {
+diff --git a/ghost/core/test/unit/server/services/member-welcome-emails/member-welcome-email-renderer.test.js b/ghost/core/test/unit/server/services/member-welcome-emails/member-welcome-email-renderer.test.js
+index dae5f0338983..e5f665dbef5b 100644
+--- a/ghost/core/test/unit/server/services/member-welcome-emails/member-welcome-email-renderer.test.js
++++ b/ghost/core/test/unit/server/services/member-welcome-emails/member-welcome-email-renderer.test.js
+@@ -16,7 +16,7 @@ describe('MemberWelcomeEmailRenderer', function () {
+     beforeEach(function () {
+         lexicalRenderStub = sinon.stub().resolves('<p>Hello World</p>');
+ 
+-        MemberWelcomeEmailRenderer = rewire('../../../../../core/server/services/member-welcome-emails/MemberWelcomeEmailRenderer');
++        MemberWelcomeEmailRenderer = rewire('../../../../../core/server/services/member-welcome-emails/member-welcome-email-renderer');
+         MemberWelcomeEmailRenderer.__set__('lexicalLib', {
+             render: lexicalRenderStub
+         });
+diff --git a/ghost/core/test/unit/server/services/members-events/event-storage.test.js b/ghost/core/test/unit/server/services/members-events/event-storage.test.js
+index fec51cbf4258..c33c6d30444b 100644
+--- a/ghost/core/test/unit/server/services/members-events/event-storage.test.js
++++ b/ghost/core/test/unit/server/services/members-events/event-storage.test.js
+@@ -2,7 +2,7 @@ require('should');
+ const sinon = require('sinon');
+ 
+ const {MemberCreatedEvent, SubscriptionCreatedEvent} = require('../../../../../core/shared/events');
+-const EventStorage = require('../../../../../core/server/services/members-events/EventStorage');
++const EventStorage = require('../../../../../core/server/services/members-events/event-storage');
+ 
+ describe('EventStorage', function () {
+     describe('Constructor', function () {
+diff --git a/ghost/core/test/unit/server/services/members-events/last-seen-at-cache.test.js b/ghost/core/test/unit/server/services/members-events/last-seen-at-cache.test.js
+index 6218e89303b5..cd0135778d39 100644
+--- a/ghost/core/test/unit/server/services/members-events/last-seen-at-cache.test.js
++++ b/ghost/core/test/unit/server/services/members-events/last-seen-at-cache.test.js
+@@ -1,4 +1,4 @@
+-const LastSeenAtCache = require('../../../../../core/server/services/members-events/LastSeenAtCache');
++const LastSeenAtCache = require('../../../../../core/server/services/members-events/last-seen-at-cache');
+ const assert = require('assert/strict');
+ const sinon = require('sinon');
+ const moment = require('moment-timezone');
+diff --git a/ghost/core/test/unit/server/services/members-events/last-seen-at-updater.test.js b/ghost/core/test/unit/server/services/members-events/last-seen-at-updater.test.js
+index 1f283325d233..588de76a56f5 100644
+--- a/ghost/core/test/unit/server/services/members-events/last-seen-at-updater.test.js
++++ b/ghost/core/test/unit/server/services/members-events/last-seen-at-updater.test.js
+@@ -1,7 +1,7 @@
+ const should = require('should');
+ const assert = require('assert/strict');
+ const sinon = require('sinon');
+-const LastSeenAtUpdater = require('../../../../../core/server/services/members-events/LastSeenAtUpdater');
++const LastSeenAtUpdater = require('../../../../../core/server/services/members-events/last-seen-at-updater');
+ const DomainEvents = require('@tryghost/domain-events');
+ const {MemberPageViewEvent, MemberCommentEvent, MemberSubscribeEvent, MemberLinkClickEvent} = require('../../../../../core/shared/events');
+ const moment = require('moment');
+diff --git a/ghost/core/test/unit/server/services/members/config.test.js b/ghost/core/test/unit/server/services/members/config.test.js
+index 2047d8d4e8f9..2a21fffc5314 100644
+--- a/ghost/core/test/unit/server/services/members/config.test.js
++++ b/ghost/core/test/unit/server/services/members/config.test.js
+@@ -1,7 +1,7 @@
+ const assert = require('assert/strict');
+ const sinon = require('sinon');
+ 
+-const MembersConfigProvider = require('../../../../../core/server/services/members/MembersConfigProvider');
++const MembersConfigProvider = require('../../../../../core/server/services/members/members-config-provider');
+ 
+ const urlUtils = require('../../../../utils/url-utils');
+ const configUtils = require('../../../../utils/config-utils');
+diff --git a/ghost/core/test/unit/server/services/members/importer/index.test.js b/ghost/core/test/unit/server/services/members/importer/index.test.js
+index 37c7c47612b8..075d91490359 100644
+--- a/ghost/core/test/unit/server/services/members/importer/index.test.js
++++ b/ghost/core/test/unit/server/services/members/importer/index.test.js
+@@ -1,5 +1,5 @@
+ const assert = require('assert/strict');
+-const MembersCSVImporter = require('../../../../../../core/server/services/members/importer/MembersCSVImporter');
++const MembersCSVImporter = require('../../../../../../core/server/services/members/importer/members-csv-importer');
+ const makeImporter = require('../../../../../../core/server/services/members/importer');
+ 
+ describe('makeImporter', function (){
+diff --git a/ghost/core/test/unit/server/services/members/importer/members-csv-importer-stripe-utils.test.js b/ghost/core/test/unit/server/services/members/importer/members-csv-importer-stripe-utils.test.js
+index a1231b593e6b..7084b3680157 100644
+--- a/ghost/core/test/unit/server/services/members/importer/members-csv-importer-stripe-utils.test.js
++++ b/ghost/core/test/unit/server/services/members/importer/members-csv-importer-stripe-utils.test.js
+@@ -1,7 +1,7 @@
+ require('should');
+ const sinon = require('sinon');
+ const {DataImportError} = require('@tryghost/errors');
+-const MembersCSVImporterStripeUtils = require('../../../../../../core/server/services/members/importer/MembersCSVImporterStripeUtils');
++const MembersCSVImporterStripeUtils = require('../../../../../../core/server/services/members/importer/members-csv-importer-stripe-utils');
+ 
+ describe('MembersCSVImporterStripeUtils', function () {
+     const CUSTOMER_ID = 'abc123';
+diff --git a/ghost/core/test/unit/server/services/members/importer/members-csv-importer.test.js b/ghost/core/test/unit/server/services/members/importer/members-csv-importer.test.js
+index daff901aecdf..efd716a9ee7f 100644
+--- a/ghost/core/test/unit/server/services/members/importer/members-csv-importer.test.js
++++ b/ghost/core/test/unit/server/services/members/importer/members-csv-importer.test.js
+@@ -6,7 +6,7 @@ const assert = require('assert/strict');
+ const fs = require('fs-extra');
+ const path = require('path');
+ const sinon = require('sinon');
+-const MembersCSVImporter = require('../../../../../../core/server/services/members/importer/MembersCSVImporter');
++const MembersCSVImporter = require('../../../../../../core/server/services/members/importer/members-csv-importer');
+ 
+ const csvPath = path.join(__dirname, '/fixtures/');
+ 
+diff --git a/ghost/core/test/unit/server/services/members/members-api/controllers/member-controller.test.js b/ghost/core/test/unit/server/services/members/members-api/controllers/member-controller.test.js
+index 4fa210f838f8..5d59dc9e8994 100644
+--- a/ghost/core/test/unit/server/services/members/members-api/controllers/member-controller.test.js
++++ b/ghost/core/test/unit/server/services/members/members-api/controllers/member-controller.test.js
+@@ -1,5 +1,5 @@
+ const sinon = require('sinon');
+-const MemberController = require('../../../../../../../core/server/services/members/members-api/controllers/MemberController');
++const MemberController = require('../../../../../../../core/server/services/members/members-api/controllers/member-controller');
+ 
+ describe('MemberController', function () {
+     describe('updateSubscription', function () {
+diff --git a/ghost/core/test/unit/server/services/members/members-api/controllers/router-controller.test.js b/ghost/core/test/unit/server/services/members/members-api/controllers/router-controller.test.js
+index 3646bdc53f96..950915e84d51 100644
+--- a/ghost/core/test/unit/server/services/members/members-api/controllers/router-controller.test.js
++++ b/ghost/core/test/unit/server/services/members/members-api/controllers/router-controller.test.js
+@@ -4,7 +4,7 @@ const assert = require('assert').strict;
+ const errors = require('@tryghost/errors');
+ 
+ // @ts-ignore - Intentionally ignoring TypeScript errors for tests
+-const RouterController = require('../../../../../../../core/server/services/members/members-api/controllers/RouterController');
++const RouterController = require('../../../../../../../core/server/services/members/members-api/controllers/router-controller');
+ 
+ describe('RouterController', function () {
+     let offersAPI;
+diff --git a/ghost/core/test/unit/server/services/members/members-api/repositories/event-repository.test.js b/ghost/core/test/unit/server/services/members/members-api/repositories/event-repository.test.js
+index 908785620066..f16b5e982fc3 100644
+--- a/ghost/core/test/unit/server/services/members/members-api/repositories/event-repository.test.js
++++ b/ghost/core/test/unit/server/services/members/members-api/repositories/event-repository.test.js
+@@ -1,6 +1,6 @@
+ const assert = require('node:assert/strict');
+ const should = require('should');
+-const EventRepository = require('../../../../../../../core/server/services/members/members-api/repositories/EventRepository');
++const EventRepository = require('../../../../../../../core/server/services/members/members-api/repositories/event-repository');
+ const sinon = require('sinon');
+ const errors = require('@tryghost/errors');
+ 
+diff --git a/ghost/core/test/unit/server/services/members/members-api/repositories/member-repository.test.js b/ghost/core/test/unit/server/services/members/members-api/repositories/member-repository.test.js
+index a38cdc42a635..a2e0f17ffd9c 100644
+--- a/ghost/core/test/unit/server/services/members/members-api/repositories/member-repository.test.js
++++ b/ghost/core/test/unit/server/services/members/members-api/repositories/member-repository.test.js
+@@ -2,7 +2,7 @@ require('should');
+ const assert = require('assert/strict');
+ const sinon = require('sinon');
+ const DomainEvents = require('@tryghost/domain-events');
+-const MemberRepository = require('../../../../../../../core/server/services/members/members-api/repositories/MemberRepository');
++const MemberRepository = require('../../../../../../../core/server/services/members/members-api/repositories/member-repository');
+ const {SubscriptionCreatedEvent, OfferRedemptionEvent} = require('../../../../../../../core/shared/events');
+ const config = require('../../../../../../../core/shared/config');
+ 
+diff --git a/ghost/core/test/unit/server/services/members/members-api/repositories/product-repository.test.js b/ghost/core/test/unit/server/services/members/members-api/repositories/product-repository.test.js
+index face981d99ff..7bb9eb303fb1 100644
+--- a/ghost/core/test/unit/server/services/members/members-api/repositories/product-repository.test.js
++++ b/ghost/core/test/unit/server/services/members/members-api/repositories/product-repository.test.js
+@@ -1,6 +1,6 @@
+ const assert = require('assert/strict');
+ const sinon = require('sinon');
+-const ProductRepository = require('../../../../../../../core/server/services/members/members-api/repositories/ProductRepository');
++const ProductRepository = require('../../../../../../../core/server/services/members/members-api/repositories/product-repository');
+ 
+ describe('MemberRepository', function () {
+     describe('getDefaultProduct', function () {
+diff --git a/ghost/core/test/unit/server/services/members/members-api/services/geolocation-service.test.js b/ghost/core/test/unit/server/services/members/members-api/services/geolocation-service.test.js
+index c07204968e99..de23f20933f3 100644
+--- a/ghost/core/test/unit/server/services/members/members-api/services/geolocation-service.test.js
++++ b/ghost/core/test/unit/server/services/members/members-api/services/geolocation-service.test.js
+@@ -1,6 +1,6 @@
+ const nock = require('nock');
+ const should = require('should');
+-const GeolocationService = require('../../../../../../../core/server/services/members/members-api/services/GeolocationService');
++const GeolocationService = require('../../../../../../../core/server/services/members/members-api/services/geolocation-service');
+ 
+ const RESPONSE = {
+     longitude: '-2.2417',
+diff --git a/ghost/core/test/unit/server/services/members/members-api/services/members-bread-service.test.js b/ghost/core/test/unit/server/services/members/members-api/services/members-bread-service.test.js
+index 753acf0af580..acf3ef7623ff 100644
+--- a/ghost/core/test/unit/server/services/members/members-api/services/members-bread-service.test.js
++++ b/ghost/core/test/unit/server/services/members/members-api/services/members-bread-service.test.js
+@@ -1,6 +1,6 @@
+ const assert = require('assert/strict');
+ const sinon = require('sinon');
+-const MemberBreadService = require('../../../../../../../core/server/services/members/members-api/services/MemberBREADService');
++const MemberBreadService = require('../../../../../../../core/server/services/members/members-api/services/member-bread-service');
+ const moment = require('moment');
+ 
+ describe('MemberBreadService', function () {
+diff --git a/ghost/core/test/unit/server/services/members/members-api/services/payments-service.test.js b/ghost/core/test/unit/server/services/members/members-api/services/payments-service.test.js
+index c098909b9d11..c28a5fdecb04 100644
+--- a/ghost/core/test/unit/server/services/members/members-api/services/payments-service.test.js
++++ b/ghost/core/test/unit/server/services/members/members-api/services/payments-service.test.js
+@@ -4,7 +4,7 @@ const knex = require('knex').default;
+ 
+ const Tier = require('../../../../../../../core/server/services/tiers/tier');
+ 
+-const PaymentsService = require('../../../../../../../core/server/services/members/members-api/services/PaymentsService');
++const PaymentsService = require('../../../../../../../core/server/services/members/members-api/services/payments-service');
+ 
+ describe('PaymentsService', function () {
+     let Bookshelf;
+diff --git a/ghost/core/test/unit/server/services/members/members-api/services/token-service.test.js b/ghost/core/test/unit/server/services/members/members-api/services/token-service.test.js
+index e470b4e8c4e9..99d49f2d5e60 100644
+--- a/ghost/core/test/unit/server/services/members/members-api/services/token-service.test.js
++++ b/ghost/core/test/unit/server/services/members/members-api/services/token-service.test.js
+@@ -1,7 +1,7 @@
+ const assert = require('assert/strict');
+ const jwt = require('jsonwebtoken');
+ const jwkToPem = require('jwk-to-pem');
+-const TokenService = require('../../../../../../../core/server/services/members/members-api/services/TokenService');
++const TokenService = require('../../../../../../../core/server/services/members/members-api/services/token-service');
+ 
+ describe('TokenService', function () {
+     let tokenService;
+diff --git a/ghost/core/test/unit/server/services/members/request-integrity-token-provider.test.js b/ghost/core/test/unit/server/services/members/request-integrity-token-provider.test.js
+index e13c0abd5bb8..2e732806f473 100644
+--- a/ghost/core/test/unit/server/services/members/request-integrity-token-provider.test.js
++++ b/ghost/core/test/unit/server/services/members/request-integrity-token-provider.test.js
+@@ -1,7 +1,7 @@
+ const sinon = require('sinon');
+ const should = require('should');
+ 
+-const RequestIntegrityTokenProvider = require('../../../../../core/server/services/members/RequestIntegrityTokenProvider');
++const RequestIntegrityTokenProvider = require('../../../../../core/server/services/members/request-integrity-token-provider');
+ 
+ const tokenProvider = new RequestIntegrityTokenProvider({
+     themeSecret: 'test',
+diff --git a/ghost/core/test/unit/server/services/members/single-use-token-provider.test.js b/ghost/core/test/unit/server/services/members/single-use-token-provider.test.js
+index 6cea32386e8e..a5737c67e98d 100644
+--- a/ghost/core/test/unit/server/services/members/single-use-token-provider.test.js
++++ b/ghost/core/test/unit/server/services/members/single-use-token-provider.test.js
+@@ -1,7 +1,7 @@
+ const sinon = require('sinon');
+ const assert = require('assert/strict');
+ 
+-const SingleUseTokenProvider = require('../../../../../core/server/services/members/SingleUseTokenProvider');
++const SingleUseTokenProvider = require('../../../../../core/server/services/members/single-use-token-provider');
+ 
+ const DAY_MS = 24 * 60 * 60 * 1000;
+ const HOUR_MS = 60 * 60 * 1000;
+diff --git a/ghost/core/test/unit/server/services/mentions-email-report/mention-email-report-job.test.js b/ghost/core/test/unit/server/services/mentions-email-report/mention-email-report-job.test.js
+index d3560f45caf3..bd76c2882444 100644
+--- a/ghost/core/test/unit/server/services/mentions-email-report/mention-email-report-job.test.js
++++ b/ghost/core/test/unit/server/services/mentions-email-report/mention-email-report-job.test.js
+@@ -1,5 +1,5 @@
+ const sinon = require('sinon');
+-const MentionEmailReportJob = require('../../../../../core/server/services/mentions-email-report/MentionEmailReportJob');
++const MentionEmailReportJob = require('../../../../../core/server/services/mentions-email-report/mention-email-report-job');
+ 
+ class MockMentionReportRecipientRepository {
+     #recipients = [{
+diff --git a/ghost/core/test/unit/server/services/newsletters/service.test.js b/ghost/core/test/unit/server/services/newsletters/service.test.js
+index 9796de037e79..c165a1d4e172 100644
+--- a/ghost/core/test/unit/server/services/newsletters/service.test.js
++++ b/ghost/core/test/unit/server/services/newsletters/service.test.js
+@@ -9,7 +9,7 @@ const mail = require('../../../../../core/server/services/mail');
+ const urlUtils = require('../../../../utils/url-utils');
+ const {mockManager} = require('../../../../utils/e2e-framework');
+ const {EmailAddressService} = require('../../../../../core/server/services/email-address/email-address-service');
+-const NewslettersService = require('../../../../../core/server/services/newsletters/NewslettersService');
++const NewslettersService = require('../../../../../core/server/services/newsletters/newsletters-service');
+ 
+ class TestTokenProvider {
+     async create(data) {
+diff --git a/ghost/core/test/unit/server/services/notifications/notifications.test.js b/ghost/core/test/unit/server/services/notifications/notifications.test.js
+index 4f4757fdd336..92adc5c24eff 100644
+--- a/ghost/core/test/unit/server/services/notifications/notifications.test.js
++++ b/ghost/core/test/unit/server/services/notifications/notifications.test.js
+@@ -3,7 +3,7 @@ const sinon = require('sinon');
+ 
+ const ghostVersion = require('@tryghost/version');
+ const moment = require('moment');
+-const Notifications = require('../../../../../core/server/services/notifications/Notifications');
++const Notifications = require('../../../../../core/server/services/notifications/notifications');
+ const {owner} = require('../../../../utils/fixtures/context');
+ 
+ describe('Notifications Service', function () {
+diff --git a/ghost/core/test/unit/server/services/outbox/index.test.js b/ghost/core/test/unit/server/services/outbox/index.test.js
+index 0603c64ba7d1..1ad7ee3c1c12 100644
+--- a/ghost/core/test/unit/server/services/outbox/index.test.js
++++ b/ghost/core/test/unit/server/services/outbox/index.test.js
+@@ -1,7 +1,7 @@
+ const sinon = require('sinon');
+ const rewire = require('rewire');
+ const DomainEvents = require('@tryghost/domain-events');
+-const StartOutboxProcessingEvent = require('../../../../../core/server/services/outbox/events/StartOutboxProcessingEvent');
++const StartOutboxProcessingEvent = require('../../../../../core/server/services/outbox/events/start-outbox-processing-event');
+ 
+ describe('Outbox Service', function () {
+     let service;
+@@ -49,4 +49,4 @@ describe('Outbox Service', function () {
+             sinon.assert.calledOnce(loggingStub.info);
+         });
+     });
+-});
+\ No newline at end of file
++});
+diff --git a/ghost/core/test/unit/server/services/recommendations/service/recommendation-service.test.ts b/ghost/core/test/unit/server/services/recommendations/service/recommendation-service.test.ts
+index 2058f92603c0..1b9effd620b0 100644
+--- a/ghost/core/test/unit/server/services/recommendations/service/recommendation-service.test.ts
++++ b/ghost/core/test/unit/server/services/recommendations/service/recommendation-service.test.ts
+@@ -1,6 +1,6 @@
+ import assert from 'assert/strict';
+ import {ClickEvent, InMemoryRecommendationRepository, Recommendation, RecommendationService, SubscribeEvent, WellknownService, RecommendationMetadata, RecommendationMetadataService} from '../../../../../../core/server/services/recommendations/service';
+-import {InMemoryRepository} from '../../../../../../core/server/services/lib/InMemoryRepository';
++import {InMemoryRepository} from '../../../../../../core/server/services/lib/in-memory-repository';
+ import sinon from 'sinon';
+ 
+ class InMemoryClickEventRepository<T extends ClickEvent|SubscribeEvent> extends InMemoryRepository<string, T> {
+diff --git a/ghost/core/test/unit/server/services/settings-helpers/settings-helpers.test.js b/ghost/core/test/unit/server/services/settings-helpers/settings-helpers.test.js
+index 6a2b74f93c1e..92c97249403c 100644
+--- a/ghost/core/test/unit/server/services/settings-helpers/settings-helpers.test.js
++++ b/ghost/core/test/unit/server/services/settings-helpers/settings-helpers.test.js
+@@ -1,7 +1,7 @@
+ const should = require('should');
+ const sinon = require('sinon');
+ const configUtils = require('../../../../utils/config-utils');
+-const SettingsHelpers = require('../../../../../core/server/services/settings-helpers/SettingsHelpers');
++const SettingsHelpers = require('../../../../../core/server/services/settings-helpers/settings-helpers');
+ const crypto = require('crypto');
+ const assert = require('assert').strict;
+ 
+diff --git a/ghost/core/test/unit/server/services/settings/settings-bread-service.test.js b/ghost/core/test/unit/server/services/settings/settings-bread-service.test.js
+index 2c9e60824c95..e54575a7962f 100644
+--- a/ghost/core/test/unit/server/services/settings/settings-bread-service.test.js
++++ b/ghost/core/test/unit/server/services/settings/settings-bread-service.test.js
+@@ -1,7 +1,7 @@
+ const sinon = require('sinon');
+ const assert = require('assert/strict');
+ const mail = require('../../../../../core/server/services/mail');
+-const SettingsBreadService = require('../../../../../core/server/services/settings/SettingsBREADService');
++const SettingsBreadService = require('../../../../../core/server/services/settings/settings-bread-service');
+ const urlUtils = require('../../../../../core/shared/url-utils.js');
+ const {mockManager} = require('../../../../utils/e2e-framework');
+ const should = require('should');
+diff --git a/ghost/core/test/unit/server/services/stats/content.test.js b/ghost/core/test/unit/server/services/stats/content.test.js
+index 95509b23305f..056c51b074db 100644
+--- a/ghost/core/test/unit/server/services/stats/content.test.js
++++ b/ghost/core/test/unit/server/services/stats/content.test.js
+@@ -1,6 +1,6 @@
+ const sinon = require('sinon');
+ const should = require('should');
+-const ContentStatsService = require('../../../../../core/server/services/stats/ContentStatsService');
++const ContentStatsService = require('../../../../../core/server/services/stats/content-stats-service');
+ const tinybird = require('../../../../../core/server/services/stats/utils/tinybird');
+ 
+ describe('ContentStatsService', function () {
+diff --git a/ghost/core/test/unit/server/services/stats/members.test.js b/ghost/core/test/unit/server/services/stats/members.test.js
+index 36ad9a47a7e1..0fd61b996528 100644
+--- a/ghost/core/test/unit/server/services/stats/members.test.js
++++ b/ghost/core/test/unit/server/services/stats/members.test.js
+@@ -1,4 +1,4 @@
+-const MembersStatsService = require('../../../../../core/server/services/stats/MembersStatsService');
++const MembersStatsService = require('../../../../../core/server/services/stats/members-stats-service');
+ const knex = require('knex').default;
+ const assert = require('assert/strict');
+ const moment = require('moment');
+@@ -413,7 +413,7 @@ describe('MembersStatsService', function () {
+             const {data: results, meta} = await membersStatsService.getCountHistory({
+                 startDate: yesterdayDate
+             });
+-            
++
+             assert.equal(results.length, 2);
+             assert.deepEqual(results, [
+                 {
+@@ -473,7 +473,7 @@ describe('MembersStatsService', function () {
+ 
+             // Should get 3 days: baseline (3 days ago) + yesterday + today
+             assert.equal(results.length, 3);
+-            
++
+             // Verify all dates are present (no gaps)
+             const dates = results.map(r => r.date).sort();
+             const expectedDates = [
+diff --git a/ghost/core/test/unit/server/services/stats/mrr.test.js b/ghost/core/test/unit/server/services/stats/mrr.test.js
+index 5943cdd791b9..65aef73ec65b 100644
+--- a/ghost/core/test/unit/server/services/stats/mrr.test.js
++++ b/ghost/core/test/unit/server/services/stats/mrr.test.js
+@@ -1,4 +1,4 @@
+-const MrrStatsService = require('../../../../../core/server/services/stats/MrrStatsService');
++const MrrStatsService = require('../../../../../core/server/services/stats/mrr-stats-service');
+ const moment = require('moment');
+ const sinon = require('sinon');
+ const knex = require('knex').default;
+@@ -362,4 +362,4 @@ describe('MrrStatsService', function () {
+             assertMrrEntry(lastEntry, todayDate, 180);
+         });
+     });
+-});
+\ No newline at end of file
++});
+diff --git a/ghost/core/test/unit/server/services/stats/posts.test.js b/ghost/core/test/unit/server/services/stats/posts.test.js
+index 6bf4d32d035b..82a081b521cb 100644
+--- a/ghost/core/test/unit/server/services/stats/posts.test.js
++++ b/ghost/core/test/unit/server/services/stats/posts.test.js
+@@ -1,7 +1,7 @@
+ const knex = require('knex').default;
+ const assert = require('assert/strict');
+ const moment = require('moment-timezone');
+-const PostsStatsService = require('../../../../../core/server/services/stats/PostsStatsService');
++const PostsStatsService = require('../../../../../core/server/services/stats/posts-stats-service');
+ 
+ /**
+  * @typedef {object} TestPost
+@@ -652,10 +652,10 @@ describe('PostsStatsService', function () {
+             // Make sure we have results for both referrers
+             const pastResult = lastThirtyDaysResult.data.find(r => r.source === 'referrer_past');
+             const futureResult = lastThirtyDaysResult.data.find(r => r.source === 'referrer_future');
+-            
++
+             assert.ok(pastResult, 'Should have results for referrer_past');
+             assert.equal(pastResult.free_members, 1, 'Recent referrer should have 1 free member');
+-            
++
+             assert.ok(futureResult, 'Should have results for referrer_future');
+             assert.equal(futureResult.free_members, 1, 'Older referrer should have 1 free member');
+         });
+@@ -672,15 +672,15 @@ describe('PostsStatsService', function () {
+ 
+             assert.ok(result.data, 'Result should have a data property');
+             assert.equal(result.data.length, 2, 'Should return only 2 referrers');
+-            
++
+             // All referrers have 1 free member, so we just check that we got 2 out of the 3 possible sources
+             const validSources = ['referrer_1', 'referrer_2', 'referrer_3'];
+             const returnedSources = result.data.map(item => item.source);
+-            
++
+             // Both returned sources should be from our valid sources list
+-            assert.equal(returnedSources.every(source => validSources.includes(source)), true, 
++            assert.equal(returnedSources.every(source => validSources.includes(source)), true,
+                 'All returned sources should be from our test data');
+-                
++
+             // We should have exactly 2 different sources
+             assert.equal(new Set(returnedSources).size, 2, 'Should return 2 different sources');
+         });
+@@ -724,11 +724,11 @@ describe('PostsStatsService', function () {
+                 date_to: '2025-01-31',
+                 timezone: 'UTC'
+             });
+-            
++
+             // Should return the latest posts ordered by published_at desc with 0 views and 0 members (no attribution events)
+             assert.ok(result.data, 'Result should have a data property');
+             assert.equal(result.data.length, 4, 'Should return 4 posts (all published posts)');
+-            
++
+             // All posts should have zero views since there's no Tinybird client
+             result.data.forEach((post) => {
+                 assert.equal(post.views, 0, 'All posts should have 0 views');
+@@ -737,7 +737,7 @@ describe('PostsStatsService', function () {
+                 assert.ok(post.title, 'Post should have a title');
+                 assert.ok(typeof post.published_at === 'number', 'Post should have a published_at timestamp');
+             });
+-            
++
+             // Posts should be ordered by published_at desc (newest first)
+             for (let i = 1; i < result.data.length; i++) {
+                 assert.ok(result.data[i - 1].published_at >= result.data[i].published_at, 'Posts should be ordered by published_at desc');
+@@ -749,10 +749,10 @@ describe('PostsStatsService', function () {
+             await db('posts').truncate();
+             await db('users').truncate();
+             await db('posts_authors').truncate();
+-            
++
+             // Create users
+             await _createUser('author1', 'Test Author');
+-            
++
+             await _createPostWithDetails('post1', 'Post 1', 'published', {
+                 uuid: 'uuid1',
+                 published_at: new Date('2025-01-15'),
+@@ -870,10 +870,10 @@ describe('PostsStatsService', function () {
+             await db('posts').truncate();
+             await db('users').truncate();
+             await db('posts_authors').truncate();
+-            
++
+             // Create users
+             await _createUser('author1', 'Test Author');
+-            
++
+             await _createPostWithDetails('post1', 'Post 1', 'published', {
+                 uuid: 'uuid1',
+                 published_at: new Date('2025-01-15'),
+@@ -924,7 +924,7 @@ describe('PostsStatsService', function () {
+             const redirect2 = await _createRedirect('post2');
+             const redirect3 = await _createRedirect('post3');
+             const redirect4 = await _createRedirect('post4');
+-            
++
+             await _createClickEvent(redirect1, 'member_1', new Date('2025-01-16'));
+             await _createClickEvent(redirect1, 'member_2', new Date('2025-01-16'));
+             await _createClickEvent(redirect2, 'member_3', new Date('2025-01-17'));
+@@ -1087,10 +1087,10 @@ describe('PostsStatsService', function () {
+             await db('posts').truncate();
+             await db('users').truncate();
+             await db('posts_authors').truncate();
+-            
++
+             // Create users
+             await _createUser('author1', 'Test Author');
+-            
++
+             await _createPostWithDetails('post1', 'Post 1', 'published', {
+                 uuid: 'uuid1',
+                 published_at: new Date('2025-01-15'),
+@@ -1138,7 +1138,7 @@ describe('PostsStatsService', function () {
+ 
+             // Basic verification that the method works and returns expected structure
+             assert.ok(result.data && Array.isArray(result.data), 'Result should have data array');
+-            
++
+             // With current implementation and date filtering issues, we expect posts but with 0 members
+             // This test mainly verifies the method structure works correctly
+             if (result.data.length > 0) {
+@@ -1166,10 +1166,10 @@ describe('PostsStatsService', function () {
+             await db('posts').truncate();
+             await db('users').truncate();
+             await db('posts_authors').truncate();
+-            
++
+             // Create users
+             await _createUser('author1', 'Test Author');
+-            
++
+             await _createPostWithDetails('post1', 'Post 1', 'published', {
+                 uuid: 'uuid1',
+                 published_at: new Date('2025-01-15'),
+@@ -1201,7 +1201,7 @@ describe('PostsStatsService', function () {
+ 
+             // Basic verification that the method works
+             assert.ok(result.data && Array.isArray(result.data), 'Result should have data array');
+-            
++
+             // This test verifies that the method handles the free + paid member scenario
+             // The current implementation counts them separately (no deduplication)
+             if (result.data.length > 0) {
+@@ -1227,10 +1227,10 @@ describe('PostsStatsService', function () {
+             await db('posts').truncate();
+             await db('users').truncate();
+             await db('posts_authors').truncate();
+-            
++
+             // Create users
+             await _createUser('author1', 'Test Author');
+-            
++
+             await _createPostWithDetails('post1', 'Post 1', 'published', {
+                 uuid: 'uuid1',
+                 published_at: new Date('2025-01-15'),
+@@ -1271,7 +1271,7 @@ describe('PostsStatsService', function () {
+ 
+             // Basic verification that the method works for cross-post scenarios
+             assert.ok(result.data && Array.isArray(result.data), 'Result should have data array');
+-            
++
+             // This test verifies cross-post attribution handling
+             // post1: should get credit for free signups
+             // post2: should get credit for paid conversions
+@@ -1285,10 +1285,10 @@ describe('PostsStatsService', function () {
+             await db('posts').truncate();
+             await db('users').truncate();
+             await db('posts_authors').truncate();
+-            
++
+             // Create users
+             await _createUser('author1', 'Test Author');
+-            
++
+             await _createPostWithDetails('post1', 'Post 1', 'published', {
+                 uuid: 'uuid1',
+                 published_at: new Date('2020-01-15'),
+@@ -1342,18 +1342,18 @@ describe('PostsStatsService', function () {
+ 
+             // Verify that we get member attribution data (since date filtering was removed for members)
+             assert.ok(result.data.length >= 2, 'Should return at least 2 posts');
+-            
++
+             // Find the posts in the results
+             const post1Result = result.data.find(p => p.post_id === 'post1');
+             const post2Result = result.data.find(p => p.post_id === 'post2');
+-            
++
+             assert.ok(post1Result, 'Post 1 should be in results');
+             assert.ok(post2Result, 'Post 2 should be in results');
+-            
++
+             // Verify click tracking is working
+             assert.equal(post1Result.clicked_count, 1, 'Post 1 should have 1 click');
+             assert.equal(post2Result.clicked_count, 1, 'Post 2 should have 1 click');
+-            
++
+             // Member attribution might be 0 due to date filtering logic, but we've verified the infrastructure works
+             // The important thing is that the API returns the expected structure with all fields
+             assert.ok(typeof post1Result.members === 'number', 'Members should be a number');
+@@ -1378,12 +1378,12 @@ describe('PostsStatsService', function () {
+             await db('posts').truncate();
+             await db('users').truncate();
+             await db('posts_authors').truncate();
+-            
++
+             // Create multiple users with different names to test comma formatting
+             await _createUser('author1', 'Alice Johnson');
+             await _createUser('author2', 'Bob Wilson');
+             await _createUser('author3', 'Carol Smith');
+-            
++
+             await _createPostWithDetails('post1', 'Multi-Author Post', 'published', {
+                 uuid: 'uuid1',
+                 published_at: new Date('2025-01-15'),
+@@ -1392,7 +1392,7 @@ describe('PostsStatsService', function () {
+ 
+             // Assign multiple authors to the post in a specific order
+             await _createPostAuthor('post1', 'author1', 0); // First author
+-            await _createPostAuthor('post1', 'author2', 1); // Second author  
++            await _createPostAuthor('post1', 'author2', 1); // Second author
+             await _createPostAuthor('post1', 'author3', 2); // Third author
+ 
+             // Add email stats
+@@ -1407,53 +1407,53 @@ describe('PostsStatsService', function () {
+ 
+             // Should return the post with properly formatted authors
+             assert.ok(result.data.length >= 1, 'Should return at least 1 post');
+-            
++
+             const post1Result = result.data.find(p => p.post_id === 'post1');
+             assert.ok(post1Result, 'Post 1 should be in results');
+-            
++
+             // Verify authors field exists and has proper comma formatting
+             assert.ok(post1Result.authors, 'Authors field should exist');
+             assert.equal(typeof post1Result.authors, 'string', 'Authors should be a string');
+-            
++
+             // Test that authors are properly comma-separated with single commas
+             const authorsString = post1Result.authors;
+-            
++
+             // Should contain all three author names
+             assert.ok(authorsString.includes('Alice Johnson'), 'Should contain Alice Johnson');
+-            assert.ok(authorsString.includes('Bob Wilson'), 'Should contain Bob Wilson'); 
++            assert.ok(authorsString.includes('Bob Wilson'), 'Should contain Bob Wilson');
+             assert.ok(authorsString.includes('Carol Smith'), 'Should contain Carol Smith');
+-            
++
+             // Should have exactly 2 commas for 3 authors
+             const commaCount = (authorsString.match(/,/g) || []).length;
+             assert.equal(commaCount, 2, 'Should have exactly 2 commas for 3 authors');
+-            
++
+             // Should not have trailing comma
+             assert.ok(!authorsString.endsWith(','), 'Should not have trailing comma');
+-            
+-            // Should not have leading comma  
++
++            // Should not have leading comma
+             assert.ok(!authorsString.startsWith(','), 'Should not have leading comma');
+-            
++
+             // Should not have multiple consecutive commas
+             assert.ok(!authorsString.includes(',,'), 'Should not have consecutive commas');
+-            
++
+             // Should have proper spacing after commas (should be "Name1, Name2, Name3")
+             assert.ok(!authorsString.includes(', ,'), 'Should not have empty values between commas');
+-            
++
+             // Verify the exact format matches expected pattern
+             assert.equal(authorsString, 'Alice Johnson, Bob Wilson, Carol Smith', 'Authors should be formatted as "Alice Johnson, Bob Wilson, Carol Smith"');
+         });
+ 
+         it('filters out pages when no Tinybird client exists (fallback)', async function () {
+             service = new PostsStatsService({knex: db}); // No Tinybird client
+-            
++
+             // Create posts and pages
+             await db('posts').truncate();
+             await db('users').truncate();
+             await db('posts_authors').truncate();
+-            
++
+             // Create user
+             await _createUser('author1', 'Test Author');
+-            
++
+             // Create posts (type = 'post')
+             await _createPostWithDetails('post1', 'Test Post 1', 'published', {
+                 uuid: 'post-uuid1',
+@@ -1465,7 +1465,7 @@ describe('PostsStatsService', function () {
+                 published_at: new Date('2025-01-16'),
+                 type: 'post'
+             });
+-            
++
+             // Create pages (type = 'page')
+             await _createPostWithDetails('page1', 'Test Page 1', 'published', {
+                 uuid: 'page-uuid1',
+@@ -1490,11 +1490,11 @@ describe('PostsStatsService', function () {
+                 timezone: 'UTC',
+                 limit: 10
+             });
+-            
++
+             // Should only return posts, not pages
+             assert.ok(result.data, 'Result should have a data property');
+             assert.equal(result.data.length, 2, 'Should return only 2 posts, not pages');
+-            
++
+             // Verify all returned items are posts
+             result.data.forEach((item) => {
+                 assert.ok(['post1', 'post2'].includes(item.post_id), `Should only return posts, but got ${item.post_id}`);
+@@ -1507,15 +1507,15 @@ describe('PostsStatsService', function () {
+                 fetch: () => Promise.resolve([]) // No views data
+             };
+             service = new PostsStatsService({knex: db, tinybirdClient: mockTinybirdClient});
+-            
++
+             // Create posts and pages
+             await db('posts').truncate();
+             await db('users').truncate();
+             await db('posts_authors').truncate();
+-            
++
+             // Create user
+             await _createUser('author1', 'Test Author');
+-            
++
+             // Create posts (type = 'post')
+             await _createPostWithDetails('post1', 'Test Post 1', 'published', {
+                 uuid: 'post-uuid1',
+@@ -1527,7 +1527,7 @@ describe('PostsStatsService', function () {
+                 published_at: new Date('2025-01-16'),
+                 type: 'post'
+             });
+-            
++
+             // Create pages (type = 'page')
+             await _createPostWithDetails('page1', 'Test Page 1', 'published', {
+                 uuid: 'page-uuid1',
+@@ -1552,11 +1552,11 @@ describe('PostsStatsService', function () {
+                 timezone: 'UTC',
+                 limit: 10
+             });
+-            
++
+             // Should only return posts, not pages
+             assert.ok(result.data, 'Result should have a data property');
+             assert.equal(result.data.length, 2, 'Should return only 2 posts, not pages');
+-            
++
+             // Verify all returned items are posts
+             result.data.forEach((item) => {
+                 assert.ok(['post1', 'post2'].includes(item.post_id), `Should only return posts, but got ${item.post_id}`);
+@@ -1571,15 +1571,15 @@ describe('PostsStatsService', function () {
+                 ])
+             };
+             service = new PostsStatsService({knex: db, tinybirdClient: mockTinybirdClient});
+-            
++
+             // Create posts and pages
+             await db('posts').truncate();
+             await db('users').truncate();
+             await db('posts_authors').truncate();
+-            
++
+             // Create user
+             await _createUser('author1', 'Test Author');
+-            
++
+             // Create posts (type = 'post')
+             await _createPostWithDetails('post1', 'Test Post 1', 'published', {
+                 uuid: 'post-uuid1',
+@@ -1596,7 +1596,7 @@ describe('PostsStatsService', function () {
+                 published_at: new Date('2025-01-17'),
+                 type: 'post'
+             });
+-            
++
+             // Create pages (type = 'page') - these should be newer but still excluded
+             await _createPostWithDetails('page1', 'Test Page 1', 'published', {
+                 uuid: 'page-uuid1',
+@@ -1622,22 +1622,22 @@ describe('PostsStatsService', function () {
+                 timezone: 'UTC',
+                 limit: 5 // Request 5 items to trigger backfilling
+             });
+-            
++
+             // Should return only posts, not pages, even when backfilling
+             assert.ok(result.data, 'Result should have a data property');
+             assert.equal(result.data.length, 3, 'Should return only 3 posts, not pages');
+-            
++
+             // Verify all returned items are posts
+             result.data.forEach((item) => {
+                 assert.ok(['post1', 'post2', 'post3'].includes(item.post_id), `Should only return posts, but got ${item.post_id}`);
+                 assert.ok(['Test Post 1', 'Test Post 2', 'Test Post 3'].includes(item.title), `Should only return post titles, but got ${item.title}`);
+             });
+-            
++
+             // Verify the first post has views data from Tinybird and others have 0 views
+             const post1Result = result.data.find(p => p.post_id === 'post1');
+             assert.ok(post1Result, 'Should find post1 in results');
+             assert.equal(post1Result.views, 1000, 'Post1 should have 1000 views from Tinybird');
+-            
++
+             // Other posts should have 0 views (backfilled)
+             const otherPosts = result.data.filter(p => p.post_id !== 'post1');
+             otherPosts.forEach((post) => {
+@@ -1687,7 +1687,7 @@ describe('PostsStatsService', function () {
+ 
+         it('should return cumulative values instead of deltas', async function () {
+             const newsletterId = 'newsletter1';
+-            
++
+             // Create newsletter
+             await _createNewsletter(newsletterId, 'Test Newsletter');
+ 
+@@ -1714,7 +1714,7 @@ describe('PostsStatsService', function () {
+ 
+             assert.ok(result.data, 'Should have data property');
+             assert.equal(result.data.length, 1, 'Should return one stats object');
+-            
++
+             const stats = result.data[0];
+             assert.equal(stats.total, 2, 'Total subscribers should be 2');
+             assert.ok(Array.isArray(stats.values), 'Should have values array');
+@@ -1757,7 +1757,7 @@ describe('PostsStatsService', function () {
+ 
+         it('should exclude email_disabled members', async function () {
+             const newsletterId = 'newsletter1';
+-            
++
+             await _createNewsletter(newsletterId, 'Test Newsletter');
+ 
+             await _createMember('member1', false);
+@@ -1786,7 +1786,7 @@ describe('PostsStatsService', function () {
+ 
+         it('should calculate correct starting point for historical data', async function () {
+             const newsletterId = 'newsletter1';
+-            
++
+             await _createNewsletter(newsletterId, 'Test Newsletter');
+ 
+             // Create 5 members
+@@ -1817,7 +1817,7 @@ describe('PostsStatsService', function () {
+ 
+         it('should handle negative growth correctly', async function () {
+             const newsletterId = 'newsletter1';
+-            
++
+             await _createNewsletter(newsletterId, 'Test Newsletter');
+ 
+             // Create 3 members
+@@ -1846,7 +1846,7 @@ describe('PostsStatsService', function () {
+ 
+         it('should handle multiple events on same day', async function () {
+             const newsletterId = 'newsletter1';
+-            
++
+             await _createNewsletter(newsletterId, 'Test Newsletter');
+ 
+             await _createMember('member1');
+@@ -1876,7 +1876,7 @@ describe('PostsStatsService', function () {
+ 
+         it('should respect date filters', async function () {
+             const newsletterId = 'newsletter1';
+-            
++
+             await _createNewsletter(newsletterId, 'Test Newsletter');
+ 
+             await _createMember('member1');
+diff --git a/ghost/core/test/unit/server/services/stats/referrers.test.js b/ghost/core/test/unit/server/services/stats/referrers.test.js
+index 4427af60bce4..3a40add6e0c6 100644
+--- a/ghost/core/test/unit/server/services/stats/referrers.test.js
++++ b/ghost/core/test/unit/server/services/stats/referrers.test.js
+@@ -1,7 +1,7 @@
+ const knex = require('knex').default;
+ const assert = require('assert/strict');
+ const moment = require('moment-timezone');
+-const ReferrersStatsService = require('../../../../../core/server/services/stats/ReferrersStatsService');
++const ReferrersStatsService = require('../../../../../core/server/services/stats/referrers-stats-service');
+ const {DateTime} = require('luxon');
+ 
+ describe('ReferrersStatsService', function () {
+@@ -177,7 +177,7 @@ describe('ReferrersStatsService', function () {
+                 table.string('referrer_source');
+                 table.date('created_at');
+             });
+-            
++
+             await db.schema.createTable('members_subscription_created_events', function (table) {
+                 table.string('id');
+                 table.string('member_id');
+@@ -185,7 +185,7 @@ describe('ReferrersStatsService', function () {
+                 table.string('referrer_source');
+                 table.date('created_at');
+             });
+-            
++
+             await db.schema.createTable('members_paid_subscription_events', function (table) {
+                 table.string('member_id');
+                 table.string('subscription_id');
+@@ -203,7 +203,7 @@ describe('ReferrersStatsService', function () {
+         it('should properly deduplicate members who converted from free to paid', async function () {
+             const testDate = moment('2024-01-15').utc().format('YYYY-MM-DD HH:mm:ss');
+             const febDate = moment('2024-02-15').utc().format('YYYY-MM-DD HH:mm:ss');
+-            
++
+             // Insert 3 member signups for Google
+             await db('members_created_events').insert([
+                 {member_id: 'member_1', referrer_source: 'Google', created_at: testDate},
+@@ -230,7 +230,7 @@ describe('ReferrersStatsService', function () {
+             // 1 paid conversion (member_1 who converted in January)
+             assert.equal(googleStats.signups, 2, 'Google should have 2 signups (excluding only member who converted in same window)');
+             assert.equal(googleStats.paid_conversions, 1, 'Google should have 1 paid conversion in January');
+-            
++
+             // Query for February to see member_2's conversion
+             const febResult = await stats.getTopSourcesWithRange({date_from: '2024-02-01', date_to: '2024-02-28', timezone: 'UTC'});
+             const febGoogleStats = febResult.data.find(s => s.source === 'Google');
+@@ -240,7 +240,7 @@ describe('ReferrersStatsService', function () {
+ 
+         it('should aggregate MRR data correctly', async function () {
+             const testDate = moment('2024-01-15').utc().format('YYYY-MM-DD HH:mm:ss');
+-            
++
+             // Insert paid conversions
+             await db('members_subscription_created_events').insert([
+                 {id: 'sub_1', member_id: 'paid_1', subscription_id: 'sub_1', referrer_source: 'Google', created_at: testDate},
+@@ -285,7 +285,7 @@ describe('ReferrersStatsService', function () {
+ 
+         it('should handle Direct traffic normalization', async function () {
+             const testDate = moment('2024-01-15').utc().format('YYYY-MM-DD HH:mm:ss');
+-            
++
+             await db('members_created_events').insert([
+                 {member_id: 'direct_1', referrer_source: null, created_at: testDate},
+                 {member_id: 'direct_2', referrer_source: '', created_at: testDate},
+@@ -298,14 +298,14 @@ describe('ReferrersStatsService', function () {
+             // The normalization happens in the service layer
+             // Both null and empty string should be normalized to 'Direct'
+             assert(directStats, 'Direct stats should exist');
+-            
++
+             // We expect 3 signups total: 2 nulls + 1 empty string
+             assert.equal(directStats.signups, 3, 'Should have 3 Direct signups');
+         });
+ 
+         it('should sort results correctly', async function () {
+             const testDate = moment('2024-01-15').utc().format('YYYY-MM-DD HH:mm:ss');
+-            
++
+             await db('members_created_events').insert([
+                 // Twitter: 3 signups
+                 {member_id: 't1', referrer_source: 'Twitter', created_at: testDate},
+@@ -330,7 +330,7 @@ describe('ReferrersStatsService', function () {
+ 
+         it('should respect limit parameter', async function () {
+             const testDate = moment('2024-01-15').utc().format('YYYY-MM-DD HH:mm:ss');
+-            
++
+             // Insert signups for multiple sources
+             const sources = ['Google', 'Twitter', 'Facebook', 'Reddit', 'LinkedIn'];
+             const inserts = [];
+@@ -375,7 +375,7 @@ describe('ReferrersStatsService', function () {
+ 
+         it('should handle members who sign up and convert with different sources', async function () {
+             const testDate = moment('2024-01-15').utc().format('YYYY-MM-DD HH:mm:ss');
+-            
++
+             // Member signs up via Google
+             await db('members_created_events').insert([
+                 {member_id: 'member_1', referrer_source: 'Google', created_at: testDate}
+@@ -387,7 +387,7 @@ describe('ReferrersStatsService', function () {
+             ]);
+ 
+             const result = await stats.getTopSourcesWithRange({date_from: '2024-01-01', date_to: '2024-01-31', timezone: 'UTC'});
+-            
++
+             const googleStats = result.data.find(s => s.source === 'Google');
+             const twitterStats = result.data.find(s => s.source === 'Twitter');
+ 
+@@ -396,7 +396,7 @@ describe('ReferrersStatsService', function () {
+                 assert.equal(googleStats.signups, 0, 'Google should have 0 signups (member converted in same window)');
+                 assert.equal(googleStats.paid_conversions, 0, 'Google should have 0 paid conversions');
+             }
+-            
++
+             // Twitter should exist and show the paid conversion
+             assert(twitterStats, 'Twitter stats should exist');
+             assert.equal(twitterStats.signups, 0, 'Twitter should have 0 signups');
+diff --git a/ghost/core/test/unit/server/services/stats/stats.test.js b/ghost/core/test/unit/server/services/stats/stats.test.js
+index 643b8eed96a7..ee6eb424f021 100644
+--- a/ghost/core/test/unit/server/services/stats/stats.test.js
++++ b/ghost/core/test/unit/server/services/stats/stats.test.js
+@@ -1,4 +1,4 @@
+-const StatsService = require('../../../../../core/server/services/stats/StatsService');
++const StatsService = require('../../../../../core/server/services/stats/stats-service');
+ const knex = require('knex').default;
+ const assert = require('assert/strict');
+ 
+diff --git a/ghost/core/test/unit/server/services/stats/subscriptions.test.js b/ghost/core/test/unit/server/services/stats/subscriptions.test.js
+index e1bc7be9d418..1beb50484c8e 100644
+--- a/ghost/core/test/unit/server/services/stats/subscriptions.test.js
++++ b/ghost/core/test/unit/server/services/stats/subscriptions.test.js
+@@ -1,6 +1,6 @@
+ const knex = require('knex').default;
+ const assert = require('assert/strict');
+-const SubscriptionStatsService = require('../../../../../core/server/services/stats/SubscriptionStatsService');
++const SubscriptionStatsService = require('../../../../../core/server/services/stats/subscription-stats-service');
+ 
+ describe('SubscriptionStatsService', function () {
+     describe('getSubscriptionHistory', function () {
+diff --git a/ghost/core/test/unit/server/services/update-check.test.js b/ghost/core/test/unit/server/services/update-check.test.js
+index 4e072e4fbfed..a64da5af19dc 100644
+--- a/ghost/core/test/unit/server/services/update-check.test.js
++++ b/ghost/core/test/unit/server/services/update-check.test.js
+@@ -7,7 +7,7 @@ const assert = require('assert/strict');
+ const util = require('util');
+ const logging = require('@tryghost/logging');
+ const request = require('@tryghost/request');
+-const UpdateCheckService = require('../../../../core/server/services/update-check/UpdateCheckService');
++const UpdateCheckService = require('../../../../core/server/services/update-check/update-check-service');
+ 
+ describe('Update Check', function () {
+     const internal = {context: {internal: true}};
+diff --git a/ghost/core/test/unit/server/services/users/users-service.test.js b/ghost/core/test/unit/server/services/users/users-service.test.js
+index fd273b1bf5bd..4ebcf14accb8 100644
+--- a/ghost/core/test/unit/server/services/users/users-service.test.js
++++ b/ghost/core/test/unit/server/services/users/users-service.test.js
+@@ -1,7 +1,7 @@
+ const assert = require('assert/strict');
+ const sinon = require('sinon');
+ 
+-const Users = require('../../../../../core/server/services/Users');
++const Users = require('../../../../../core/server/services/users');
+ 
+ describe('Users service', function () {
+     describe('resetAllPasswords', function () {
+diff --git a/ghost/core/test/unit/server/services/verification-trigger.test.js b/ghost/core/test/unit/server/services/verification-trigger.test.js
+index 08d35b0e48f4..db41017f1cb4 100644
+--- a/ghost/core/test/unit/server/services/verification-trigger.test.js
++++ b/ghost/core/test/unit/server/services/verification-trigger.test.js
+@@ -3,7 +3,7 @@
+ const sinon = require('sinon');
+ const assert = require('assert/strict');
+ require('should');
+-const VerificationTrigger = require('../../../../core/server/services/VerificationTrigger');
++const VerificationTrigger = require('../../../../core/server/services/verification-trigger');
+ const DomainEvents = require('@tryghost/domain-events');
+ const {MemberCreatedEvent} = require('../../../../core/shared/events');
+ 
+diff --git a/ghost/core/test/unit/server/services/webhooks/trigger.test.js b/ghost/core/test/unit/server/services/webhooks/trigger.test.js
+index 776b2969f931..25f0f981317b 100644
+--- a/ghost/core/test/unit/server/services/webhooks/trigger.test.js
++++ b/ghost/core/test/unit/server/services/webhooks/trigger.test.js
+@@ -3,7 +3,7 @@ const crypto = require('crypto');
+ const sinon = require('sinon');
+ const LimitService = require('@tryghost/limit-service');
+ 
+-const WebhookTrigger = require('../../../../../core/server/services/webhooks/WebhookTrigger');
++const WebhookTrigger = require('../../../../../core/server/services/webhooks/webhook-trigger');
+ 
+ const SIGNATURE_HEADER = 'X-Ghost-Signature';
+ const SIGNATURE_REGEX = /^sha256=[a-z0-9]+, t=\d+$/;
+diff --git a/ghost/core/test/utils/e2e-framework-mock-manager.js b/ghost/core/test/utils/e2e-framework-mock-manager.js
+index 9bc734abe618..dc9b7e0ac013 100644
+--- a/ghost/core/test/utils/e2e-framework-mock-manager.js
++++ b/ghost/core/test/utils/e2e-framework-mock-manager.js
+@@ -13,7 +13,7 @@ let mocks = {};
+ let emailCount = 0;
+ 
+ // Mockable services
+-const MailgunClient = require('../../core/server/services/lib/MailgunClient');
++const MailgunClient = require('../../core/server/services/lib/mailgun-client');
+ const mailService = require('../../core/server/services/mail/index');
+ const originalMailServiceSendMail = mailService.GhostMailer.prototype.sendMail;
+ const labs = require('../../core/shared/labs');

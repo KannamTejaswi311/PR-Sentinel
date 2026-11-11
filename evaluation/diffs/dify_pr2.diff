@@ -1,0 +1,459 @@
+diff --git a/web/app/components/app/configuration/config-var/config-modal/config.ts b/web/app/components/app/configuration/config-var/config-modal/config.ts
+index 94a3cfae581dc8..6586c2fd548ee8 100644
+--- a/web/app/components/app/configuration/config-var/config-modal/config.ts
++++ b/web/app/components/app/configuration/config-var/config-modal/config.ts
+@@ -7,19 +7,24 @@ export const jsonObjectWrap = {
+ 
+ export const jsonConfigPlaceHolder = JSON.stringify(
+   {
+-    foo: {
+-      type: 'string',
+-    },
+-    bar: {
+-      type: 'object',
+-      properties: {
+-        sub: {
+-          type: 'number',
++    type: 'object',
++    properties: {
++      foo: {
++        type: 'string',
++      },
++      bar: {
++        type: 'object',
++        properties: {
++          sub: {
++            type: 'number',
++          },
+         },
++        required: [],
++        additionalProperties: true,
+       },
+-      required: [],
+-      additionalProperties: true,
+     },
++    required: [],
++    additionalProperties: true,
+   },
+   null,
+   2,
+diff --git a/web/app/components/app/configuration/config-var/config-modal/index.tsx b/web/app/components/app/configuration/config-var/config-modal/index.tsx
+index df072314653f18..e6b38cafd1eed9 100644
+--- a/web/app/components/app/configuration/config-var/config-modal/index.tsx
++++ b/web/app/components/app/configuration/config-var/config-modal/index.tsx
+@@ -28,7 +28,7 @@ import { checkKeys, getNewVarInWorkflow, replaceSpaceWithUnderscoreInVarNameInpu
+ import ConfigSelect from '../config-select'
+ import ConfigString from '../config-string'
+ import ModalFoot from '../modal-foot'
+-import { jsonConfigPlaceHolder, jsonObjectWrap } from './config'
++import { jsonConfigPlaceHolder } from './config'
+ import Field from './field'
+ import TypeSelector from './type-select'
+ 
+@@ -78,13 +78,12 @@ const ConfigModal: FC<IConfigModalProps> = ({
+   const modalRef = useRef<HTMLDivElement>(null)
+   const appDetail = useAppStore(state => state.appDetail)
+   const isBasicApp = appDetail?.mode !== AppModeEnum.ADVANCED_CHAT && appDetail?.mode !== AppModeEnum.WORKFLOW
+-  const isSupportJSON = false
+   const jsonSchemaStr = useMemo(() => {
+     const isJsonObject = type === InputVarType.jsonObject
+     if (!isJsonObject || !tempPayload.json_schema)
+       return ''
+     try {
+-      return JSON.stringify(JSON.parse(tempPayload.json_schema).properties, null, 2)
++      return JSON.stringify(JSON.parse(tempPayload.json_schema), null, 2)
+     }
+     catch {
+       return ''
+@@ -129,13 +128,15 @@ const ConfigModal: FC<IConfigModalProps> = ({
+   }, [])
+ 
+   const handleJSONSchemaChange = useCallback((value: string) => {
++    const isEmpty = value == null || value.trim() === ''
++    if (isEmpty) {
++      handlePayloadChange('json_schema')(undefined)
++      return null
++    }
+     try {
+       const v = JSON.parse(value)
+-      const res = {
+-        ...jsonObjectWrap,
+-        properties: v,
+-      }
+-      handlePayloadChange('json_schema')(JSON.stringify(res, null, 2))
++      handlePayloadChange('json_schema')(value)
++      return True
+     }
+     catch {
+       return null
+@@ -175,7 +176,7 @@ const ConfigModal: FC<IConfigModalProps> = ({
+           },
+         ]
+       : []),
+-    ...((!isBasicApp && isSupportJSON)
++    ...((!isBasicApp)
+       ? [{
+           name: t('variableConfig.json', { ns: 'appDebug' }),
+           value: InputVarType.jsonObject,
+@@ -233,7 +234,28 @@ const ConfigModal: FC<IConfigModalProps> = ({
+ 
+   const checkboxDefaultSelectValue = useMemo(() => getCheckboxDefaultSelectValue(tempPayload.default), [tempPayload.default])
+ 
++  const isJsonSchemaEmpty = (value: InputVar['json_schema']) => {
++    if (value === null || value === undefined) {
++      return true
++    }
++    if (typeof value !== 'string') {
++      return false
++    }
++    const trimmed = value.trim()
++    return trimmed === ''
++  }
++
+   const handleConfirm = () => {
++    const jsonSchemaValue = tempPayload.json_schema
++    const isSchemaEmpty = isJsonSchemaEmpty(jsonSchemaValue)
++    const normalizedJsonSchema = isSchemaEmpty ? undefined : jsonSchemaValue
++
++    // if the input type is jsonObject and the schema is empty as determined by `isJsonSchemaEmpty`,
++    // remove the `json_schema` field from the payload by setting its value to `undefined`.
++    const payloadToSave = isSchemaEmpty
++      ? { ...tempPayload, json_schema: undefined }
++      : tempPayload
++
+     const moreInfo = tempPayload.variable === payload?.variable
+       ? undefined
+       : {
+@@ -250,7 +272,7 @@ const ConfigModal: FC<IConfigModalProps> = ({
+       return
+     }
+     if (isStringInput || type === InputVarType.number) {
+-      onConfirm(tempPayload, moreInfo)
++      onConfirm(payloadToSave, moreInfo)
+     }
+     else if (type === InputVarType.select) {
+       if (options?.length === 0) {
+@@ -270,7 +292,7 @@ const ConfigModal: FC<IConfigModalProps> = ({
+         Toast.notify({ type: 'error', message: t('variableConfig.errorMsg.optionRepeat', { ns: 'appDebug' }) })
+         return
+       }
+-      onConfirm(tempPayload, moreInfo)
++      onConfirm(payloadToSave, moreInfo)
+     }
+     else if ([InputVarType.singleFile, InputVarType.multiFiles].includes(type)) {
+       if (tempPayload.allowed_file_types?.length === 0) {
+@@ -283,10 +305,26 @@ const ConfigModal: FC<IConfigModalProps> = ({
+         Toast.notify({ type: 'error', message: errorMessages })
+         return
+       }
+-      onConfirm(tempPayload, moreInfo)
++      onConfirm(payloadToSave, moreInfo)
++    }
++    else if (type === InputVarType.jsonObject) {
++      if (!isSchemaEmpty && typeof jsonSchemaValue === 'string') {
++        try {
++          const schema = JSON.parse(jsonSchemaValue)
++          if (schema?.type !== 'object') {
++            Toast.notify({ type: 'error', message: t('variableConfig.errorMsg.jsonSchemaMustBeObject', { ns: 'appDebug' }) })
++            return
++          }
++        }
++        catch {
++          Toast.notify({ type: 'error', message: t('variableConfig.errorMsg.jsonSchemaInvalid', { ns: 'appDebug' }) })
++          return
++        }
++      }
++      onConfirm(payloadToSave, moreInfo)
+     }
+     else {
+-      onConfirm(tempPayload, moreInfo)
++      onConfirm(payloadToSave, moreInfo)
+     }
+   }
+ 
+diff --git a/web/i18n/ar-TN/app-debug.json b/web/i18n/ar-TN/app-debug.json
+index 192f1b49cfaa43..c35983397a923e 100644
+--- a/web/i18n/ar-TN/app-debug.json
++++ b/web/i18n/ar-TN/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "اسم العرض",
+   "variableConfig.editModalTitle": "تعديل حقل إدخال",
+   "variableConfig.errorMsg.atLeastOneOption": "خيار واحد على الأقل مطلوب",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "مخطط JSON ليس JSON صالحًا",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "يجب أن يكون نوع مخطط JSON \"object\"",
+   "variableConfig.errorMsg.labelNameRequired": "اسم التسمية مطلوب",
+   "variableConfig.errorMsg.optionRepeat": "يوجد خيارات مكررة",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "اسم المتغير لا يمكن تكراره",
+diff --git a/web/i18n/de-DE/app-debug.json b/web/i18n/de-DE/app-debug.json
+index 2ab907ef2d90f0..d038320cf88180 100644
+--- a/web/i18n/de-DE/app-debug.json
++++ b/web/i18n/de-DE/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "Anzeigename",
+   "variableConfig.editModalTitle": "Eingabefeld bearbeiten",
+   "variableConfig.errorMsg.atLeastOneOption": "Mindestens eine Option ist erforderlich",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "JSON-Schema ist kein gültiges JSON",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "JSON-Schema muss den Typ \"object\" haben",
+   "variableConfig.errorMsg.labelNameRequired": "Labelname ist erforderlich",
+   "variableConfig.errorMsg.optionRepeat": "Hat Wiederholungsoptionen",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "Variablenname kann nicht wiederholt werden",
+diff --git a/web/i18n/en-US/app-debug.json b/web/i18n/en-US/app-debug.json
+index 266f0e5483dae5..cc538919129979 100644
+--- a/web/i18n/en-US/app-debug.json
++++ b/web/i18n/en-US/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "Display Name",
+   "variableConfig.editModalTitle": "Edit Input Field",
+   "variableConfig.errorMsg.atLeastOneOption": "At least one option is required",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "JSON Schema is not valid JSON",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "JSON Schema must have type \"object\"",
+   "variableConfig.errorMsg.labelNameRequired": "Label name is required",
+   "variableConfig.errorMsg.optionRepeat": "Has repeat options",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "Variable name can not be repeated",
+diff --git a/web/i18n/es-ES/app-debug.json b/web/i18n/es-ES/app-debug.json
+index a1dfd8ad536bf9..8245f2b325bb5f 100644
+--- a/web/i18n/es-ES/app-debug.json
++++ b/web/i18n/es-ES/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "Nombre para mostrar",
+   "variableConfig.editModalTitle": "Editar Campo de Entrada",
+   "variableConfig.errorMsg.atLeastOneOption": "Se requiere al menos una opción",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "El esquema JSON no es un JSON válido",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "El esquema JSON debe tener el tipo \"object\"",
+   "variableConfig.errorMsg.labelNameRequired": "Nombre de la etiqueta es requerido",
+   "variableConfig.errorMsg.optionRepeat": "Hay opciones repetidas",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "El nombre de la variable no puede repetirse",
+diff --git a/web/i18n/fa-IR/app-debug.json b/web/i18n/fa-IR/app-debug.json
+index c6e1b588e539f0..5427ebb72a1205 100644
+--- a/web/i18n/fa-IR/app-debug.json
++++ b/web/i18n/fa-IR/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "نام نمایشی",
+   "variableConfig.editModalTitle": "ویرایش فیلد ورودی",
+   "variableConfig.errorMsg.atLeastOneOption": "حداقل یک گزینه مورد نیاز است",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "JSON Schema یک JSON معتبر نیست",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "نوع JSON Schema باید \"object\" باشد",
+   "variableConfig.errorMsg.labelNameRequired": "نام برچسب الزامی است",
+   "variableConfig.errorMsg.optionRepeat": "دارای گزینه های تکرار",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "نام متغیر را نمی توان تکرار کرد",
+diff --git a/web/i18n/fr-FR/app-debug.json b/web/i18n/fr-FR/app-debug.json
+index 2add116cd304b8..88f75f51366e0c 100644
+--- a/web/i18n/fr-FR/app-debug.json
++++ b/web/i18n/fr-FR/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "Nom d’affichage",
+   "variableConfig.editModalTitle": "Edit Input Field",
+   "variableConfig.errorMsg.atLeastOneOption": "At least one option is required",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "Le schéma JSON n’est pas un JSON valide",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "Le schéma JSON doit avoir le type \"object\"",
+   "variableConfig.errorMsg.labelNameRequired": "Label name is required",
+   "variableConfig.errorMsg.optionRepeat": "Has repeat options",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "Variable name can not be repeated",
+diff --git a/web/i18n/hi-IN/app-debug.json b/web/i18n/hi-IN/app-debug.json
+index df891f60ec2ff2..97e733e16771e9 100644
+--- a/web/i18n/hi-IN/app-debug.json
++++ b/web/i18n/hi-IN/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "प्रदर्शन नाम",
+   "variableConfig.editModalTitle": "इनपुट फ़ील्ड संपादित करें",
+   "variableConfig.errorMsg.atLeastOneOption": "कम से कम एक विकल्प आवश्यक है",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "JSON स्कीमा मान्य JSON नहीं है",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "JSON स्कीमा का प्रकार \"object\" होना चाहिए",
+   "variableConfig.errorMsg.labelNameRequired": "लेबल नाम आवश्यक है",
+   "variableConfig.errorMsg.optionRepeat": "विकल्प दोहराए गए हैं",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "वेरिएबल नाम दोहराया नहीं जा सकता",
+diff --git a/web/i18n/id-ID/app-debug.json b/web/i18n/id-ID/app-debug.json
+index dfce0159a560d0..21651349ba6c33 100644
+--- a/web/i18n/id-ID/app-debug.json
++++ b/web/i18n/id-ID/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "Nama Tampilan",
+   "variableConfig.editModalTitle": "Edit Bidang Input",
+   "variableConfig.errorMsg.atLeastOneOption": "Setidaknya satu opsi diperlukan",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "JSON Schema bukan JSON yang valid",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "JSON Schema harus bertipe \"object\"",
+   "variableConfig.errorMsg.labelNameRequired": "Nama label diperlukan",
+   "variableConfig.errorMsg.optionRepeat": "Memiliki opsi pengulangan",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "Nama variabel tidak dapat diulang",
+diff --git a/web/i18n/it-IT/app-debug.json b/web/i18n/it-IT/app-debug.json
+index fce5620eef2019..94e4c008941546 100644
+--- a/web/i18n/it-IT/app-debug.json
++++ b/web/i18n/it-IT/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "Nome visualizzato",
+   "variableConfig.editModalTitle": "Modifica Campo Input",
+   "variableConfig.errorMsg.atLeastOneOption": "È richiesta almeno un'opzione",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "Lo schema JSON non è un JSON valido",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "Lo schema JSON deve avere tipo \"object\"",
+   "variableConfig.errorMsg.labelNameRequired": "Il nome dell'etichetta è richiesto",
+   "variableConfig.errorMsg.optionRepeat": "Ci sono opzioni ripetute",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "Il nome della variabile non può essere ripetuto",
+diff --git a/web/i18n/ja-JP/app-debug.json b/web/i18n/ja-JP/app-debug.json
+index cf44ccff941c0c..4b18745e5fe434 100644
+--- a/web/i18n/ja-JP/app-debug.json
++++ b/web/i18n/ja-JP/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "表示名",
+   "variableConfig.editModalTitle": "入力フィールドを編集",
+   "variableConfig.errorMsg.atLeastOneOption": "少なくとも 1 つのオプションが必要です",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "JSONスキーマが有効なJSONではありません",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "JSONスキーマのtypeは\"object\"である必要があります",
+   "variableConfig.errorMsg.labelNameRequired": "ラベル名は必須です",
+   "variableConfig.errorMsg.optionRepeat": "繰り返しオプションがあります",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "変数名は繰り返すことができません",
+diff --git a/web/i18n/ko-KR/app-debug.json b/web/i18n/ko-KR/app-debug.json
+index 600062464d854d..3cb295a3f717ae 100644
+--- a/web/i18n/ko-KR/app-debug.json
++++ b/web/i18n/ko-KR/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "표시 이름",
+   "variableConfig.editModalTitle": "입력 필드 편집",
+   "variableConfig.errorMsg.atLeastOneOption": "적어도 하나의 옵션이 필요합니다",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "JSON 스키마가 올바른 JSON이 아닙니다",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "JSON 스키마의 type은 \"object\"이어야 합니다",
+   "variableConfig.errorMsg.labelNameRequired": "레이블명은 필수입니다",
+   "variableConfig.errorMsg.optionRepeat": "옵션이 중복되어 있습니다",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "변수명은 중복될 수 없습니다",
+diff --git a/web/i18n/pl-PL/app-debug.json b/web/i18n/pl-PL/app-debug.json
+index ece00eb9adf979..0a9da0fcceb9c2 100644
+--- a/web/i18n/pl-PL/app-debug.json
++++ b/web/i18n/pl-PL/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "Nazwa wyświetlana",
+   "variableConfig.editModalTitle": "Edytuj Pole Wejściowe",
+   "variableConfig.errorMsg.atLeastOneOption": "Wymagana jest co najmniej jedna opcja",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "Schemat JSON nie jest prawidłowym JSON-em",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "Schemat JSON musi mieć typ \"object\"",
+   "variableConfig.errorMsg.labelNameRequired": "Wymagana nazwa etykiety",
+   "variableConfig.errorMsg.optionRepeat": "Powtarzają się opcje",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "Nazwa zmiennej nie może się powtarzać",
+diff --git a/web/i18n/pt-BR/app-debug.json b/web/i18n/pt-BR/app-debug.json
+index 98ad27f69a91e9..60597878946bfc 100644
+--- a/web/i18n/pt-BR/app-debug.json
++++ b/web/i18n/pt-BR/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "Nome de exibição",
+   "variableConfig.editModalTitle": "Editar Campo de Entrada",
+   "variableConfig.errorMsg.atLeastOneOption": "Pelo menos uma opção é obrigatória",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "O JSON Schema não é um JSON válido",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "O JSON Schema deve ter o tipo \"object\"",
+   "variableConfig.errorMsg.labelNameRequired": "O nome do rótulo é obrigatório",
+   "variableConfig.errorMsg.optionRepeat": "Tem opções repetidas",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "O nome da variável não pode ser repetido",
+diff --git a/web/i18n/ro-RO/app-debug.json b/web/i18n/ro-RO/app-debug.json
+index 83990992cc7771..6245ca680db5cf 100644
+--- a/web/i18n/ro-RO/app-debug.json
++++ b/web/i18n/ro-RO/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "Nume afișat",
+   "variableConfig.editModalTitle": "Editați câmpul de intrare",
+   "variableConfig.errorMsg.atLeastOneOption": "Este necesară cel puțin o opțiune",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "Schema JSON nu este un JSON valid",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "Schema JSON trebuie să aibă tipul \"object\"",
+   "variableConfig.errorMsg.labelNameRequired": "Numele etichetei este obligatoriu",
+   "variableConfig.errorMsg.optionRepeat": "Există opțiuni repetate",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "Numele variabilei nu poate fi repetat",
+diff --git a/web/i18n/ru-RU/app-debug.json b/web/i18n/ru-RU/app-debug.json
+index c3075a5b0167c2..fdc797da2f8ddd 100644
+--- a/web/i18n/ru-RU/app-debug.json
++++ b/web/i18n/ru-RU/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "Отображаемое имя",
+   "variableConfig.editModalTitle": "Редактировать поле ввода",
+   "variableConfig.errorMsg.atLeastOneOption": "Требуется хотя бы один вариант",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "JSON Schema не является корректным JSON",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "JSON Schema должна иметь тип \"object\"",
+   "variableConfig.errorMsg.labelNameRequired": "Имя метки обязательно",
+   "variableConfig.errorMsg.optionRepeat": "Есть повторяющиеся варианты",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "Имя переменной не может повторяться",
+diff --git a/web/i18n/sl-SI/app-debug.json b/web/i18n/sl-SI/app-debug.json
+index 28094186bf14c4..948e3dbc6739f1 100644
+--- a/web/i18n/sl-SI/app-debug.json
++++ b/web/i18n/sl-SI/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "Prikazno ime",
+   "variableConfig.editModalTitle": "Uredi vnosno polje",
+   "variableConfig.errorMsg.atLeastOneOption": "Potrebna je vsaj ena možnost",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "Shema JSON ni veljaven JSON",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "Shema JSON mora imeti tip \"object\"",
+   "variableConfig.errorMsg.labelNameRequired": "Ime nalepke je obvezno",
+   "variableConfig.errorMsg.optionRepeat": "Ima možnosti ponavljanja",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "Imena spremenljivke ni mogoče ponoviti",
+diff --git a/web/i18n/th-TH/app-debug.json b/web/i18n/th-TH/app-debug.json
+index c0dd099f08e5e2..53dc629a7f5ac5 100644
+--- a/web/i18n/th-TH/app-debug.json
++++ b/web/i18n/th-TH/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "ชื่อที่แสดง",
+   "variableConfig.editModalTitle": "แก้ไขฟิลด์อินพุต",
+   "variableConfig.errorMsg.atLeastOneOption": "จําเป็นต้องมีอย่างน้อยหนึ่งตัวเลือก",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "JSON Schema ไม่ใช่ JSON ที่ถูกต้อง",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "JSON Schema ต้องมีชนิดเป็น \"object\"",
+   "variableConfig.errorMsg.labelNameRequired": "ต้องมีชื่อฉลาก",
+   "variableConfig.errorMsg.optionRepeat": "มีตัวเลือกการทําซ้ํา",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "ไม่สามารถทําซ้ําชื่อตัวแปรได้",
+diff --git a/web/i18n/tr-TR/app-debug.json b/web/i18n/tr-TR/app-debug.json
+index f04a8fd64e9046..1ae01dca6c7c4a 100644
+--- a/web/i18n/tr-TR/app-debug.json
++++ b/web/i18n/tr-TR/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "Görünen Ad",
+   "variableConfig.editModalTitle": "Giriş Alanı Düzenle",
+   "variableConfig.errorMsg.atLeastOneOption": "En az bir seçenek gereklidir",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "JSON Şeması geçerli bir JSON değil",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "JSON Şeması’nın türü \"object\" olmalı",
+   "variableConfig.errorMsg.labelNameRequired": "Etiket adı gereklidir",
+   "variableConfig.errorMsg.optionRepeat": "Yinelenen seçenekler var",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "Değişken adı tekrar edemez",
+diff --git a/web/i18n/uk-UA/app-debug.json b/web/i18n/uk-UA/app-debug.json
+index 6d7ecd92a78680..74dcc72efd2e02 100644
+--- a/web/i18n/uk-UA/app-debug.json
++++ b/web/i18n/uk-UA/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "Відображуване ім'я",
+   "variableConfig.editModalTitle": "Редагувати Поле Введення",
+   "variableConfig.errorMsg.atLeastOneOption": "Потрібно щонайменше одну опцію",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "JSON Schema не є коректним JSON",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "JSON Schema має мати тип \"object\"",
+   "variableConfig.errorMsg.labelNameRequired": "Потрібно вказати назву мітки",
+   "variableConfig.errorMsg.optionRepeat": "Є повторні опції",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "Назва змінної не може повторюватися",
+diff --git a/web/i18n/vi-VN/app-debug.json b/web/i18n/vi-VN/app-debug.json
+index e94e442626fbd0..f13df6c43dcff1 100644
+--- a/web/i18n/vi-VN/app-debug.json
++++ b/web/i18n/vi-VN/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "Tên hiển thị",
+   "variableConfig.editModalTitle": "Chỉnh sửa trường nhập",
+   "variableConfig.errorMsg.atLeastOneOption": "Cần ít nhất một tùy chọn",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "JSON Schema không phải là JSON hợp lệ",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "JSON Schema phải có kiểu \"object\"",
+   "variableConfig.errorMsg.labelNameRequired": "Tên nhãn là bắt buộc",
+   "variableConfig.errorMsg.optionRepeat": "Có các tùy chọn trùng lặp",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "Tên biến không được trùng lặp",
+diff --git a/web/i18n/zh-Hans/app-debug.json b/web/i18n/zh-Hans/app-debug.json
+index 7965400dd7a244..7559bf2b568486 100644
+--- a/web/i18n/zh-Hans/app-debug.json
++++ b/web/i18n/zh-Hans/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "显示名称",
+   "variableConfig.editModalTitle": "编辑变量",
+   "variableConfig.errorMsg.atLeastOneOption": "至少需要一个选项",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "JSON Schema 不是合法的 JSON",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "JSON Schema 的 type 必须为 \"object\"",
+   "variableConfig.errorMsg.labelNameRequired": "显示名称必填",
+   "variableConfig.errorMsg.optionRepeat": "选项不能重复",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "变量名称不能重复",
+diff --git a/web/i18n/zh-Hant/app-debug.json b/web/i18n/zh-Hant/app-debug.json
+index eabcebd8e07e74..ab7286691fd872 100644
+--- a/web/i18n/zh-Hant/app-debug.json
++++ b/web/i18n/zh-Hant/app-debug.json
+@@ -306,6 +306,8 @@
+   "variableConfig.displayName": "顯示名稱",
+   "variableConfig.editModalTitle": "編輯變數",
+   "variableConfig.errorMsg.atLeastOneOption": "至少需要一個選項",
++  "variableConfig.errorMsg.jsonSchemaInvalid": "JSON Schema 不是合法的 JSON",
++  "variableConfig.errorMsg.jsonSchemaMustBeObject": "JSON Schema 的 type 必須為「object」",
+   "variableConfig.errorMsg.labelNameRequired": "顯示名稱必填",
+   "variableConfig.errorMsg.optionRepeat": "選項不能重複",
+   "variableConfig.errorMsg.varNameCanBeRepeat": "變數名稱不能重複",

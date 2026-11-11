@@ -1,0 +1,767 @@
+diff --git a/.claude/skills/frontend-testing/assets/component-test.template.tsx b/.claude/skills/frontend-testing/assets/component-test.template.tsx
+index c39baff9160867..6b7803bd4b4378 100644
+--- a/.claude/skills/frontend-testing/assets/component-test.template.tsx
++++ b/.claude/skills/frontend-testing/assets/component-test.template.tsx
+@@ -28,17 +28,14 @@ import userEvent from '@testing-library/user-event'
+ 
+ // i18n (automatically mocked)
+ // WHY: Global mock in web/vitest.setup.ts is auto-loaded by Vitest setup
+-// No explicit mock needed - it returns translation keys as-is
++// The global mock provides: useTranslation, Trans, useMixedTranslation, useGetLanguage
++// No explicit mock needed for most tests
++//
+ // Override only if custom translations are required:
+-// vi.mock('react-i18next', () => ({
+-//   useTranslation: () => ({
+-//     t: (key: string) => {
+-//       const customTranslations: Record<string, string> = {
+-//         'my.custom.key': 'Custom Translation',
+-//       }
+-//       return customTranslations[key] || key
+-//     },
+-//   }),
++// import { createReactI18nextMock } from '@/test/i18n-mock'
++// vi.mock('react-i18next', () => createReactI18nextMock({
++//   'my.custom.key': 'Custom Translation',
++//   'button.save': 'Save',
+ // }))
+ 
+ // Router (if component uses useRouter, usePathname, useSearchParams)
+diff --git a/.claude/skills/frontend-testing/references/mocking.md b/.claude/skills/frontend-testing/references/mocking.md
+index 23889c8d3d620c..c70bcf0ae520b3 100644
+--- a/.claude/skills/frontend-testing/references/mocking.md
++++ b/.claude/skills/frontend-testing/references/mocking.md
+@@ -52,23 +52,29 @@ Modules are not mocked automatically. Use `vi.mock` in test files, or add global
+ ### 1. i18n (Auto-loaded via Global Mock)
+ 
+ A global mock is defined in `web/vitest.setup.ts` and is auto-loaded by Vitest setup.
+-**No explicit mock needed** for most tests - it returns translation keys as-is.
+ 
+-For tests requiring custom translations, override the mock:
++The global mock provides:
++
++- `useTranslation` - returns translation keys with namespace prefix
++- `Trans` component - renders i18nKey and components
++- `useMixedTranslation` (from `@/app/components/plugins/marketplace/hooks`)
++- `useGetLanguage` (from `@/context/i18n`) - returns `'en-US'`
++
++**Default behavior**: Most tests should use the global mock (no local override needed).
++
++**For custom translations**: Use the helper function from `@/test/i18n-mock`:
+ 
+ ```typescript
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: (key: string) => {
+-      const translations: Record<string, string> = {
+-        'my.custom.key': 'Custom translation',
+-      }
+-      return translations[key] || key
+-    },
+-  }),
++import { createReactI18nextMock } from '@/test/i18n-mock'
++
++vi.mock('react-i18next', () => createReactI18nextMock({
++  'my.custom.key': 'Custom translation',
++  'button.save': 'Save',
+ }))
+ ```
+ 
++**Avoid**: Manually defining `useTranslation` mocks that just return the key - the global mock already does this.
++
+ ### 2. Next.js Router
+ 
+ ```typescript
+diff --git a/web/app/components/app/configuration/config/agent-setting-button.spec.tsx b/web/app/components/app/configuration/config/agent-setting-button.spec.tsx
+index 1874a3cccf5ece..492b3b104ccf32 100644
+--- a/web/app/components/app/configuration/config/agent-setting-button.spec.tsx
++++ b/web/app/components/app/configuration/config/agent-setting-button.spec.tsx
+@@ -5,15 +5,6 @@ import * as React from 'react'
+ import { AgentStrategy } from '@/types/app'
+ import AgentSettingButton from './agent-setting-button'
+ 
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: (key: string, options?: { ns?: string }) => {
+-      const prefix = options?.ns ? `${options.ns}.` : ''
+-      return `${prefix}${key}`
+-    },
+-  }),
+-}))
+-
+ let latestAgentSettingProps: any
+ vi.mock('./agent/agent-setting', () => ({
+   default: (props: any) => {
+diff --git a/web/app/components/app/configuration/config/config-audio.spec.tsx b/web/app/components/app/configuration/config/config-audio.spec.tsx
+index 41219fd1fa5fc5..a3e5c7c149a22a 100644
+--- a/web/app/components/app/configuration/config/config-audio.spec.tsx
++++ b/web/app/components/app/configuration/config/config-audio.spec.tsx
+@@ -15,15 +15,6 @@ vi.mock('use-context-selector', async (importOriginal) => {
+   }
+ })
+ 
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: (key: string, options?: { ns?: string }) => {
+-      const prefix = options?.ns ? `${options.ns}.` : ''
+-      return `${prefix}${key}`
+-    },
+-  }),
+-}))
+-
+ const mockUseFeatures = vi.fn()
+ const mockUseFeaturesStore = vi.fn()
+ vi.mock('@/app/components/base/features/hooks', () => ({
+diff --git a/web/app/components/base/inline-delete-confirm/index.spec.tsx b/web/app/components/base/inline-delete-confirm/index.spec.tsx
+index 0de8c0844f65fe..b770fccc88d281 100644
+--- a/web/app/components/base/inline-delete-confirm/index.spec.tsx
++++ b/web/app/components/base/inline-delete-confirm/index.spec.tsx
+@@ -1,26 +1,14 @@
+ import { cleanup, fireEvent, render } from '@testing-library/react'
+ import * as React from 'react'
++import { createReactI18nextMock } from '@/test/i18n-mock'
+ import InlineDeleteConfirm from './index'
+ 
+-// Mock react-i18next
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: (key: string, defaultValueOrOptions?: string | { ns?: string }) => {
+-      const translations: Record<string, string> = {
+-        'operation.deleteConfirmTitle': 'Delete?',
+-        'operation.yes': 'Yes',
+-        'operation.no': 'No',
+-        'operation.confirmAction': 'Please confirm your action.',
+-      }
+-      if (translations[key])
+-        return translations[key]
+-      // Handle case where second arg is default value string
+-      if (typeof defaultValueOrOptions === 'string')
+-        return defaultValueOrOptions
+-      const prefix = defaultValueOrOptions?.ns ? `${defaultValueOrOptions.ns}.` : ''
+-      return `${prefix}${key}`
+-    },
+-  }),
++// Mock react-i18next with custom translations for test assertions
++vi.mock('react-i18next', () => createReactI18nextMock({
++  'operation.deleteConfirmTitle': 'Delete?',
++  'operation.yes': 'Yes',
++  'operation.no': 'No',
++  'operation.confirmAction': 'Please confirm your action.',
+ }))
+ 
+ afterEach(cleanup)
+diff --git a/web/app/components/base/input-with-copy/index.spec.tsx b/web/app/components/base/input-with-copy/index.spec.tsx
+index 5a4ca7c97ee9fa..438e72d14285ea 100644
+--- a/web/app/components/base/input-with-copy/index.spec.tsx
++++ b/web/app/components/base/input-with-copy/index.spec.tsx
+@@ -1,5 +1,6 @@
+ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+ import * as React from 'react'
++import { createReactI18nextMock } from '@/test/i18n-mock'
+ import InputWithCopy from './index'
+ 
+ // Create a mock function that we can track using vi.hoisted
+@@ -10,22 +11,12 @@ vi.mock('copy-to-clipboard', () => ({
+   default: mockCopyToClipboard,
+ }))
+ 
+-// Mock the i18n hook
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: (key: string, options?: { ns?: string }) => {
+-      const translations: Record<string, string> = {
+-        'operation.copy': 'Copy',
+-        'operation.copied': 'Copied',
+-        'overview.appInfo.embedded.copy': 'Copy',
+-        'overview.appInfo.embedded.copied': 'Copied',
+-      }
+-      if (translations[key])
+-        return translations[key]
+-      const prefix = options?.ns ? `${options.ns}.` : ''
+-      return `${prefix}${key}`
+-    },
+-  }),
++// Mock the i18n hook with custom translations for test assertions
++vi.mock('react-i18next', () => createReactI18nextMock({
++  'operation.copy': 'Copy',
++  'operation.copied': 'Copied',
++  'overview.appInfo.embedded.copy': 'Copy',
++  'overview.appInfo.embedded.copied': 'Copied',
+ }))
+ 
+ // Mock es-toolkit/compat debounce
+diff --git a/web/app/components/base/input/index.spec.tsx b/web/app/components/base/input/index.spec.tsx
+index a0de3c4ca44a4a..65589ddcdf9f3f 100644
+--- a/web/app/components/base/input/index.spec.tsx
++++ b/web/app/components/base/input/index.spec.tsx
+@@ -1,21 +1,12 @@
+ import { fireEvent, render, screen } from '@testing-library/react'
+ import * as React from 'react'
++import { createReactI18nextMock } from '@/test/i18n-mock'
+ import Input, { inputVariants } from './index'
+ 
+-// Mock the i18n hook
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: (key: string, options?: { ns?: string }) => {
+-      const translations: Record<string, string> = {
+-        'operation.search': 'Search',
+-        'placeholder.input': 'Please input',
+-      }
+-      if (translations[key])
+-        return translations[key]
+-      const prefix = options?.ns ? `${options.ns}.` : ''
+-      return `${prefix}${key}`
+-    },
+-  }),
++// Mock the i18n hook with custom translations for test assertions
++vi.mock('react-i18next', () => createReactI18nextMock({
++  'operation.search': 'Search',
++  'placeholder.input': 'Please input',
+ }))
+ 
+ describe('Input component', () => {
+diff --git a/web/app/components/billing/pricing/footer.spec.tsx b/web/app/components/billing/pricing/footer.spec.tsx
+index 0bbc38224eafdb..85bd72c247082e 100644
+--- a/web/app/components/billing/pricing/footer.spec.tsx
++++ b/web/app/components/billing/pricing/footer.spec.tsx
+@@ -3,8 +3,6 @@ import * as React from 'react'
+ import { CategoryEnum } from '.'
+ import Footer from './footer'
+ 
+-let mockTranslations: Record<string, string> = {}
+-
+ vi.mock('next/link', () => ({
+   default: ({ children, href, className, target }: { children: React.ReactNode, href: string, className?: string, target?: string }) => (
+     <a href={href} className={className} target={target} data-testid="pricing-link">
+@@ -13,25 +11,9 @@ vi.mock('next/link', () => ({
+   ),
+ }))
+ 
+-vi.mock('react-i18next', async (importOriginal) => {
+-  const actual = await importOriginal<typeof import('react-i18next')>()
+-  return {
+-    ...actual,
+-    useTranslation: () => ({
+-      t: (key: string, options?: { ns?: string }) => {
+-        if (mockTranslations[key])
+-          return mockTranslations[key]
+-        const prefix = options?.ns ? `${options.ns}.` : ''
+-        return `${prefix}${key}`
+-      },
+-    }),
+-  }
+-})
+-
+ describe('Footer', () => {
+   beforeEach(() => {
+     vi.clearAllMocks()
+-    mockTranslations = {}
+   })
+ 
+   // Rendering behavior
+diff --git a/web/app/components/datasets/create/index.spec.tsx b/web/app/components/datasets/create/index.spec.tsx
+index 1cf24e6f2196e3..7e20e4bc1c5325 100644
+--- a/web/app/components/datasets/create/index.spec.tsx
++++ b/web/app/components/datasets/create/index.spec.tsx
+@@ -18,16 +18,6 @@ const IndexingTypeValues = {
+ // Mock External Dependencies
+ // ==========================================
+ 
+-// Mock react-i18next (handled by global mock in web/vitest.setup.ts but we override for custom messages)
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: (key: string, options?: { ns?: string }) => {
+-      const prefix = options?.ns ? `${options.ns}.` : ''
+-      return `${prefix}${key}`
+-    },
+-  }),
+-}))
+-
+ // Mock next/link
+ vi.mock('next/link', () => {
+   return function MockLink({ children, href }: { children: React.ReactNode, href: string }) {
+diff --git a/web/app/components/datasets/documents/create-from-pipeline/processing/index.spec.tsx b/web/app/components/datasets/documents/create-from-pipeline/processing/index.spec.tsx
+index 875adb27791931..d9fea934461abe 100644
+--- a/web/app/components/datasets/documents/create-from-pipeline/processing/index.spec.tsx
++++ b/web/app/components/datasets/documents/create-from-pipeline/processing/index.spec.tsx
+@@ -9,16 +9,6 @@ import Processing from './index'
+ // Mock External Dependencies
+ // ==========================================
+ 
+-// Mock react-i18next (handled by global mock in web/vitest.setup.ts but we override for custom messages)
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: (key: string, options?: { ns?: string }) => {
+-      const prefix = options?.ns ? `${options.ns}.` : ''
+-      return `${prefix}${key}`
+-    },
+-  }),
+-}))
+-
+ // Mock useDocLink - returns a function that generates doc URLs
+ // Strips leading slash from path to match actual implementation behavior
+ vi.mock('@/context/i18n', () => ({
+diff --git a/web/app/components/plugins/card/index.spec.tsx b/web/app/components/plugins/card/index.spec.tsx
+index d32aafff5724b7..4a3e5a587bbb14 100644
+--- a/web/app/components/plugins/card/index.spec.tsx
++++ b/web/app/components/plugins/card/index.spec.tsx
+@@ -21,33 +21,6 @@ import Card from './index'
+ // Mock External Dependencies Only
+ // ================================
+ 
+-// Mock react-i18next (translation hook)
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: (key: string) => key,
+-  }),
+-}))
+-
+-// Mock useMixedTranslation hook
+-vi.mock('../marketplace/hooks', () => ({
+-  useMixedTranslation: (_locale?: string) => ({
+-    t: (key: string, options?: { ns?: string }) => {
+-      const fullKey = options?.ns ? `${options.ns}.${key}` : key
+-      const translations: Record<string, string> = {
+-        'plugin.marketplace.partnerTip': 'Partner plugin',
+-        'plugin.marketplace.verifiedTip': 'Verified plugin',
+-        'plugin.installModal.installWarning': 'Install warning message',
+-      }
+-      return translations[fullKey] || key
+-    },
+-  }),
+-}))
+-
+-// Mock useGetLanguage context
+-vi.mock('@/context/i18n', () => ({
+-  useGetLanguage: () => 'en-US',
+-}))
+-
+ // Mock useTheme hook
+ vi.mock('@/hooks/use-theme', () => ({
+   default: () => ({ theme: 'light' }),
+diff --git a/web/app/components/plugins/install-plugin/install-from-local-package/steps/install.spec.tsx b/web/app/components/plugins/install-plugin/install-from-local-package/steps/install.spec.tsx
+index 4e3a3307df4d38..7f95eb0b35927a 100644
+--- a/web/app/components/plugins/install-plugin/install-from-local-package/steps/install.spec.tsx
++++ b/web/app/components/plugins/install-plugin/install-from-local-package/steps/install.spec.tsx
+@@ -64,26 +64,20 @@ vi.mock('@/context/app-context', () => ({
+   }),
+ }))
+ 
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: (key: string, options?: { ns?: string } & Record<string, unknown>) => {
+-      // Build full key with namespace prefix if provided
+-      const fullKey = options?.ns ? `${options.ns}.${key}` : key
+-      // Handle interpolation params (excluding ns)
+-      const { ns: _ns, ...params } = options || {}
+-      if (Object.keys(params).length > 0) {
+-        return `${fullKey}:${JSON.stringify(params)}`
+-      }
+-      return fullKey
+-    },
+-  }),
+-  Trans: ({ i18nKey, components }: { i18nKey: string, components?: Record<string, React.ReactNode> }) => (
+-    <span data-testid="trans">
+-      {i18nKey}
+-      {components?.trustSource}
+-    </span>
+-  ),
+-}))
++vi.mock('react-i18next', async (importOriginal) => {
++  const actual = await importOriginal<typeof import('react-i18next')>()
++  const { createReactI18nextMock } = await import('@/test/i18n-mock')
++  return {
++    ...actual,
++    ...createReactI18nextMock(),
++    Trans: ({ i18nKey, components }: { i18nKey: string, components?: Record<string, React.ReactNode> }) => (
++      <span data-testid="trans">
++        {i18nKey}
++        {components?.trustSource}
++      </span>
++    ),
++  }
++})
+ 
+ vi.mock('../../../card', () => ({
+   default: ({ payload, titleLeft }: {
+diff --git a/web/app/components/plugins/install-plugin/install-from-local-package/steps/uploading.spec.tsx b/web/app/components/plugins/install-plugin/install-from-local-package/steps/uploading.spec.tsx
+index c1d7e8cefefbd4..35256b663318a4 100644
+--- a/web/app/components/plugins/install-plugin/install-from-local-package/steps/uploading.spec.tsx
++++ b/web/app/components/plugins/install-plugin/install-from-local-package/steps/uploading.spec.tsx
+@@ -48,21 +48,6 @@ vi.mock('@/service/plugins', () => ({
+   uploadFile: (...args: unknown[]) => mockUploadFile(...args),
+ }))
+ 
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: (key: string, options?: { ns?: string } & Record<string, unknown>) => {
+-      // Build full key with namespace prefix if provided
+-      const fullKey = options?.ns ? `${options.ns}.${key}` : key
+-      // Handle interpolation params (excluding ns)
+-      const { ns: _ns, ...params } = options || {}
+-      if (Object.keys(params).length > 0) {
+-        return `${fullKey}:${JSON.stringify(params)}`
+-      }
+-      return fullKey
+-    },
+-  }),
+-}))
+-
+ vi.mock('../../../card', () => ({
+   default: ({ payload, isLoading, loadingFileName }: {
+     payload: { name: string }
+diff --git a/web/app/components/plugins/marketplace/index.spec.tsx b/web/app/components/plugins/marketplace/index.spec.tsx
+index 6047afe9506afa..3073897ba1ecb9 100644
+--- a/web/app/components/plugins/marketplace/index.spec.tsx
++++ b/web/app/components/plugins/marketplace/index.spec.tsx
+@@ -27,17 +27,17 @@ import {
+ // Mock External Dependencies Only
+ // ================================
+ 
+-// Mock react-i18next
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: (key: string) => key,
+-  }),
+-}))
+-
+ // Mock i18next-config
+ vi.mock('@/i18n-config/i18next-config', () => ({
+   default: {
+-    getFixedT: (_locale: string) => (key: string) => key,
++    getFixedT: (_locale: string) => (key: string, options?: Record<string, unknown>) => {
++      if (options && options.ns) {
++        return `${options.ns}.${key}`
++      }
++      else {
++        return key
++      }
++    },
+   },
+ }))
+ 
+@@ -617,8 +617,8 @@ describe('hooks', () => {
+     it('should return translation key when no translation found', () => {
+       const { result } = renderHook(() => useMixedTranslation())
+ 
+-      // The mock returns key as-is
+-      expect(result.current.t('category.all', { ns: 'plugin' })).toBe('category.all')
++      // The global mock returns key with namespace prefix
++      expect(result.current.t('category.all', { ns: 'plugin' })).toBe('plugin.category.all')
+     })
+ 
+     it('should use locale from outer when provided', () => {
+@@ -638,8 +638,8 @@ describe('hooks', () => {
+ 
+     it('should use getFixedT when localeFromOuter is provided', () => {
+       const { result } = renderHook(() => useMixedTranslation('fr-FR'))
+-      // Should still return a function
+-      expect(result.current.t('search', { ns: 'plugin' })).toBe('search')
++      // The global mock returns key with namespace prefix
++      expect(result.current.t('search', { ns: 'plugin' })).toBe('plugin.search')
+     })
+   })
+ })
+@@ -2756,15 +2756,15 @@ describe('PluginTypeSwitch Component', () => {
+         </MarketplaceContextProvider>,
+       )
+ 
+-      // Note: The mock returns the key without namespace prefix
+-      expect(screen.getByText('category.all')).toBeInTheDocument()
+-      expect(screen.getByText('category.models')).toBeInTheDocument()
+-      expect(screen.getByText('category.tools')).toBeInTheDocument()
+-      expect(screen.getByText('category.datasources')).toBeInTheDocument()
+-      expect(screen.getByText('category.triggers')).toBeInTheDocument()
+-      expect(screen.getByText('category.agents')).toBeInTheDocument()
+-      expect(screen.getByText('category.extensions')).toBeInTheDocument()
+-      expect(screen.getByText('category.bundles')).toBeInTheDocument()
++      // Note: The global mock returns the key with namespace prefix (plugin.)
++      expect(screen.getByText('plugin.category.all')).toBeInTheDocument()
++      expect(screen.getByText('plugin.category.models')).toBeInTheDocument()
++      expect(screen.getByText('plugin.category.tools')).toBeInTheDocument()
++      expect(screen.getByText('plugin.category.datasources')).toBeInTheDocument()
++      expect(screen.getByText('plugin.category.triggers')).toBeInTheDocument()
++      expect(screen.getByText('plugin.category.agents')).toBeInTheDocument()
++      expect(screen.getByText('plugin.category.extensions')).toBeInTheDocument()
++      expect(screen.getByText('plugin.category.bundles')).toBeInTheDocument()
+     })
+ 
+     it('should apply className prop', () => {
+@@ -2794,7 +2794,7 @@ describe('PluginTypeSwitch Component', () => {
+         </MarketplaceContextProvider>,
+       )
+ 
+-      fireEvent.click(screen.getByText('category.tools'))
++      fireEvent.click(screen.getByText('plugin.category.tools'))
+       expect(screen.getByTestId('active-type-display')).toHaveTextContent('tool')
+     })
+ 
+@@ -2816,7 +2816,7 @@ describe('PluginTypeSwitch Component', () => {
+       )
+ 
+       fireEvent.click(screen.getByTestId('set-model'))
+-      const modelOption = screen.getByText('category.models').closest('div')
++      const modelOption = screen.getByText('plugin.category.models').closest('div')
+       expect(modelOption).toHaveClass('shadow-xs')
+     })
+   })
+diff --git a/web/app/components/plugins/plugin-detail-panel/subscription-list/create/common-modal.spec.tsx b/web/app/components/plugins/plugin-detail-panel/subscription-list/create/common-modal.spec.tsx
+index 33cb93013df8c6..c87fc1e4da668d 100644
+--- a/web/app/components/plugins/plugin-detail-panel/subscription-list/create/common-modal.spec.tsx
++++ b/web/app/components/plugins/plugin-detail-panel/subscription-list/create/common-modal.spec.tsx
+@@ -78,17 +78,6 @@ function createMockLogData(logs: TriggerLogEntity[] = []): { logs: TriggerLogEnt
+ // Mock Setup
+ // ============================================================================
+ 
+-const mockTranslate = vi.fn((key: string, options?: { ns?: string }) => {
+-  // Build full key with namespace prefix if provided
+-  const fullKey = options?.ns ? `${options.ns}.${key}` : key
+-  return fullKey
+-})
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: mockTranslate,
+-  }),
+-}))
+-
+ // Mock plugin store
+ const mockPluginDetail = createMockPluginDetail()
+ const mockUsePluginStore = vi.fn(() => mockPluginDetail)
+diff --git a/web/app/components/plugins/plugin-detail-panel/subscription-list/create/oauth-client.spec.tsx b/web/app/components/plugins/plugin-detail-panel/subscription-list/create/oauth-client.spec.tsx
+index 74599a13c57278..f1cb7a65aeeceb 100644
+--- a/web/app/components/plugins/plugin-detail-panel/subscription-list/create/oauth-client.spec.tsx
++++ b/web/app/components/plugins/plugin-detail-panel/subscription-list/create/oauth-client.spec.tsx
+@@ -68,17 +68,6 @@ function createMockSubscriptionBuilder(overrides: Partial<TriggerSubscriptionBui
+ // Mock Setup
+ // ============================================================================
+ 
+-const mockTranslate = vi.fn((key: string, options?: { ns?: string }) => {
+-  // Build full key with namespace prefix if provided
+-  const fullKey = options?.ns ? `${options.ns}.${key}` : key
+-  return fullKey
+-})
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: mockTranslate,
+-  }),
+-}))
+-
+ // Mock plugin store
+ const mockPluginDetail = createMockPluginDetail()
+ const mockUsePluginStore = vi.fn(() => mockPluginDetail)
+diff --git a/web/app/components/plugins/plugin-detail-panel/subscription-list/edit/index.spec.tsx b/web/app/components/plugins/plugin-detail-panel/subscription-list/edit/index.spec.tsx
+index 4ce1841b051de1..b7988c916b8cd4 100644
+--- a/web/app/components/plugins/plugin-detail-panel/subscription-list/edit/index.spec.tsx
++++ b/web/app/components/plugins/plugin-detail-panel/subscription-list/edit/index.spec.tsx
+@@ -12,16 +12,6 @@ import { OAuthEditModal } from './oauth-edit-modal'
+ 
+ // ==================== Mock Setup ====================
+ 
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: (key: string, options?: { ns?: string }) => {
+-      // Build full key with namespace prefix if provided
+-      const fullKey = options?.ns ? `${options.ns}.${key}` : key
+-      return fullKey
+-    },
+-  }),
+-}))
+-
+ const mockToastNotify = vi.fn()
+ vi.mock('@/app/components/base/toast', () => ({
+   default: { notify: (params: unknown) => mockToastNotify(params) },
+diff --git a/web/app/components/plugins/plugin-mutation-model/index.spec.tsx b/web/app/components/plugins/plugin-mutation-model/index.spec.tsx
+index f007c32ef14f5d..95c9db3c97715b 100644
+--- a/web/app/components/plugins/plugin-mutation-model/index.spec.tsx
++++ b/web/app/components/plugins/plugin-mutation-model/index.spec.tsx
+@@ -9,28 +9,6 @@ import PluginMutationModal from './index'
+ // Mock External Dependencies Only
+ // ================================
+ 
+-// Mock react-i18next (translation hook)
+-vi.mock('react-i18next', () => ({
+-  useTranslation: () => ({
+-    t: (key: string) => key,
+-  }),
+-}))
+-
+-// Mock useMixedTranslation hook
+-vi.mock('../marketplace/hooks', () => ({
+-  useMixedTranslation: (_locale?: string) => ({
+-    t: (key: string, options?: { ns?: string }) => {
+-      const fullKey = options?.ns ? `${options.ns}.${key}` : key
+-      return fullKey
+-    },
+-  }),
+-}))
+-
+-// Mock useGetLanguage context
+-vi.mock('@/context/i18n', () => ({
+-  useGetLanguage: () => 'en-US',
+-}))
+-
+ // Mock useTheme hook
+ vi.mock('@/hooks/use-theme', () => ({
+   default: () => ({ theme: 'light' }),
+diff --git a/web/test/i18n-mock.ts b/web/test/i18n-mock.ts
+new file mode 100644
+index 00000000000000..07a204ee23c3ed
+--- /dev/null
++++ b/web/test/i18n-mock.ts
+@@ -0,0 +1,79 @@
++import * as React from 'react'
++import { vi } from 'vitest'
++
++interface TranslationMap extends Record<string, string | string[]> {}
++
++/**
++ * Create a t function with optional custom translations
++ * Checks translations[key] first, then translations[ns.key], then returns ns.key as fallback
++ */
++export function createTFunction(translations: TranslationMap, defaultNs?: string) {
++  return (key: string, options?: Record<string, unknown>) => {
++    const ns = (options?.ns as string | undefined) ?? defaultNs
++    const fullKey = ns ? `${ns}.${key}` : key
++
++    // Check custom translations with namespace first
++    if (translations[fullKey] !== undefined)
++      return translations[fullKey]
++
++    // Check custom translations without namespace
++    if (translations[key] !== undefined)
++      return translations[key]
++
++    // Serialize params (excluding ns) for test assertions
++    const params = { ...options }
++    delete params.ns
++    const suffix = Object.keys(params).length > 0 ? `:${JSON.stringify(params)}` : ''
++    return `${fullKey}${suffix}`
++  }
++}
++
++/**
++ * Create useTranslation mock with optional custom translations
++ *
++ * @example
++ * vi.mock('react-i18next', () => createUseTranslationMock({
++ *   'operation.confirm': 'Confirm',
++ * }))
++ */
++export function createUseTranslationMock(translations: TranslationMap = {}) {
++  return {
++    useTranslation: () => ({
++      t: createTFunction(translations),
++      i18n: {
++        language: 'en',
++        changeLanguage: vi.fn(),
++      },
++    }),
++  }
++}
++
++/**
++ * Create Trans component mock with optional custom translations
++ */
++export function createTransMock(translations: TranslationMap = {}) {
++  return {
++    Trans: ({ i18nKey, children }: {
++      i18nKey: string
++      children?: React.ReactNode
++    }) => {
++      const text = translations[i18nKey] ?? i18nKey
++      return React.createElement('span', { 'data-i18n-key': i18nKey }, children ?? text)
++    },
++  }
++}
++
++/**
++ * Create complete react-i18next mock (useTranslation + Trans)
++ *
++ * @example
++ * vi.mock('react-i18next', () => createReactI18nextMock({
++ *   'modal.title': 'My Modal',
++ * }))
++ */
++export function createReactI18nextMock(translations: TranslationMap = {}) {
++  return {
++    ...createUseTranslationMock(translations),
++    ...createTransMock(translations),
++  }
++}
+diff --git a/web/testing/testing.md b/web/testing/testing.md
+index 1d578ae6342e59..47341e445ec01f 100644
+--- a/web/testing/testing.md
++++ b/web/testing/testing.md
+@@ -329,21 +329,28 @@ describe('ComponentName', () => {
+ 
+ 1. **i18n**: Uses global mock in `web/vitest.setup.ts` (auto-loaded by Vitest setup)
+ 
+-   The global mock returns translation keys as-is. For custom translations, override:
++   The global mock provides:
++
++   - `useTranslation` - returns translation keys with namespace prefix
++   - `Trans` component - renders i18nKey and components
++   - `useMixedTranslation` (from `@/app/components/plugins/marketplace/hooks`)
++   - `useGetLanguage` (from `@/context/i18n`) - returns `'en-US'`
++
++   **Default behavior**: Most tests should use the global mock (no local override needed).
++
++   **For custom translations**: Use the helper function from `@/test/i18n-mock`:
+ 
+    ```typescript
+-   vi.mock('react-i18next', () => ({
+-     useTranslation: () => ({
+-       t: (key: string) => {
+-         const translations: Record<string, string> = {
+-           'my.custom.key': 'Custom translation',
+-         }
+-         return translations[key] || key
+-       },
+-     }),
++   import { createReactI18nextMock } from '@/test/i18n-mock'
++
++   vi.mock('react-i18next', () => createReactI18nextMock({
++     'my.custom.key': 'Custom translation',
++     'button.save': 'Save',
+    }))
+    ```
+ 
++   **Avoid**: Manually defining `useTranslation` mocks that just return the key - the global mock already does this.
++
+ 1. **Forms**: Test validation logic thoroughly
+ 
+ 1. **Example - Correct mock with conditional rendering**:
+diff --git a/web/vitest.setup.ts b/web/vitest.setup.ts
+index 551a22475b0a0e..26dc25bbcf7ef7 100644
+--- a/web/vitest.setup.ts
++++ b/web/vitest.setup.ts
+@@ -88,26 +88,10 @@ vi.mock('next/image')
+ // mock react-i18next
+ vi.mock('react-i18next', async () => {
+   const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next')
++  const { createReactI18nextMock } = await import('./test/i18n-mock')
+   return {
+     ...actual,
+-    useTranslation: (defaultNs?: string) => ({
+-      t: (key: string, options?: Record<string, unknown>) => {
+-        if (options?.returnObjects)
+-          return [`${key}-feature-1`, `${key}-feature-2`]
+-        const ns = options?.ns ?? defaultNs
+-        if (options || ns) {
+-          const { ns: _ns, ...rest } = options ?? {}
+-          const prefix = ns ? `${ns}.` : ''
+-          const suffix = Object.keys(rest).length > 0 ? `:${JSON.stringify(rest)}` : ''
+-          return `${prefix}${key}${suffix}`
+-        }
+-        return key
+-      },
+-      i18n: {
+-        language: 'en',
+-        changeLanguage: vi.fn(),
+-      },
+-    }),
++    ...createReactI18nextMock(),
+   }
+ })
+ 

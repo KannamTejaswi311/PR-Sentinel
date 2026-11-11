@@ -1,0 +1,86 @@
+{
+  "pr_id": "Ghost_pr3",
+  "experiment_id": "E2",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "StaticAnalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/core/server/services/email-service/DomainWarmingService.ts",
+      "line_start": 1,
+      "evidence": "",
+      "execution_status": "SUCCESS",
+      "finding_id": "020454b0-6d99-42b8-ab03-ff48caad69cd",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.ts)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/core/server/services/email-service/DomainWarmingService.ts' has unsupported extension '.ts'.",
+      "recommendation": "Add external static analyzer for '.ts' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "FILE",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "StaticAnalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/test/integration/services/email-service/domain-warming.test.js",
+      "line_start": 1,
+      "evidence": "",
+      "execution_status": "SUCCESS",
+      "finding_id": "d99d03e0-9e2a-4ee1-aa7a-7f71560bb733",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.js)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/test/integration/services/email-service/domain-warming.test.js' has unsupported extension '.js'.",
+      "recommendation": "Add external static analyzer for '.js' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "FILE",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "StaticAnalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/test/unit/server/services/email-service/domain-warming-service.test.ts",
+      "line_start": 1,
+      "evidence": "",
+      "execution_status": "SUCCESS",
+      "finding_id": "74cc963d-893f-4869-9847-356656907aaa",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.ts)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/test/unit/server/services/email-service/domain-warming-service.test.ts' has unsupported extension '.ts'.",
+      "recommendation": "Add external static analyzer for '.ts' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "FILE",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    }
+  ],
+  "findings_count": 3,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 0.008,
+  "execution_manifest": {
+    "codebert": "SKIPPED",
+    "static_analyzer": "SUCCESS",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SKIPPED",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

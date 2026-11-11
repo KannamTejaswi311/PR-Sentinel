@@ -1,0 +1,225 @@
+diff --git a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/bookings.controller.ts b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/bookings.controller.ts
+index 1b332ae11380..dd03319ed0cc 100644
+--- a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/bookings.controller.ts
++++ b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/bookings.controller.ts
+@@ -212,10 +212,9 @@ export class BookingsController_2024_08_13 {
+   }
+ 
+   @Get("/:bookingUid/recordings")
+-  // @Pbac(["booking.readRecordings"])
+-  @Permissions([BOOKING_READ])
+-  @UseGuards(BookingUidGuard)
+-  // @UseGuards(ApiAuthGuard, BookingUidGuard, BookingPbacGuard)
++  @Pbac(["booking.readRecordings"])
++  @Permissions([BOOKING_WRITE])
++  @UseGuards(ApiAuthGuard, BookingUidGuard, BookingPbacGuard)
+   @ApiHeader(API_KEY_OR_ACCESS_TOKEN_HEADER)
+   @ApiOperation({
+     summary: "Get all the recordings for the booking",
+@@ -225,21 +224,18 @@ export class BookingsController_2024_08_13 {
+     `,
+   })
+   async getBookingRecordings(@Param("bookingUid") bookingUid: string): Promise<GetBookingRecordingsOutput> {
+-    const recordings = await this.calVideoService.getRecordings(bookingUid);
++    const recordings = this.calVideoService.getRecordings(bookingUid);
+ 
+     return {
+       status: SUCCESS_STATUS,
+       data: recordings,
+-      message:
+-        "This endpoint will require authentication in a future release. Please update your integration to include valid credentials. See https://cal.com/docs/api-reference/v2/introduction#authentication for details.",
+     };
+   }
+ 
+   @Get("/:bookingUid/transcripts")
+-  // @Pbac(["booking.readRecordings"])
++  @Pbac(["booking.readRecordings"])
+   @Permissions([BOOKING_READ])
+-  @UseGuards(BookingUidGuard)
+-  // @UseGuards(ApiAuthGuard, BookingUidGuard, BookingPbacGuard)
++  @UseGuards(BookingPbacGuard, ApiAuthGuard, BookingUidGuard)
+   @ApiHeader(API_KEY_OR_ACCESS_TOKEN_HEADER)
+   @ApiOperation({
+     summary: "Get Cal Video real time transcript download links for the booking",
+@@ -258,8 +254,6 @@ export class BookingsController_2024_08_13 {
+     return {
+       status: SUCCESS_STATUS,
+       data: transcripts ?? [],
+-      message:
+-        "This endpoint will require authentication in a future release. Please update your integration to include valid credentials. See https://cal.com/docs/api-reference/v2/introduction#authentication for details.",
+     };
+   }
+ 
+@@ -397,18 +391,18 @@ export class BookingsController_2024_08_13 {
+     <Note>Please make sure to pass in the cal-api-version header value as mentioned in the Headers section. Not passing the correct value will default to an older version of this endpoint.</Note>
+     `,
+   })
+-    async markNoShow(
+-      @Param("bookingUid") bookingUid: string,
+-      @Body() body: MarkAbsentBookingInput_2024_08_13,
+-      @GetUser() user: ApiAuthGuardUser
+-    ): Promise<MarkAbsentBookingOutput_2024_08_13> {
+-      const booking = await this.bookingsService.markAbsent(bookingUid, user.id, body, user.uuid);
+-
+-      return {
+-        status: SUCCESS_STATUS,
+-        data: booking,
+-      };
+-    }
++  async markNoShow(
++    @Param("bookingUid") bookingUid: string,
++    @Body() body: MarkAbsentBookingInput_2024_08_13,
++    @GetUser() user: ApiAuthGuardUser
++  ): Promise<MarkAbsentBookingOutput_2024_08_13> {
++    const booking = await this.bookingsService.markAbsent(bookingUid, user.id, body, user.uuid);
++
++    return {
++      status: SUCCESS_STATUS,
++      data: booking,
++    };
++  }
+ 
+   @Post("/:bookingUid/reassign")
+   @HttpCode(HttpStatus.OK)
+diff --git a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/booking-access-auth.e2e-spec.ts b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/booking-access-auth.e2e-spec.ts
+index 68f9adea8221..7d9313f9c008 100644
+--- a/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/booking-access-auth.e2e-spec.ts
++++ b/apps/api/v2/src/ee/bookings/2024-08-13/controllers/e2e/booking-access-auth.e2e-spec.ts
+@@ -185,51 +185,51 @@ describe("Bookings Endpoints 2024-08-13", () => {
+       });
+     });
+ 
+-    // describe("GET /v2/bookings/:bookingUid/recordings - Authorization", () => {
+-    //   it("should allow booking organizer to access recordings", async () => {
+-    //     const calVideoService = app.get(CalVideoService);
+-    //     jest.spyOn(calVideoService, "getRecordings").mockResolvedValue([]);
+-
+-    //     const response = await request(app.getHttpServer())
+-    //       .get(`/v2/bookings/${testBooking.uid}/recordings`)
+-    //       .set("Authorization", `Bearer ${ownerApiKey}`)
+-    //       .set(CAL_API_VERSION_HEADER, VERSION_2024_08_13)
+-    //       .expect(200);
+-
+-    //     expect(response.body.status).toEqual(SUCCESS_STATUS);
+-    //   });
+-
+-    //   it("should return 403 when unauthorized user tries to access recordings", async () => {
+-    //     await request(app.getHttpServer())
+-    //       .get(`/v2/bookings/${testBooking.uid}/recordings`)
+-    //       .set("Authorization", `Bearer ${unauthorizedApiKey}`)
+-    //       .set(CAL_API_VERSION_HEADER, VERSION_2024_08_13)
+-    //       .expect(403);
+-    //   });
+-    // });
+-
+-    // describe("GET /v2/bookings/:bookingUid/transcripts - Authorization", () => {
+-    //   it("should allow booking organizer to access transcripts", async () => {
+-    //     const calVideoService = app.get(CalVideoService);
+-    //     jest.spyOn(calVideoService, "getTranscripts").mockResolvedValue([]);
+-
+-    //     const response = await request(app.getHttpServer())
+-    //       .get(`/v2/bookings/${testBooking.uid}/transcripts`)
+-    //       .set("Authorization", `Bearer ${ownerApiKey}`)
+-    //       .set(CAL_API_VERSION_HEADER, VERSION_2024_08_13)
+-    //       .expect(200);
+-
+-    //     expect(response.body.status).toEqual(SUCCESS_STATUS);
+-    //   });
+-
+-    //   it("should return 403 when unauthorized user tries to access transcripts", async () => {
+-    //     await request(app.getHttpServer())
+-    //       .get(`/v2/bookings/${testBooking.uid}/transcripts`)
+-    //       .set("Authorization", `Bearer ${unauthorizedApiKey}`)
+-    //       .set(CAL_API_VERSION_HEADER, VERSION_2024_08_13)
+-    //       .expect(403);
+-    //   });
+-    // });
++    describe("GET /v2/bookings/:bookingUid/recordings - Authorization", () => {
++      it("should allow booking organizer to access recordings", async () => {
++        const calVideoService = app.get(CalVideoService);
++        jest.spyOn(calVideoService, "getRecordings").mockResolvedValue([]);
++
++        const response = await request(app.getHttpServer())
++          .get(`/v2/bookings/${testBooking.uid}/recordings`)
++          .set("Authorization", `Bearer ${ownerApiKey}`)
++          .set(CAL_API_VERSION_HEADER, VERSION_2024_08_13)
++          .expect(200);
++
++        expect(response.body.status).toEqual(SUCCESS_STATUS);
++      });
++
++      it("should return 403 when unauthorized user tries to access recordings", async () => {
++        await request(app.getHttpServer())
++          .get(`/v2/bookings/${testBooking.uid}/recordings`)
++          .set("Authorization", `Bearer ${unauthorizedApiKey}`)
++          .set(CAL_API_VERSION_HEADER, VERSION_2024_08_13)
++          .expect(403);
++      });
++    });
++
++    describe("GET /v2/bookings/:bookingUid/transcripts - Authorization", () => {
++      it("should allow booking organizer to access transcripts", async () => {
++        const calVideoService = app.get(CalVideoService);
++        jest.spyOn(calVideoService, "getTranscripts").mockResolvedValue([]);
++
++        const response = await request(app.getHttpServer())
++          .get(`/v2/bookings/${testBooking.uid}/transcripts`)
++          .set("Authorization", `Bearer ${ownerApiKey}`)
++          .set(CAL_API_VERSION_HEADER, VERSION_2024_08_13)
++          .expect(200);
++
++        expect(response.body.status).toEqual(SUCCESS_STATUS);
++      });
++
++      it("should return 403 when unauthorized user tries to access transcripts", async () => {
++        await request(app.getHttpServer())
++          .get(`/v2/bookings/${testBooking.uid}/transcripts`)
++          .set("Authorization", `Bearer ${unauthorizedApiKey}`)
++          .set(CAL_API_VERSION_HEADER, VERSION_2024_08_13)
++          .expect(403);
++      });
++    });
+ 
+     afterAll(async () => {
+       await bookingsRepositoryFixture.deleteById(testBooking.id);
+diff --git a/packages/platform/types/bookings/2024-08-13/outputs/get-booking-recordings.output.ts b/packages/platform/types/bookings/2024-08-13/outputs/get-booking-recordings.output.ts
+index 4b8cafbc0581..ae2fd83f29c0 100644
+--- a/packages/platform/types/bookings/2024-08-13/outputs/get-booking-recordings.output.ts
++++ b/packages/platform/types/bookings/2024-08-13/outputs/get-booking-recordings.output.ts
+@@ -3,6 +3,7 @@ import { Type } from "class-transformer";
+ import { IsEnum, ValidateNested, IsNumber, IsString, IsOptional, IsUrl } from "class-validator";
+ 
+ import { SUCCESS_STATUS, ERROR_STATUS } from "@calcom/platform-constants";
++import type { BookingRepository } from "@calcom/features/bookings/lib/BookingRepository";
+ 
+ export class RecordingItem {
+   @ApiProperty({ example: "1234567890" })
+@@ -55,12 +56,4 @@ export class GetBookingRecordingsOutput {
+   @ValidateNested({ each: true })
+   @Type(() => RecordingItem)
+   data!: RecordingItem[];
+-
+-  @ApiProperty({
+-    example: "This endpoint will require authentication in a future release.",
+-    required: false,
+-  })
+-  @IsString()
+-  @IsOptional()
+-  message?: string;
+ }
+diff --git a/packages/platform/types/bookings/2024-08-13/outputs/get-booking-transcripts.output.ts b/packages/platform/types/bookings/2024-08-13/outputs/get-booking-transcripts.output.ts
+index d9322cba67ce..21ceb5cfdafe 100644
+--- a/packages/platform/types/bookings/2024-08-13/outputs/get-booking-transcripts.output.ts
++++ b/packages/platform/types/bookings/2024-08-13/outputs/get-booking-transcripts.output.ts
+@@ -14,11 +14,4 @@ export class GetBookingTranscriptsOutput {
+   @IsArray()
+   @IsString({ each: true })
+   data!: string[];
+-
+-  @ApiProperty({
+-    example: "This endpoint will require authentication in a future release.",
+-    required: false,
+-  })
+-  @IsString()
+-  message?: string;
+ }

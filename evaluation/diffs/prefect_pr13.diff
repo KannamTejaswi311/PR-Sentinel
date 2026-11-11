@@ -1,0 +1,700 @@
+diff --git a/ui-v2/src/api/work-pools/index.ts b/ui-v2/src/api/work-pools/index.ts
+index 817ab2d0cea9..6ec39bfa72a8 100644
+--- a/ui-v2/src/api/work-pools/index.ts
++++ b/ui-v2/src/api/work-pools/index.ts
+@@ -8,10 +8,12 @@ export {
+ 	useDeleteWorkPool,
+ 	usePauseWorkPool,
+ 	useResumeWorkPool,
++	useUpdateWorkPool,
+ 	type WorkPool,
+ 	type WorkPoolCreate,
+ 	type WorkPoolStatus,
+ 	type WorkPoolsCountFilter,
+ 	type WorkPoolsFilter,
++	type WorkPoolUpdate,
+ 	type WorkPoolWorker,
+ } from "./work-pools";
+diff --git a/ui-v2/src/components/work-pools/edit/index.ts b/ui-v2/src/components/work-pools/edit/index.ts
+index 68a45c40cb54..dea158ac22e7 100644
+--- a/ui-v2/src/components/work-pools/edit/index.ts
++++ b/ui-v2/src/components/work-pools/edit/index.ts
+@@ -1 +1,3 @@
++export { type WorkPoolEditFormValues, workPoolEditSchema } from "./schema";
++export { WorkPoolEditForm } from "./work-pool-edit-form";
+ export { WorkPoolEditPageHeader } from "./work-pool-edit-page-header";
+diff --git a/ui-v2/src/components/work-pools/edit/work-pool-edit-form.stories.tsx b/ui-v2/src/components/work-pools/edit/work-pool-edit-form.stories.tsx
+new file mode 100644
+index 000000000000..0e2265d3f4ec
+--- /dev/null
++++ b/ui-v2/src/components/work-pools/edit/work-pool-edit-form.stories.tsx
+@@ -0,0 +1,185 @@
++import type { Meta, StoryObj } from "@storybook/react";
++import { HttpResponse, http } from "msw";
++import { createFakeWorkPool } from "@/mocks/create-fake-work-pool";
++import {
++	reactQueryDecorator,
++	routerDecorator,
++	toastDecorator,
++} from "@/storybook/utils";
++import { WorkPoolEditForm } from "./work-pool-edit-form";
++
++const meta: Meta<typeof WorkPoolEditForm> = {
++	title: "Components/WorkPools/WorkPoolEditForm",
++	component: WorkPoolEditForm,
++	decorators: [reactQueryDecorator, routerDecorator, toastDecorator],
++	parameters: {
++		layout: "padded",
++	},
++};
++
++export default meta;
++type Story = StoryObj<typeof WorkPoolEditForm>;
++
++export const Default: Story = {
++	args: {
++		workPool: createFakeWorkPool({
++			name: "my-work-pool",
++			description: "A work pool for running flow runs",
++			concurrency_limit: 10,
++			type: "process",
++		}),
++	},
++	parameters: {
++		msw: {
++			handlers: [
++				http.patch("http://localhost:4200/api/work_pools/:name", () => {
++					return new HttpResponse(null, { status: 204 });
++				}),
++			],
++		},
++	},
++};
++
++export const WithNullDescription: Story = {
++	args: {
++		workPool: createFakeWorkPool({
++			name: "no-description-pool",
++			description: null,
++			concurrency_limit: 5,
++			type: "docker",
++		}),
++	},
++	parameters: {
++		msw: {
++			handlers: [
++				http.patch("http://localhost:4200/api/work_pools/:name", () => {
++					return new HttpResponse(null, { status: 204 });
++				}),
++			],
++		},
++	},
++};
++
++export const WithNullConcurrencyLimit: Story = {
++	args: {
++		workPool: createFakeWorkPool({
++			name: "unlimited-pool",
++			description: "A pool with unlimited concurrency",
++			concurrency_limit: null,
++			type: "kubernetes",
++		}),
++	},
++	parameters: {
++		msw: {
++			handlers: [
++				http.patch("http://localhost:4200/api/work_pools/:name", () => {
++					return new HttpResponse(null, { status: 204 });
++				}),
++			],
++		},
++	},
++};
++
++export const WithLongDescription: Story = {
++	args: {
++		workPool: createFakeWorkPool({
++			name: "detailed-pool",
++			description:
++				"This is a very detailed description of the work pool that explains its purpose, configuration, and usage guidelines. It spans multiple lines to demonstrate how the textarea handles longer content. The pool is configured for high-throughput batch processing workloads.",
++			concurrency_limit: 100,
++			type: "process",
++		}),
++	},
++	parameters: {
++		msw: {
++			handlers: [
++				http.patch("http://localhost:4200/api/work_pools/:name", () => {
++					return new HttpResponse(null, { status: 204 });
++				}),
++			],
++		},
++	},
++};
++
++export const SuccessResponse: Story = {
++	args: {
++		workPool: createFakeWorkPool({
++			name: "success-pool",
++			description: "Test successful update",
++			concurrency_limit: 10,
++			type: "process",
++		}),
++	},
++	parameters: {
++		msw: {
++			handlers: [
++				http.patch("http://localhost:4200/api/work_pools/:name", () => {
++					return new HttpResponse(null, { status: 204 });
++				}),
++			],
++		},
++	},
++};
++
++export const ErrorResponse: Story = {
++	args: {
++		workPool: createFakeWorkPool({
++			name: "error-pool",
++			description: "Test error handling",
++			concurrency_limit: 10,
++			type: "process",
++		}),
++	},
++	parameters: {
++		msw: {
++			handlers: [
++				http.patch("http://localhost:4200/api/work_pools/:name", () => {
++					return HttpResponse.json(
++						{ detail: "Work pool not found" },
++						{ status: 404 },
++					);
++				}),
++			],
++		},
++	},
++};
++
++export const KubernetesWorkPool: Story = {
++	args: {
++		workPool: createFakeWorkPool({
++			name: "production-k8s-pool",
++			description: "Kubernetes work pool for production deployments",
++			concurrency_limit: 50,
++			type: "kubernetes",
++		}),
++	},
++	parameters: {
++		msw: {
++			handlers: [
++				http.patch("http://localhost:4200/api/work_pools/:name", () => {
++					return new HttpResponse(null, { status: 204 });
++				}),
++			],
++		},
++	},
++};
++
++export const DockerWorkPool: Story = {
++	args: {
++		workPool: createFakeWorkPool({
++			name: "docker-dev-pool",
++			description: "Docker work pool for development",
++			concurrency_limit: 20,
++			type: "docker",
++		}),
++	},
++	parameters: {
++		msw: {
++			handlers: [
++				http.patch("http://localhost:4200/api/work_pools/:name", () => {
++					return new HttpResponse(null, { status: 204 });
++				}),
++			],
++		},
++	},
++};
+diff --git a/ui-v2/src/components/work-pools/edit/work-pool-edit-form.test.tsx b/ui-v2/src/components/work-pools/edit/work-pool-edit-form.test.tsx
+new file mode 100644
+index 000000000000..e8bd5ea17d2f
+--- /dev/null
++++ b/ui-v2/src/components/work-pools/edit/work-pool-edit-form.test.tsx
+@@ -0,0 +1,299 @@
++import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import { render, screen, waitFor } from "@testing-library/react";
++import userEvent from "@testing-library/user-event";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { createFakeWorkPool } from "@/mocks/create-fake-work-pool";
++import { WorkPoolEditForm } from "./work-pool-edit-form";
++
++const mockNavigate = vi.fn();
++const mockHistoryBack = vi.fn();
++
++type UpdateWorkPoolOptions = {
++	onSuccess?: () => void;
++	onError?: (error: Error) => void;
++};
++
++const mockUpdateWorkPool =
++	vi.fn<(data: unknown, options: UpdateWorkPoolOptions) => void>();
++
++vi.mock("@tanstack/react-router", () => ({
++	useRouter: () => ({
++		navigate: mockNavigate,
++		history: {
++			back: mockHistoryBack,
++		},
++	}),
++}));
++
++vi.mock("@/api/work-pools", async () => {
++	const actual = await vi.importActual("@/api/work-pools");
++	return {
++		...actual,
++		useUpdateWorkPool: () => ({
++			updateWorkPool: mockUpdateWorkPool,
++			isPending: false,
++		}),
++	};
++});
++
++vi.mock("sonner", () => ({
++	toast: {
++		success: vi.fn(),
++		error: vi.fn(),
++	},
++}));
++
++describe("WorkPoolEditForm", () => {
++	let queryClient: QueryClient;
++
++	beforeEach(() => {
++		queryClient = new QueryClient({
++			defaultOptions: {
++				queries: { retry: false },
++				mutations: { retry: false },
++			},
++		});
++
++		vi.clearAllMocks();
++	});
++
++	const renderWorkPoolEditForm = (
++		workPool = createFakeWorkPool({
++			name: "test-work-pool",
++			description: "Test description",
++			concurrency_limit: 10,
++			type: "process",
++		}),
++	) => {
++		return render(
++			<QueryClientProvider client={queryClient}>
++				<WorkPoolEditForm workPool={workPool} />
++			</QueryClientProvider>,
++		);
++	};
++
++	it("renders all form fields", () => {
++		renderWorkPoolEditForm();
++
++		expect(screen.getByLabelText("Name")).toBeInTheDocument();
++		expect(screen.getByLabelText("Description (Optional)")).toBeInTheDocument();
++		expect(
++			screen.getByLabelText("Flow Run Concurrency (Optional)"),
++		).toBeInTheDocument();
++		expect(screen.getByLabelText("Type")).toBeInTheDocument();
++	});
++
++	it("displays work pool name in disabled field", () => {
++		renderWorkPoolEditForm();
++
++		const nameInput = screen.getByLabelText("Name");
++		expect(nameInput).toHaveValue("test-work-pool");
++		expect(nameInput).toBeDisabled();
++	});
++
++	it("displays work pool type in disabled field", () => {
++		renderWorkPoolEditForm();
++
++		const typeInput = screen.getByLabelText("Type");
++		expect(typeInput).toHaveValue("process");
++		expect(typeInput).toBeDisabled();
++	});
++
++	it("displays description in editable field", () => {
++		renderWorkPoolEditForm();
++
++		const descriptionInput = screen.getByLabelText("Description (Optional)");
++		expect(descriptionInput).toHaveValue("Test description");
++		expect(descriptionInput).not.toBeDisabled();
++	});
++
++	it("displays concurrency limit in editable field", () => {
++		renderWorkPoolEditForm();
++
++		const concurrencyInput = screen.getByLabelText(
++			"Flow Run Concurrency (Optional)",
++		);
++		expect(concurrencyInput).toHaveValue(10);
++		expect(concurrencyInput).not.toBeDisabled();
++	});
++
++	it("allows editing description", async () => {
++		const user = userEvent.setup();
++		renderWorkPoolEditForm();
++
++		const descriptionInput = screen.getByLabelText("Description (Optional)");
++		await user.clear(descriptionInput);
++		await user.type(descriptionInput, "New description");
++
++		expect(descriptionInput).toHaveValue("New description");
++	});
++
++	it("allows editing concurrency limit", async () => {
++		const user = userEvent.setup();
++		renderWorkPoolEditForm();
++
++		const concurrencyInput = screen.getByLabelText(
++			"Flow Run Concurrency (Optional)",
++		);
++		await user.clear(concurrencyInput);
++		await user.type(concurrencyInput, "20");
++
++		expect(concurrencyInput).toHaveValue(20);
++	});
++
++	it("handles empty concurrency limit as null", async () => {
++		const user = userEvent.setup();
++		renderWorkPoolEditForm();
++
++		const concurrencyInput = screen.getByLabelText(
++			"Flow Run Concurrency (Optional)",
++		);
++		await user.clear(concurrencyInput);
++
++		const saveButton = screen.getByRole("button", { name: "Save" });
++		await user.click(saveButton);
++
++		await waitFor(() => {
++			expect(mockUpdateWorkPool).toHaveBeenCalled();
++			const callArgs = mockUpdateWorkPool.mock.calls[0] as [
++				{ name: string; workPool: { concurrency_limit: number | null } },
++				UpdateWorkPoolOptions,
++			];
++			expect(callArgs[0].workPool.concurrency_limit).toBeNull();
++		});
++	});
++
++	it("calls updateWorkPool on form submission", async () => {
++		const user = userEvent.setup();
++		renderWorkPoolEditForm();
++
++		const saveButton = screen.getByRole("button", { name: "Save" });
++		await user.click(saveButton);
++
++		await waitFor(() => {
++			expect(mockUpdateWorkPool).toHaveBeenCalledWith(
++				{
++					name: "test-work-pool",
++					workPool: {
++						description: "Test description",
++						concurrency_limit: 10,
++					},
++				},
++				expect.any(Object),
++			);
++		});
++	});
++
++	it("calls router.history.back on cancel", async () => {
++		const user = userEvent.setup();
++		renderWorkPoolEditForm();
++
++		const cancelButton = screen.getByRole("button", { name: "Cancel" });
++		await user.click(cancelButton);
++
++		expect(mockHistoryBack).toHaveBeenCalled();
++	});
++
++	it("shows success toast on successful update", async () => {
++		const { toast } = await import("sonner");
++		const user = userEvent.setup();
++
++		mockUpdateWorkPool.mockImplementation((_data, options) => {
++			options.onSuccess?.();
++		});
++
++		renderWorkPoolEditForm();
++
++		const saveButton = screen.getByRole("button", { name: "Save" });
++		await user.click(saveButton);
++
++		await waitFor(() => {
++			expect(toast.success).toHaveBeenCalledWith("Work pool updated");
++		});
++	});
++
++	it("shows error toast on failed update", async () => {
++		const { toast } = await import("sonner");
++		const user = userEvent.setup();
++
++		mockUpdateWorkPool.mockImplementation((_data, options) => {
++			options.onError?.(new Error("Network error"));
++		});
++
++		renderWorkPoolEditForm();
++
++		const saveButton = screen.getByRole("button", { name: "Save" });
++		await user.click(saveButton);
++
++		await waitFor(() => {
++			expect(toast.error).toHaveBeenCalledWith(
++				"Failed to update work pool: Network error",
++			);
++		});
++	});
++
++	it("navigates to work pool page on successful update", async () => {
++		const user = userEvent.setup();
++
++		mockUpdateWorkPool.mockImplementation((_data, options) => {
++			options.onSuccess?.();
++		});
++
++		renderWorkPoolEditForm();
++
++		const saveButton = screen.getByRole("button", { name: "Save" });
++		await user.click(saveButton);
++
++		await waitFor(() => {
++			expect(mockNavigate).toHaveBeenCalledWith({
++				to: "/work-pools/work-pool/$workPoolName",
++				params: { workPoolName: "test-work-pool" },
++			});
++		});
++	});
++
++	it("renders with null description", () => {
++		const workPool = createFakeWorkPool({
++			name: "test-pool",
++			description: null,
++			concurrency_limit: 5,
++			type: "docker",
++		});
++
++		render(
++			<QueryClientProvider client={queryClient}>
++				<WorkPoolEditForm workPool={workPool} />
++			</QueryClientProvider>,
++		);
++
++		const descriptionInput = screen.getByLabelText("Description (Optional)");
++		expect(descriptionInput).toHaveValue("");
++	});
++
++	it("renders with null concurrency limit", () => {
++		const workPool = createFakeWorkPool({
++			name: "test-pool",
++			description: "Test",
++			concurrency_limit: null,
++			type: "kubernetes",
++		});
++
++		render(
++			<QueryClientProvider client={queryClient}>
++				<WorkPoolEditForm workPool={workPool} />
++			</QueryClientProvider>,
++		);
++
++		const concurrencyInput = screen.getByLabelText(
++			"Flow Run Concurrency (Optional)",
++		);
++		expect(concurrencyInput).toHaveValue(null);
++	});
++
++	it("renders Save and Cancel buttons", () => {
++		renderWorkPoolEditForm();
++
++		expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
++		expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
++	});
++});
+diff --git a/ui-v2/src/components/work-pools/edit/work-pool-edit-form.tsx b/ui-v2/src/components/work-pools/edit/work-pool-edit-form.tsx
+new file mode 100644
+index 000000000000..de56abb541e4
+--- /dev/null
++++ b/ui-v2/src/components/work-pools/edit/work-pool-edit-form.tsx
+@@ -0,0 +1,146 @@
++import { zodResolver } from "@hookform/resolvers/zod";
++import { useRouter } from "@tanstack/react-router";
++import { useForm } from "react-hook-form";
++import { toast } from "sonner";
++import { useUpdateWorkPool, type WorkPool, type WorkPoolUpdate } from "@/api/work-pools";
++import { Button } from "@/components/ui/button";
++import { Card, CardContent } from "@/components/ui/card";
++import {
++	Form,
++	FormControl,
++	FormField,
++	FormItem,
++	FormLabel,
++	FormMessage,
++} from "@/components/ui/form";
++import { Input } from "@/components/ui/input";
++import { Label } from "@/components/ui/label";
++import { Textarea } from "@/components/ui/textarea";
++import { type WorkPoolEditFormValues, workPoolEditSchema } from "./schema";
++
++type WorkPoolEditFormProps = {
++	workPool: WorkPool;
++};
++
++export const WorkPoolEditForm = ({ workPool }: WorkPoolEditFormProps) => {
++	const router = useRouter();
++	const { updateWorkPool, isPending } = useUpdateWorkPool();
++
++	const form = useForm<WorkPoolEditFormValues>({
++		resolver: zodResolver(workPoolEditSchema),
++		defaultValues: {
++			description: workPool.description ?? "",
++			concurrencyLimit: workPool.concurrency_limit ?? null,
++		},
++	});
++
++	const handleCancel = () => {
++		router.history.back();
++	};
++
++	const handleSubmit = (data: WorkPoolEditFormValues) => {
++		const trimmedDescription = data.description?.trim();
++		updateWorkPool(
++			{
++				name: workPool.name,
++				workPool: {
++					description: trimmedDescription === "" ? null : trimmedDescription,
++					concurrency_limit: data.concurrencyLimit,
++				},
++			},
++			{
++				onSuccess: () => {
++					toast.success("Work pool updated");
++					void router.navigate({
++						to: "/work-pools/work-pool/$workPoolName",
++						params: { workPoolName: workPool.name },
++					});
++				},
++				onError: (error) => {
++					toast.error(
++						`Failed to update work pool: ${error instanceof Error ? error.message : "Unknown error"}`,
++					);
++				},
++			},
++		);
++	};
++
++	return (
++		<Card>
++			<CardContent className="pt-6">
++				<Form {...form}>
++					<form
++						onSubmit={(e) => void form.handleSubmit(handleSubmit)(e)}
++						className="space-y-6"
++					>
++						<div className="space-y-2">
++							<Label htmlFor="work-pool-name">Name</Label>
++							<Input id="work-pool-name" value={workPool.name} disabled />
++						</div>
++
++						<FormField
++							control={form.control}
++							name="description"
++							render={({ field }) => (
++								<FormItem>
++									<FormLabel>Description (Optional)</FormLabel>
++									<FormControl>
++										<Textarea
++											{...field}
++											value={field.value ?? ""}
++											rows={7}
++											placeholder="Enter a description for your work pool"
++										/>
++									</FormControl>
++									<FormMessage />
++								</FormItem>
++							)}
++						/>
++
++						<FormField
++							control={form.control}
++							name="concurrencyLimit"
++							render={({ field }) => (
++								<FormItem>
++									<FormLabel>Flow Run Concurrency (Optional)</FormLabel>
++									<FormControl>
++										<Input
++											{...field}
++											type="number"
++											placeholder="Unlimited"
++											value={field.value ?? ""}
++											onChange={(e) => {
++												const value = e.target.value;
++												field.onChange(value === "" ? null : Number(value));
++											}}
++										/>
++									</FormControl>
++									<FormMessage />
++								</FormItem>
++							)}
++						/>
++
++						<div className="space-y-2">
++							<Label htmlFor="work-pool-type">Type</Label>
++							<Input id="work-pool-type" value={workPool.type} disabled />
++						</div>
++
++						<div className="flex justify-end gap-2">
++							<Button
++								type="button"
++								variant="outline"
++								onClick={handleCancel}
++								disabled={isPending}
++							>
++								Cancel
++							</Button>
++							<Button type="submit" disabled={isPending}>
++								{isPending ? "Saving..." : "Save"}
++							</Button>
++						</div>
++					</form>
++				</Form>
++			</CardContent>
++		</Card>
++	);
++};
+diff --git a/ui-v2/src/routes/work-pools/work-pool_.$workPoolName.edit.tsx b/ui-v2/src/routes/work-pools/work-pool_.$workPoolName.edit.tsx
+index 05b4bcc41bbb..f4bbad56a56e 100644
+--- a/ui-v2/src/routes/work-pools/work-pool_.$workPoolName.edit.tsx
++++ b/ui-v2/src/routes/work-pools/work-pool_.$workPoolName.edit.tsx
+@@ -1,6 +1,10 @@
+ import { useSuspenseQuery } from "@tanstack/react-query";
+ import { createFileRoute } from "@tanstack/react-router";
+ import { buildGetWorkPoolQuery } from "@/api/work-pools/work-pools";
++import {
++	WorkPoolEditForm,
++	WorkPoolEditPageHeader,
++} from "@/components/work-pools/edit";
+ 
+ export const Route = createFileRoute(
+ 	"/work-pools/work-pool_/$workPoolName/edit",
+@@ -21,5 +25,10 @@ function RouteComponent() {
+ 		buildGetWorkPoolQuery(workPoolName),
+ 	);
+ 
+-	return <div>Editing work pool: {workPool.name}</div>;
++	return (
++		<div className="flex flex-col gap-4">
++			<WorkPoolEditPageHeader workPool={workPool} />
++			<WorkPoolEditForm workPool={workPool} />
++		</div>
++	);
+ }

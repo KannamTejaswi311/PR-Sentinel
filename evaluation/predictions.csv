@@ -1,0 +1,8 @@
+
+sample_id,ground_truth,llm_only,static_only,codebert,llm_rag,llm_multi_agent,pr_sentinel
+1,1,,,,,,
+2,0,,,,,,
+3,1,,,,,,
+4,0,,,,,,
+5,1,,,,,,
+6,0,,,,,,

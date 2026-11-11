@@ -1,0 +1,22 @@
+{
+  "pr_id": "Ghost_pr1",
+  "experiment_id": "E1",
+  "status": "SUCCESS",
+  "findings": [],
+  "findings_count": 0,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 0.007,
+  "execution_manifest": {
+    "codebert": "SKIPPED",
+    "static_analyzer": "SKIPPED",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "MONOLITHIC_MODE",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

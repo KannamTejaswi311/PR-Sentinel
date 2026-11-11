@@ -1,0 +1,107 @@
+{
+  "pr_id": "Ghost_pr1",
+  "experiment_id": "E2",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "Ghost_pr1",
+      "source": "StaticAnalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/core/boot.js",
+      "line_start": 1,
+      "evidence": "",
+      "execution_status": "SUCCESS",
+      "finding_id": "eead6379-1b46-4856-9b13-ef4dda6ae718",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.js)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/core/boot.js' has unsupported extension '.js'.",
+      "recommendation": "Add external static analyzer for '.js' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "FILE",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr1",
+      "source": "StaticAnalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/core/server/services/xmlrpc.js",
+      "line_start": 1,
+      "evidence": "",
+      "execution_status": "SUCCESS",
+      "finding_id": "cec0a8d1-ed64-4fe0-9e17-af5d28f962ad",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.js)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/core/server/services/xmlrpc.js' has unsupported extension '.js'.",
+      "recommendation": "Add external static analyzer for '.js' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "FILE",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr1",
+      "source": "StaticAnalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/core/shared/config/env/config.development.json",
+      "line_start": 1,
+      "evidence": "",
+      "execution_status": "SUCCESS",
+      "finding_id": "80c300a9-550c-454a-a059-9ff28e04d637",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.json)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/core/shared/config/env/config.development.json' has unsupported extension '.json'.",
+      "recommendation": "Add external static analyzer for '.json' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "FILE",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr1",
+      "source": "StaticAnalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/test/unit/server/services/xmlrpc.test.js",
+      "line_start": 1,
+      "evidence": "",
+      "execution_status": "SUCCESS",
+      "finding_id": "318b39ba-1076-432e-b6b5-362fcf8359ae",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.js)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/test/unit/server/services/xmlrpc.test.js' has unsupported extension '.js'.",
+      "recommendation": "Add external static analyzer for '.js' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "FILE",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    }
+  ],
+  "findings_count": 4,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 0.007,
+  "execution_manifest": {
+    "codebert": "SKIPPED",
+    "static_analyzer": "SUCCESS",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SKIPPED",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

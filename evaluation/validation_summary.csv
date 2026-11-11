@@ -1,0 +1,7 @@
+Metric,Count
+Total ground-truth issues,580
+File found in diff,537
+Missing ground-truth file path,37
+File not found in diff,6
+Missing-path issues with code matches,16
+Missing-path issues without code matches,21

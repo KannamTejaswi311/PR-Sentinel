@@ -1,0 +1,118 @@
+diff --git a/ui-v2/src/components/flows/flow-icon-text/flow-icon-text.stories.tsx b/ui-v2/src/components/flows/flow-icon-text/flow-icon-text.stories.tsx
+new file mode 100644
+index 000000000000..5888f99f3207
+--- /dev/null
++++ b/ui-v2/src/components/flows/flow-icon-text/flow-icon-text.stories.tsx
+@@ -0,0 +1,66 @@
++import type { Meta, StoryObj } from "@storybook/react";
++import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import {
++	createMemoryHistory,
++	createRootRoute,
++	createRouter,
++	RouterProvider,
++} from "@tanstack/react-router";
++import { Suspense } from "react";
++import { FlowIconText } from "./flow-icon-text";
++
++const queryClient = new QueryClient({
++	defaultOptions: {
++		queries: {
++			retry: false,
++		},
++	},
++});
++
++const createTestRouter = (flowId: string) => {
++	const rootRoute = createRootRoute({
++		component: () => (
++			<Suspense fallback={<div>Loading...</div>}>
++				<FlowIconText flowId={flowId} />
++			</Suspense>
++		),
++	});
++
++	return createRouter({
++		routeTree: rootRoute,
++		history: createMemoryHistory({ initialEntries: ["/"] }),
++		context: { queryClient: new QueryClient() },
++	});
++};
++
++const meta: Meta<typeof FlowIconText> = {
++	title: "Components/Flows/FlowIconText",
++	component: FlowIconText,
++	decorators: [
++		(_Story, context) => {
++			const router = createTestRouter(context.args.flowId ?? "flow-123");
++			return (
++				<QueryClientProvider client={queryClient}>
++					<RouterProvider router={router} />
++				</QueryClientProvider>
++			);
++		},
++	],
++	parameters: {
++		docs: {
++			description: {
++				component:
++					"A link component that fetches and displays a flow name with a Workflow icon, linking to the flow detail page.",
++			},
++		},
++	},
++};
++
++export default meta;
++type Story = StoryObj<typeof FlowIconText>;
++
++export const Default: Story = {
++	args: {
++		flowId: "flow-123",
++	},
++};
+diff --git a/ui-v2/src/components/flows/flow-icon-text/flow-icon-text.tsx b/ui-v2/src/components/flows/flow-icon-text/flow-icon-text.tsx
+new file mode 100644
+index 000000000000..6284a101d2cb
+--- /dev/null
++++ b/ui-v2/src/components/flows/flow-icon-text/flow-icon-text.tsx
+@@ -0,0 +1,33 @@
++import { useSuspenseQuery } from "@tanstack/react-query";
++import { Link } from "@tanstack/react-router";
++import { Suspense } from "react";
++import { buildFLowDetailsQuery } from "@/api/flows";
++import { Icon } from "@/components/ui/icons";
++import { Skeleton } from "@/components/ui/skeleton";
++
++type FlowIconTextProps = {
++	flowId: string;
++};
++
++export const FlowIconText = ({ flowId }: FlowIconTextProps) => {
++	return (
++		<Suspense>
++			<FlowIconTextImplementation flowId={flowId} />
++		</Suspense>
++	);
++};
++
++const FlowIconTextImplementation = ({ flowId }: FlowIconTextProps) => {
++	const { data: flow } = useSuspenseQuery(buildFLowDetailsQuery(flowId));
++
++	return (
++		<Link
++			to="/flows/flow/$id"
++			params={{ id: flow.id }}
++			className="flex items-center gap-1"
++		>
++			<Icon id="Workflow" className="size-4" />
++			{flow.name}
++		</Link>
++	);
++};
+diff --git a/ui-v2/src/components/flows/flow-icon-text/index.ts b/ui-v2/src/components/flows/flow-icon-text/index.ts
+new file mode 100644
+index 000000000000..93fe09f346ab
+--- /dev/null
++++ b/ui-v2/src/components/flows/flow-icon-text/index.ts
+@@ -0,0 +1 @@
++export { FlowIconText } from "./flow-icon-text";

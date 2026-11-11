@@ -1,0 +1,133 @@
+diff --git a/web/app/components/plugins/marketplace/atoms.ts b/web/app/components/plugins/marketplace/atoms.ts
+index 6ca9bd1c054807..b290a0447bae37 100644
+--- a/web/app/components/plugins/marketplace/atoms.ts
++++ b/web/app/components/plugins/marketplace/atoms.ts
+@@ -1,4 +1,3 @@
+-import type { ActivePluginType } from './constants'
+ import type { PluginsSort, SearchParamsFromCollection } from './types'
+ import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai'
+ import { useQueryState } from 'nuqs'
+@@ -17,32 +16,14 @@ export function useSetMarketplaceSort() {
+   return useSetAtom(marketplaceSortAtom)
+ }
+ 
+-/**
+- * Preserve the state for marketplace
+- */
+-export const preserveSearchStateInQueryAtom = atom<boolean>(false)
+-
+-const searchPluginTextAtom = atom<string>('')
+-const activePluginTypeAtom = atom<ActivePluginType>('all')
+-const filterPluginTagsAtom = atom<string[]>([])
+-
+ export function useSearchPluginText() {
+-  const preserveSearchStateInQuery = useAtomValue(preserveSearchStateInQueryAtom)
+-  const queryState = useQueryState('q', marketplaceSearchParamsParsers.q)
+-  const atomState = useAtom(searchPluginTextAtom)
+-  return preserveSearchStateInQuery ? queryState : atomState
++  return useQueryState('q', marketplaceSearchParamsParsers.q)
+ }
+ export function useActivePluginType() {
+-  const preserveSearchStateInQuery = useAtomValue(preserveSearchStateInQueryAtom)
+-  const queryState = useQueryState('category', marketplaceSearchParamsParsers.category)
+-  const atomState = useAtom(activePluginTypeAtom)
+-  return preserveSearchStateInQuery ? queryState : atomState
++  return useQueryState('tab', marketplaceSearchParamsParsers.category)
+ }
+ export function useFilterPluginTags() {
+-  const preserveSearchStateInQuery = useAtomValue(preserveSearchStateInQueryAtom)
+-  const queryState = useQueryState('tags', marketplaceSearchParamsParsers.tags)
+-  const atomState = useAtom(filterPluginTagsAtom)
+-  return preserveSearchStateInQuery ? queryState : atomState
++  return useQueryState('tags', marketplaceSearchParamsParsers.tags)
+ }
+ 
+ /**
+@@ -59,7 +40,7 @@ export function useMarketplaceSearchMode() {
+   const searchMode = useAtomValue(searchModeAtom)
+   const isSearchMode = !!searchPluginText
+     || filterPluginTags.length > 0
+-    || (searchMode ?? (!PLUGIN_CATEGORY_WITH_COLLECTIONS.has(activePluginType)))
++    || (searchMode ?? (PLUGIN_CATEGORY_WITH_COLLECTIONS.has(activePluginType)))
+   return isSearchMode
+ }
+ 
+diff --git a/web/app/components/plugins/marketplace/hydration-client.tsx b/web/app/components/plugins/marketplace/hydration-client.tsx
+deleted file mode 100644
+index 5698db711f6e5a..00000000000000
+--- a/web/app/components/plugins/marketplace/hydration-client.tsx
++++ /dev/null
+@@ -1,15 +0,0 @@
+-'use client'
+-
+-import { useHydrateAtoms } from 'jotai/utils'
+-import { preserveSearchStateInQueryAtom } from './atoms'
+-
+-export function HydrateMarketplaceAtoms({
+-  preserveSearchStateInQuery,
+-  children,
+-}: {
+-  preserveSearchStateInQuery: boolean
+-  children: React.ReactNode
+-}) {
+-  useHydrateAtoms([[preserveSearchStateInQueryAtom, preserveSearchStateInQuery]])
+-  return <>{children}</>
+-}
+diff --git a/web/app/components/plugins/marketplace/index.tsx b/web/app/components/plugins/marketplace/index.tsx
+index 1f32ee4d291e9e..0eb2488cef97d5 100644
+--- a/web/app/components/plugins/marketplace/index.tsx
++++ b/web/app/components/plugins/marketplace/index.tsx
+@@ -1,7 +1,6 @@
+ import type { SearchParams } from 'nuqs'
+ import { TanstackQueryInitializer } from '@/context/query-client'
+ import Description from './description'
+-import { HydrateMarketplaceAtoms } from './hydration-client'
+ import { HydrateQueryClient } from './hydration-server'
+ import ListWrapper from './list/list-wrapper'
+ import StickySearchAndSwitchWrapper from './sticky-search-and-switch-wrapper'
+@@ -10,8 +9,7 @@ type MarketplaceProps = {
+   showInstallButton?: boolean
+   pluginTypeSwitchClassName?: string
+   /**
+-   * Pass the search params from the request to prefetch data on the server
+-   * and preserve the search params in the URL.
++   * Pass the search params from the request to prefetch data on the server.
+    */
+   searchParams?: Promise<SearchParams>
+ }
+@@ -24,15 +22,13 @@ const Marketplace = async ({
+   return (
+     <TanstackQueryInitializer>
+       <HydrateQueryClient searchParams={searchParams}>
+-        <HydrateMarketplaceAtoms preserveSearchStateInQuery={!!searchParams}>
+-          <Description />
+-          <StickySearchAndSwitchWrapper
+-            pluginTypeSwitchClassName={pluginTypeSwitchClassName}
+-          />
+-          <ListWrapper
+-            showInstallButton={showInstallButton}
+-          />
+-        </HydrateMarketplaceAtoms>
++        <Description />
++        <StickySearchAndSwitchWrapper
++          pluginTypeSwitchClassName={pluginTypeSwitchClassName}
++        />
++        <ListWrapper
++          showInstallButton={showInstallButton}
++        />
+       </HydrateQueryClient>
+     </TanstackQueryInitializer>
+   )
+diff --git a/web/app/components/plugins/plugin-page/context.tsx b/web/app/components/plugins/plugin-page/context.tsx
+index fea78ae181eb99..b6a36775d55a74 100644
+--- a/web/app/components/plugins/plugin-page/context.tsx
++++ b/web/app/components/plugins/plugin-page/context.tsx
+@@ -48,7 +48,7 @@ type PluginPageContextProviderProps = {
+   children: ReactNode
+ }
+ 
+-export function usePluginPageContext(selector: (value: PluginPageContextValue) => any) {
++export function usePluginPageContext(selector: any) {
+   return useContextSelector(PluginPageContext, selector)
+ }
+ 
