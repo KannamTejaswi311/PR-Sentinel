@@ -1,1361 +1,733 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>AI Code Review Assistant</title>
-
+    <title>PR-Sentinel — AI-Powered Intelligent Code Review Bot</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
-
 <body>
 
     <!-- ============================= -->
     <!-- HEADER -->
     <!-- ============================= -->
-
     <header>
-
-        <div class="logo">
-            AI Code Review Assistant
+        <div class="logo-container">
+            <span class="logo-badge">PR-SENTINEL</span>
+            <span class="logo-title">AI Code Review Bot</span>
         </div>
-
-        <div class="status">
-            ● Local AI
+        <div class="system-status-pills">
+            <div class="status-pill" id="statusOllama">
+                <span class="status-dot active"></span>
+                <span>Qwen2.5-Coder</span>
+            </div>
+            <div class="status-pill" id="statusCodeBERT">
+                <span class="status-dot active"></span>
+                <span>CodeBERT (768-D)</span>
+            </div>
+            <div class="status-pill" id="statusStatic">
+                <span class="status-dot active"></span>
+                <span>Bandit / Flake8</span>
+            </div>
+            <div class="status-pill" id="statusRAG">
+                <span class="status-dot active"></span>
+                <span id="ragPillText">RAG Ready</span>
+            </div>
         </div>
-
     </header>
 
-
-    <!-- ============================= -->
-    <!-- MAIN CONTENT -->
-    <!-- ============================= -->
-
     <main>
-
         <!-- ============================= -->
         <!-- HERO SECTION -->
         <!-- ============================= -->
-
         <section class="hero">
-
-            <h1>
-                AI-Powered Code Review
-            </h1>
-
+            <h1>Automated Pull Request Review & Risk Intelligence</h1>
             <p>
-                Analyze your code changes using PR-Agent,
-                Ollama and Qwen2.5-Coder.
+                Multi-agent code review combining CodeBERT representations, static analysis (Bandit & Flake8),
+                repository-aware RAG, and Qwen2.5-Coder reasoning into an explainable, risk-scored review report.
             </p>
-
         </section>
 
-
         <!-- ============================= -->
-        <!-- UPLOAD SECTION -->
+        <!-- INPUT & SUBMISSION CARD -->
         <!-- ============================= -->
+        <section class="card">
+            <div class="tab-container">
+                <button class="tab-btn active" onclick="switchInputTab('uploadTab', this)">Upload Diff / Patch</button>
+                <button class="tab-btn" onclick="switchInputTab('githubTab', this)">GitHub Pull Request</button>
+                <button class="tab-btn" onclick="switchInputTab('benchmarksTab', this)">Controlled Benchmarks</button>
+            </div>
 
-        <section class="review-card">
+            <!-- TAB 1: LOCAL DIFF -->
+            <div id="uploadTab" class="tab-content active">
+                <div class="upload-area">
+                    <div class="upload-icon">📄</div>
+                    <h3>Select Source Code Diff</h3>
+                    <p>Upload a Git unified diff (<code>.diff</code> or <code>.patch</code> file) to trigger review.</p>
+                    <input type="file" id="diffFile" accept=".diff,.patch">
+                    <label for="diffFile" class="choose-button">Choose Diff File</label>
+                    <p id="fileName" style="margin-top: 12px; font-weight: 600; color: #38bdf8;">No file selected</p>
+                </div>
+                <button id="runUploadBtn" class="btn-primary" style="margin-top: 20px; width: 100%; justify-content: center;">
+                    ⚡ Run Full PR-Sentinel Review
+                </button>
+            </div>
 
-            <h2>
-                Submit Code for Review
-            </h2>
+            <!-- TAB 2: GITHUB PR -->
+            <div id="githubTab" class="tab-content">
+                <p class="card-subtitle">Connect directly to a GitHub Pull Request URL to analyze metadata, commits, and diffs.</p>
+                <div class="url-input-group">
+                    <input type="text" id="githubPrUrl" class="text-input" placeholder="https://github.com/owner/repository/pull/123" />
+                    <button id="runGithubBtn" class="btn-primary">
+                        🔍 Review GitHub PR
+                    </button>
+                </div>
+            </div>
 
-            <p class="description">
-                Upload a Git diff file to start an automated code review.
+            <!-- TAB 3: BENCHMARKS -->
+            <div id="benchmarksTab" class="tab-content">
+                <p class="card-subtitle">Run pre-configured test cases from our evaluation suite to verify defect & security detection.</p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;" id="benchmarkButtons">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- LOADING INDICATOR -->
+        <div id="loadingBox" class="card" style="display: none; text-align: center; padding: 40px;">
+            <div style="font-size: 32px; margin-bottom: 15px;">⚙️</div>
+            <h3 style="color: #38bdf8; margin-bottom: 8px;">PR-Sentinel Pipeline in Progress</h3>
+            <p style="color: #94a3b8; font-size: 14px;">
+                Extracting diff hunks → Running CodeBERT representations → Executing Bandit & Flake8 →
+                Retrieving RAG repo context → Dispatching Bug, Security, Performance & Quality agents...
             </p>
+        </div>
 
+        <!-- ============================= -->
+        <!-- REVIEW RESULTS SECTION -->
+        <!-- ============================= -->
+        <div id="reviewResultsSection" style="display: none;">
 
-            <div class="upload-area">
-
-                <div class="upload-icon">
-                    ↑
+            <!-- PR RISK GAUGE BANNER -->
+            <div id="riskBanner" class="risk-banner medium">
+                <div class="risk-gauge-box">
+                    <div class="risk-score-circle" id="riskScoreValue">
+                        55
+                        <small>RISK</small>
+                    </div>
+                    <div class="risk-info">
+                        <h3 id="riskLevelText">MEDIUM RISK</h3>
+                        <p id="riskRecommendationText">Review recommended before merging.</p>
+                        <small id="riskFormulaText" style="color: #64748b; font-size: 12px; margin-top: 6px; display: block;"></small>
+                    </div>
                 </div>
-
-                <h3>
-                    Upload Diff File
-                </h3>
-
-                <p>
-                    Select a .diff or .patch file
-                </p>
-
-
-                <input
-                    type="file"
-                    id="diffFile"
-                    accept=".diff,.patch"
-                >
-
-
-                <label
-                    for="diffFile"
-                    class="choose-button"
-                >
-                    Choose Diff File
-                </label>
-
-
-                <p id="fileName">
-                    No file selected
-                </p>
-
+                <div>
+                    <span id="reviewedFilenameBadge" class="badge badge-info" style="font-size: 13px; padding: 6px 12px;">patch.diff</span>
+                </div>
             </div>
 
-
-            <button
-                class="review-button"
-                type="button"
-            >
-                Review Code
-            </button>
-
-        </section>
-
-
-        <!-- ============================= -->
-        <!-- REVIEW SUMMARY -->
-        <!-- ============================= -->
-
-        <section class="summary">
-
-            <h2>
-                Review Summary
-            </h2>
-
-
-            <div class="summary-grid">
-
-
-                <!-- Critical Issues -->
-
-                <div class="summary-box">
-
-                    <span
-                        class="number"
-                        id="criticalIssues"
-                    >
-                        0
-                    </span>
-
-                    <span>
-                        Critical Issues
-                    </span>
-
+            <!-- SEVERITY METRICS GRID -->
+            <div class="metrics-grid">
+                <div class="metric-card critical">
+                    <div class="metric-number" id="critCount">0</div>
+                    <div class="metric-label">Critical</div>
                 </div>
-
-
-                <!-- Security Issues -->
-
-                <div class="summary-box">
-
-                    <span
-                        class="number"
-                        id="securityIssues"
-                    >
-                        0
-                    </span>
-
-                    <span>
-                        Security Issues
-                    </span>
-
+                <div class="metric-card high">
+                    <div class="metric-number" id="highCount">0</div>
+                    <div class="metric-label">High Severity</div>
                 </div>
-
-
-                <!-- Code Quality -->
-
-                <div class="summary-box">
-
-                    <span
-                        class="number"
-                        id="codeQualityIssues"
-                    >
-                        0
-                    </span>
-
-                    <span>
-                        Code Quality
-                    </span>
-
+                <div class="metric-card medium">
+                    <div class="metric-number" id="medCount">0</div>
+                    <div class="metric-label">Medium Severity</div>
                 </div>
-
-
-                <!-- Test Issues -->
-
-                <div class="summary-box">
-
-                    <span
-                        class="number"
-                        id="testIssues"
-                    >
-                        0
-                    </span>
-
-                    <span>
-                        Test Issues
-                    </span>
-
+                <div class="metric-card low">
+                    <div class="metric-number" id="lowCount">0</div>
+                    <div class="metric-label">Low / Info</div>
                 </div>
-
-
+                <div class="metric-card info">
+                    <div class="metric-number" id="totalCount">0</div>
+                    <div class="metric-label">Total Findings</div>
+                </div>
             </div>
 
-        </section>
+            <!-- MAIN REVIEW SECTIONS TABS -->
+            <section class="card">
+                <div class="tab-container">
+                    <button class="tab-btn active" onclick="switchReviewTab('findingsTab', this)">Consolidated Findings</button>
+                    <button class="tab-btn" onclick="switchReviewTab('multiAgentTab', this)">Multi-Agent Breakdown</button>
+                    <button class="tab-btn" onclick="switchReviewTab('testsTab', this)">Test Recommendations</button>
+                    <button class="tab-btn" onclick="switchReviewTab('ragTab', this)">RAG Context</button>
+                    <button class="tab-btn" onclick="switchReviewTab('codebertTab', this)">CodeBERT Intel</button>
+                    <button class="tab-btn" onclick="switchReviewTab('githubOutTab', this)">GitHub Comment</button>
+                </div>
 
+                <!-- TAB 1: CONSOLIDATED FINDINGS -->
+                <div id="findingsTab" class="tab-content active">
+                    <div id="findingsList" class="findings-container">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- TAB 2: MULTI-AGENT BREAKDOWN -->
+                <div id="multiAgentTab" class="tab-content">
+                    <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+                        <button class="btn-secondary" onclick="renderAgentSection('Bug Detection Agent')">Bug Detection</button>
+                        <button class="btn-secondary" onclick="renderAgentSection('Security Review Agent')">Security</button>
+                        <button class="btn-secondary" onclick="renderAgentSection('Performance Review Agent')">Performance</button>
+                        <button class="btn-secondary" onclick="renderAgentSection('Code Quality Agent')">Code Quality</button>
+                    </div>
+                    <div id="agentDetailContainer">
+                        <!-- Agent details populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- TAB 3: TEST RECOMMENDATIONS -->
+                <div id="testsTab" class="tab-content">
+                    <p class="card-subtitle">Automated unit, boundary, negative, and security test recommendations generated for this review.</p>
+                    <div id="testRecsContainer">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- TAB 4: RAG CONTEXT -->
+                <div id="ragTab" class="tab-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div>
+                            <h4 style="color: #f8fafc;">Repository Context Ingestion</h4>
+                            <p id="ragStatsSummary" style="color: #94a3b8; font-size: 13px;">Checking index status...</p>
+                        </div>
+                        <button class="btn-secondary" onclick="reindexRepository()">🔄 Reindex Repository</button>
+                    </div>
+                    <div id="ragContextSnippets">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- TAB 5: CODEBERT INTEL -->
+                <div id="codebertTab" class="tab-content">
+                    <div class="context-item">
+                        <div class="context-header">
+                            <span>Model: microsoft/codebert-base</span>
+                            <span>Vector Dimensions: 768-D</span>
+                        </div>
+                        <p id="codebertSummaryText" style="color: #cbd5e1; font-size: 14px; margin-bottom: 12px;"></p>
+                        <div id="codebertIndicators" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 13px;">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 6: GITHUB COMMENT PREVIEW -->
+                <div id="githubOutTab" class="tab-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="color: #94a3b8; font-size: 13px;">Markdown format ready for GitHub PR review comment</span>
+                        <button class="btn-secondary" onclick="copyGitHubComment()">📋 Copy Markdown</button>
+                    </div>
+                    <pre class="code-block" id="githubCommentBlock"></pre>
+                </div>
+            </section>
+        </div>
 
         <!-- ============================= -->
-        <!-- STAGE 3 - SEVERITY OVERVIEW -->
+        <!-- REVIEW HISTORY SECTION -->
         <!-- ============================= -->
-
-        <section class="summary">
-
-            <h2>
-                Security Severity
-            </h2>
-
-
-            <div class="summary-grid">
-
-
-                <!-- Critical -->
-
-                <div class="summary-box">
-
-                    <span
-                        class="number"
-                        id="criticalSeverity"
-                    >
-                        0
-                    </span>
-
-                    <span>
-                        Critical
-                    </span>
-
-                </div>
-
-
-                <!-- High -->
-
-                <div class="summary-box">
-
-                    <span
-                        class="number"
-                        id="highSeverity"
-                    >
-                        0
-                    </span>
-
-                    <span>
-                        High
-                    </span>
-
-                </div>
-
-
-                <!-- Medium -->
-
-                <div class="summary-box">
-
-                    <span
-                        class="number"
-                        id="mediumSeverity"
-                    >
-                        0
-                    </span>
-
-                    <span>
-                        Medium
-                    </span>
-
-                </div>
-
-
-                <!-- Low -->
-
-                <div class="summary-box">
-
-                    <span
-                        class="number"
-                        id="lowSeverity"
-                    >
-                        0
-                    </span>
-
-                    <span>
-                        Low
-                    </span>
-
-                </div>
-
-
+        <section class="card">
+            <h2 class="card-title">📜 Review History & Audit Log</h2>
+            <p class="card-subtitle">Stored historical reviews, PR risk scores, and developer calibration feedback in SQLite.</p>
+            <div style="overflow-x: auto;">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Target / File</th>
+                            <th>Date</th>
+                            <th>Risk Score</th>
+                            <th>Risk Level</th>
+                            <th>Critical</th>
+                            <th>Security</th>
+                            <th>Quality</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
             </div>
-
-        </section>
-
-
-        <!-- ============================= -->
-        <!-- STAGE 3 - SECURITY FINDINGS -->
-        <!-- ============================= -->
-
-        <section class="results">
-
-    <h2>
-        Security Findings
-    </h2>
-
-    <div
-        class="result-placeholder"
-        id="securityFindings"
-    >
-
-        <p>
-            No security findings detected yet.
-        </p>
-
-    </div>
-
-</section>
-
-
-        <!-- ============================= -->
-        <!-- REVIEW RESULTS -->
-        <!-- ============================= -->
-
-        <section class="results">
-
-    <h2>
-        Review Results
-    </h2>
-
-    <div
-        class="result-placeholder"
-        id="reviewResults"
-    >
-
-        <p>
-            Your AI code review results will appear here.
-        </p>
-
-    </div>
-
-</section>
-        <!-- ============================= -->
-        <!-- REVIEW HISTORY -->
-        <!-- ============================= -->
-
-        <section class="results">
-
-            <h2>
-                Review History
-            </h2>
-
-            <div
-                class="result-placeholder"
-                id="reviewHistory"
-            >
-
-                <p>
-                    No previous reviews found.
-                </p>
-
-            </div>
-
         </section>
     </main>
 
-
     <!-- ============================= -->
-    <!-- FOOTER -->
+    <!-- JAVASCRIPT LOGIC -->
     <!-- ============================= -->
-
-    <footer>
-
-        <p>
-            PR-Agent • Ollama • Qwen2.5-Coder
-        </p>
-
-    </footer>
-
-
-    <!-- ============================= -->
-    <!-- JAVASCRIPT -->
-    <!-- ============================= -->
-
     <script>
+        let currentReviewId = null;
+        let currentReviewData = null;
 
+        // TAB SWITCHERS
+        function switchInputTab(tabId, btn) {
+            document.querySelectorAll("#uploadTab, #githubTab, #benchmarksTab").forEach(el => el.classList.remove("active"));
+            document.getElementById(tabId).classList.add("active");
+            btn.parentElement.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+        }
 
-        // -----------------------------------------
-        // Get HTML elements
-        // -----------------------------------------
+        function switchReviewTab(tabId, btn) {
+            document.querySelectorAll("#findingsTab, #multiAgentTab, #testsTab, #ragTab, #codebertTab, #githubOutTab").forEach(el => el.classList.remove("active"));
+            document.getElementById(tabId).classList.add("active");
+            btn.parentElement.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+        }
 
-        const fileInput =
-            document.getElementById("diffFile");
+        // INITIALIZATION
+        document.addEventListener("DOMContentLoaded", () => {
+            loadReviewHistory();
+            loadRAGStatus();
+            loadBenchmarks();
 
+            // File input label update
+            const fileInput = document.getElementById("diffFile");
+            fileInput.addEventListener("change", () => {
+                const name = fileInput.files.length > 0 ? fileInput.files[0].name : "No file selected";
+                document.getElementById("fileName").textContent = name;
+            });
 
-        const fileName =
-            document.getElementById("fileName");
+            // Local Upload button
+            document.getElementById("runUploadBtn").addEventListener("click", submitLocalDiff);
 
+            // GitHub PR button
+            document.getElementById("runGithubBtn").addEventListener("click", submitGitHubPR);
+        });
 
-        const reviewButton =
-            document.querySelector(".review-button");
-
-
-        const results =
-            document.getElementById("reviewResults");
-
-
-        // -----------------------------------------
-        // Stage 2 summary elements
-        // -----------------------------------------
-
-        const criticalIssues =
-            document.getElementById("criticalIssues");
-
-
-        const securityIssues =
-            document.getElementById("securityIssues");
-
-
-        const codeQualityIssues =
-            document.getElementById("codeQualityIssues");
-
-
-        const testIssues =
-            document.getElementById("testIssues");
-
-
-        // -----------------------------------------
-        // Stage 3 severity elements
-        // -----------------------------------------
-
-        const criticalSeverity =
-            document.getElementById("criticalSeverity");
-
-
-        const highSeverity =
-            document.getElementById("highSeverity");
-
-
-        const mediumSeverity =
-            document.getElementById("mediumSeverity");
-
-
-        const lowSeverity =
-            document.getElementById("lowSeverity");
-
-
-        // -----------------------------------------
-        // Stage 3 security findings
-        // -----------------------------------------
-
-        const securityFindings =
-            document.getElementById("securityFindings");
-
-        // -----------------------------------------
-// Review History
-// -----------------------------------------
-
-const reviewHistory =
-    document.getElementById("reviewHistory");
-
-
-        // -----------------------------------------
-        // Display selected filename
-        // -----------------------------------------
-
-        fileInput.addEventListener(
-            "change",
-            function () {
-
-                if (this.files.length > 0) {
-
-                    fileName.textContent =
-                        this.files[0].name;
-
-                } else {
-
-                    fileName.textContent =
-                        "No file selected";
-
-                }
-
+        // SUBMIT LOCAL DIFF
+        async function submitLocalDiff() {
+            const fileInput = document.getElementById("diffFile");
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("Please select a .diff or .patch file first.");
+                return;
             }
-        );
 
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
 
-        // -----------------------------------------
-        // HTML escape function
-        // -----------------------------------------
+            setLoading(true);
+            try {
+                const resp = await fetch("/upload", { method: "POST", body: formData });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.message || "Review failed.");
+                displayFullReview(data);
+                loadReviewHistory();
+            } catch (err) {
+                alert("Review error: " + err.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // SUBMIT GITHUB PR
+        async function submitGitHubPR() {
+            const urlInput = document.getElementById("githubPrUrl").value.trim();
+            if (!urlInput) {
+                alert("Please enter a GitHub Pull Request URL.");
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const resp = await fetch("/review/github", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ pr_url: urlInput })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.message || "Failed to review GitHub PR.");
+                displayFullReview(data);
+                loadReviewHistory();
+            } catch (err) {
+                alert("GitHub Review error: " + err.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function setLoading(isLoading) {
+            document.getElementById("loadingBox").style.display = isLoading ? "block" : "none";
+            document.getElementById("runUploadBtn").disabled = isLoading;
+            document.getElementById("runGithubBtn").disabled = isLoading;
+            if (isLoading) {
+                document.getElementById("reviewResultsSection").style.display = "none";
+            }
+        }
+
+        // RENDER FULL REVIEW
+        function displayFullReview(data) {
+            currentReviewData = data;
+            currentReviewId = data.review_id;
+            document.getElementById("reviewResultsSection").style.display = "block";
+
+            // 1. Risk Banner
+            const risk = data.risk_assessment || {};
+            const score = risk.score || 0;
+            const scoreCircle = document.getElementById("riskScoreValue");
+            scoreCircle.innerHTML = `${score}<small>RISK</small>`;
+
+            const banner = document.getElementById("riskBanner");
+            banner.className = "risk-banner " + (score >= 75 ? "critical" : (score >= 50 ? "high" : (score >= 25 ? "medium" : "low")));
+
+            document.getElementById("riskLevelText").textContent = risk.risk_level || "EVALUATED";
+            document.getElementById("riskRecommendationText").textContent = risk.recommendation || "";
+            document.getElementById("riskFormulaText").textContent = risk.formula_explanation || "";
+            document.getElementById("reviewedFilenameBadge").textContent = data.filename || "diff";
+
+            // 2. Metrics
+            const summary = data.summary || {};
+            const sev = summary.severity || {};
+            document.getElementById("critCount").textContent = sev.critical || 0;
+            document.getElementById("highCount").textContent = sev.high || 0;
+            document.getElementById("medCount").textContent = sev.medium || 0;
+            document.getElementById("lowCount").textContent = (sev.low || 0) + (sev.informational || 0);
+            document.getElementById("totalCount").textContent = (summary.findings || []).length;
+
+            // 3. Consolidated Findings
+            renderFindingsList(summary.findings || []);
+
+            // 4. Multi-Agent default view
+            renderAgentSection("Bug Detection Agent");
+
+            // 5. Test Recommendations
+            renderTestRecommendations(data.test_recommendations || []);
+
+            // 6. RAG Context Snippets
+            renderRAGSnippets(data.rag_context || []);
+
+            // 7. CodeBERT Intel
+            renderCodeBERT(data.codebert_analysis || {});
+
+            // 8. GitHub Comment
+            document.getElementById("githubCommentBlock").textContent = data.github_comment || "No comment generated.";
+
+            // Scroll to results
+            document.getElementById("reviewResultsSection").scrollIntoView({ behavior: "smooth" });
+        }
+
+        // RENDER FINDINGS WITH FEEDBACK BUTTONS
+        function renderFindingsList(findings) {
+            const container = document.getElementById("findingsList");
+            if (!findings || findings.length === 0) {
+                container.innerHTML = `<div style="text-align: center; padding: 30px; color: #10b981;">✅ No defects or security vulnerabilities detected. Code is clean!</div>`;
+                return;
+            }
+
+            container.innerHTML = findings.map((f, idx) => {
+                const sevClass = (f.severity || "MEDIUM").toLowerCase();
+                return `
+                    <div class="finding-card">
+                        <div class="finding-header">
+                            <span class="badge badge-${sevClass}">${f.severity || "MEDIUM"}</span>
+                            <span class="finding-location">${escapeHtml(f.file || "")}:${f.line || 1}</span>
+                        </div>
+                        <h4 class="finding-title">${escapeHtml(f.title || "Finding")}</h4>
+                        <p class="finding-desc">${escapeHtml(f.description || "")}</p>
+                        ${f.evidence ? `<div class="code-snippet">${escapeHtml(f.evidence)}</div>` : ""}
+                        ${f.suggested_fix ? `<div class="fix-box"><strong>Suggested Fix:</strong>${escapeHtml(f.suggested_fix)}</div>` : ""}
+                        <div class="feedback-bar" id="feedbackBar_${idx}">
+                            <span class="feedback-label">Developer Calibration:</span>
+                            <button class="feedback-btn" onclick="sendFeedback(${idx}, 'useful', this)">👍 Useful</button>
+                            <button class="feedback-btn" onclick="sendFeedback(${idx}, 'correct_finding', this)">✅ Correct Finding</button>
+                            <button class="feedback-btn" onclick="sendFeedback(${idx}, 'false_positive', this)">⚠️ False Positive</button>
+                            <button class="feedback-btn" onclick="sendFeedback(${idx}, 'not_useful', this)">👎 Not Useful</button>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        // SEND FEEDBACK
+        async function sendFeedback(findingIndex, feedbackType, btn) {
+            if (!currentReviewId) return;
+            try {
+                const resp = await fetch("/feedback", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        review_id: currentReviewId,
+                        finding_index: findingIndex,
+                        feedback_type: feedbackType,
+                    })
+                });
+                const res = await resp.json();
+                if (res.success) {
+                    const parent = btn.parentElement;
+                    parent.querySelectorAll(".feedback-btn").forEach(b => b.classList.remove("selected"));
+                    btn.classList.add("selected");
+                }
+            } catch (e) {
+                console.error("Feedback error", e);
+            }
+        }
+
+        // RENDER MULTI-AGENT SECTION
+        function renderAgentSection(agentName) {
+            if (!currentReviewData || !currentReviewData.multi_agent_results) return;
+            const container = document.getElementById("agentDetailContainer");
+            const agentData = currentReviewData.multi_agent_results[agentName] || {};
+
+            container.innerHTML = `
+                <div class="context-item">
+                    <div class="context-header">
+                        <span>${agentName}</span>
+                        <span>Role: ${agentData.role || ""}</span>
+                    </div>
+                    <p style="color: #94a3b8; font-size: 13px; margin-bottom: 12px;">
+                        Focus Areas: ${(agentData.focus_areas || []).join(", ")}
+                    </p>
+                    <div class="findings-container">
+                        ${(agentData.findings && agentData.findings.length > 0)
+                            ? agentData.findings.map(f => `
+                                <div class="finding-card" style="padding: 12px;">
+                                    <div class="finding-header">
+                                        <span class="badge badge-${(f.severity || 'medium').toLowerCase()}">${f.severity}</span>
+                                        <span class="finding-location">${f.file}:${f.line}</span>
+                                    </div>
+                                    <h5 style="color: #f8fafc; margin-bottom: 4px;">${escapeHtml(f.title)}</h5>
+                                    <p style="font-size: 13px; color: #cbd5e1;">${escapeHtml(f.description)}</p>
+                                    ${f.suggested_fix ? `<div class="fix-box" style="margin-top: 8px;"><strong>Fix:</strong> ${escapeHtml(f.suggested_fix)}</div>` : ''}
+                                </div>
+                            `).join("")
+                            : `<div style="color: #10b981; font-size: 13px;">No issues flagged by ${agentName}.</div>`
+                        }
+                    </div>
+                </div>
+            `;
+        }
+
+        // RENDER TEST RECOMMENDATIONS
+        function renderTestRecommendations(tests) {
+            const container = document.getElementById("testRecsContainer");
+            if (!tests || tests.length === 0) {
+                container.innerHTML = `<div style="color: #94a3b8;">No specific test scenarios generated.</div>`;
+                return;
+            }
+
+            container.innerHTML = tests.map(t => `
+                <div class="test-card">
+                    <div class="test-header">
+                        <span class="test-type-pill">${t.test_type}</span>
+                        <span style="font-size: 12px; color: #94a3b8;">Target: <code>${t.target_component}()</code></span>
+                    </div>
+                    <h4 style="color: #f8fafc; font-size: 15px; margin-bottom: 6px;">${escapeHtml(t.scenario)}</h4>
+                    <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 8px;"><b>Rationale:</b> ${escapeHtml(t.rationale)}</p>
+                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">
+                        <div><b>Input:</b> <code>${escapeHtml(t.input_conditions)}</code></div>
+                        <div><b>Expected:</b> ${escapeHtml(t.expected_result)}</div>
+                    </div>
+                    ${t.sample_test_code ? `<pre class="code-block" style="padding: 10px; font-size: 12px;">${escapeHtml(t.sample_test_code)}</pre>` : ""}
+                </div>
+            `).join("");
+        }
+
+        // RENDER RAG CONTEXT
+        function renderRAGSnippets(snippets) {
+            const container = document.getElementById("ragContextSnippets");
+            if (!snippets || snippets.length === 0) {
+                container.innerHTML = `<div style="color: #94a3b8; font-size: 13px;">No relevant context snippets needed for this diff.</div>`;
+                return;
+            }
+            container.innerHTML = snippets.map((s, i) => `
+                <div class="context-item">
+                    <div class="context-header">
+                        <span>[Context ${i+1}] ${escapeHtml(s.file_path)} (${s.name}) [Lines ${s.line_start}-${s.line_end}]</span>
+                        <span style="color: #34d399;">${(s.similarity_score * 100).toFixed(1)}% Match</span>
+                    </div>
+                    <pre class="code-block" style="font-size: 12px; padding: 10px;">${escapeHtml(s.content_snippet)}</pre>
+                </div>
+            `).join("");
+        }
+
+        // RENDER CODEBERT
+        function renderCodeBERT(cb) {
+            document.getElementById("codebertSummaryText").textContent = cb.summary || "CodeBERT representation analyzed.";
+            const ind = cb.semantic_indicators || {};
+            const container = document.getElementById("codebertIndicators");
+            container.innerHTML = `
+                <div class="metric-card info" style="padding: 10px;">
+                    <div style="font-size: 18px; font-weight: bold; color: #38bdf8;">${cb.token_count || 0}</div>
+                    <div style="font-size: 11px; color: #94a3b8;">Tokens Encoded</div>
+                </div>
+                <div class="metric-card ${ind.semantic_risk_deviation > 0.05 ? 'high' : 'low'}" style="padding: 10px;">
+                    <div style="font-size: 18px; font-weight: bold; color: ${ind.semantic_risk_deviation > 0.05 ? '#fb923c' : '#34d399'};">
+                        ${(ind.semantic_risk_deviation || 0).toFixed(3)}
+                    </div>
+                    <div style="font-size: 11px; color: #94a3b8;">Risk Deviation</div>
+                </div>
+                <div class="metric-card info" style="padding: 10px;">
+                    <div style="font-size: 18px; font-weight: bold; color: #38bdf8;">${(ind.unsafe_sql_pattern_similarity || 0).toFixed(3)}</div>
+                    <div style="font-size: 11px; color: #94a3b8;">Unsafe Vector Sim</div>
+                </div>
+            `;
+        }
+
+        // COPY GITHUB COMMENT
+        function copyGitHubComment() {
+            const text = document.getElementById("githubCommentBlock").textContent;
+            navigator.clipboard.writeText(text);
+            alert("GitHub review summary copied to clipboard!");
+        }
+
+        // LOAD REVIEW HISTORY
+        async function loadReviewHistory() {
+            try {
+                const resp = await fetch("/history");
+                const data = await resp.json();
+                if (!data.success) return;
+
+                const tbody = document.getElementById("historyTableBody");
+                tbody.innerHTML = data.history.map(item => {
+                    const score = item.risk_score || 0;
+                    const badgeClass = score >= 75 ? "badge-critical" : (score >= 50 ? "badge-high" : (score >= 25 ? "badge-medium" : "badge-low"));
+                    return `
+                        <tr>
+                            <td>#${item.id}</td>
+                            <td style="font-weight: 600; color: #f8fafc;">${escapeHtml(item.filename)}</td>
+                            <td>${item.review_date}</td>
+                            <td><span class="badge ${badgeClass}">${score}/100</span></td>
+                            <td>${escapeHtml(item.risk_level || "LOW")}</td>
+                            <td>${item.critical_issues || item.critical_severity || 0}</td>
+                            <td>${item.security_issues || 0}</td>
+                            <td>${item.code_quality_issues || 0}</td>
+                            <td>
+                                <button class="btn-secondary" style="padding: 4px 10px; font-size: 12px;" onclick="viewHistoryDetail(${item.id})">
+                                    View
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
+            } catch (e) {
+                console.error("Failed to load history", e);
+            }
+        }
+
+        // VIEW HISTORY DETAIL
+        async function viewHistoryDetail(reviewId) {
+            try {
+                const resp = await fetch(`/history/${reviewId}`);
+                const data = await resp.json();
+                if (!data.success || !data.review) return;
+
+                const r = data.review;
+                const synthesized = r.synthesized_data || {};
+
+                displayFullReview({
+                    review_id: r.id,
+                    filename: r.filename,
+                    summary: {
+                        critical_issues: r.critical_issues,
+                        security_issues: r.security_issues,
+                        code_quality_issues: r.code_quality_issues,
+                        test_issues: r.test_issues,
+                        severity: {
+                            critical: r.critical_severity,
+                            high: r.high_severity,
+                            medium: r.medium_severity,
+                            low: r.low_severity,
+                        },
+                        findings: r.findings || synthesized.findings || [],
+                    },
+                    risk_assessment: synthesized.risk_assessment || {
+                        score: r.risk_score,
+                        risk_level: r.risk_level,
+                        recommendation: "Historical record loaded.",
+                    },
+                    codebert_analysis: synthesized.codebert_analysis || {},
+                    multi_agent_results: synthesized.multi_agent_results || {},
+                    test_recommendations: synthesized.test_recommendations || [],
+                    rag_context: synthesized.rag_context_snippets || [],
+                    github_comment: synthesized.github_comment || r.review_text,
+                });
+            } catch (e) {
+                alert("Could not load review detail: " + e.message);
+            }
+        }
+
+        // LOAD RAG STATUS
+        async function loadRAGStatus() {
+            try {
+                const resp = await fetch("/rag/status");
+                const data = await resp.json();
+                document.getElementById("ragPillText").textContent = `RAG: ${data.total_chunks || 0} chunks`;
+                document.getElementById("ragStatsSummary").textContent =
+                    `Vector Index: ${data.total_chunks || 0} chunks across ${data.indexed_files_count || 0} files. Last indexed: ${data.last_indexed_time || 'Never'}.`;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // REINDEX RAG
+        async function reindexRepository() {
+            try {
+                const resp = await fetch("/rag/index", { method: "POST" });
+                const data = await resp.json();
+                if (data.success) {
+                    alert("Repository successfully re-indexed into RAG vector store!");
+                    loadRAGStatus();
+                }
+            } catch (e) {
+                alert("Reindexing failed: " + e.message);
+            }
+        }
+
+        // LOAD CONTROLLED BENCHMARKS
+        async function loadBenchmarks() {
+            try {
+                const resp = await fetch("/benchmarks");
+                const data = await resp.json();
+                const container = document.getElementById("benchmarkButtons");
+                container.innerHTML = (data.controlled_benchmarks || []).map(b => `
+                    <button class="btn-secondary" style="padding: 10px 14px; text-align: left;" onclick="runBenchmark('${b.id}')">
+                        <div style="font-weight: 600; color: #38bdf8;">${b.id}: ${escapeHtml(b.title)}</div>
+                        <small style="color: #94a3b8;">${b.type} | Expected: ${b.expected_severity}</small>
+                    </button>
+                `).join("");
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function runBenchmark(benchId) {
+            const resp = await fetch("/benchmarks");
+            const data = await resp.json();
+            const b = (data.controlled_benchmarks || []).find(x => x.id === benchId);
+            if (!b) return;
+
+            // Create file blob from diff and submit
+            const blob = new Blob([b.diff], { type: "text/plain" });
+            const file = new File([blob], `${benchId.toLowerCase()}_test.diff`);
+            const formData = new FormData();
+            formData.append("file", file);
+
+            setLoading(true);
+            try {
+                const reviewResp = await fetch("/upload", { method: "POST", body: formData });
+                const reviewData = await reviewResp.json();
+                displayFullReview(reviewData);
+                loadReviewHistory();
+            } catch (err) {
+                alert("Benchmark review failed: " + err.message);
+            } finally {
+                setLoading(false);
+            }
+        }
 
         function escapeHtml(text) {
-
-            const div =
-                document.createElement("div");
-
-            div.textContent = text;
-
-            return div.innerHTML;
-
+            if (!text) return "";
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
-
-
-        // -----------------------------------------
-        // Format PR-Agent review
-        // -----------------------------------------
-
-        function formatReview(review) {
-
-            let safe =
-                escapeHtml(review);
-
-
-            // -------------------------------------
-            // Convert Markdown heading
-            // -------------------------------------
-
-            safe = safe.replace(
-                /^## PR Reviewer Guide 🔍/m,
-                '<h3 class="review-title">PR Reviewer Guide 🔍</h3>'
-            );
-
-
-            // -------------------------------------
-            // Remove table wrapper
-            // -------------------------------------
-
-            safe = safe.replace(
-                /&lt;table&gt;/gi,
-                '<div class="review-table">'
-            );
-
-
-            safe = safe.replace(
-                /&lt;\/table&gt;/gi,
-                '</div>'
-            );
-
-
-            // -------------------------------------
-            // Convert table rows
-            // -------------------------------------
-
-            safe = safe.replace(
-                /&lt;tr&gt;/gi,
-                '<div class="review-row">'
-            );
-
-
-            safe = safe.replace(
-                /&lt;\/tr&gt;/gi,
-                '</div>'
-            );
-
-
-            // -------------------------------------
-            // Convert table cells
-            // -------------------------------------
-
-            safe = safe.replace(
-                /&lt;td&gt;/gi,
-                '<div class="review-cell">'
-            );
-
-
-            safe = safe.replace(
-                /&lt;\/td&gt;/gi,
-                '</div>'
-            );
-
-
-            // -------------------------------------
-            // Convert bold text
-            // -------------------------------------
-
-            safe = safe.replace(
-                /&lt;strong&gt;/gi,
-                '<strong>'
-            );
-
-
-            safe = safe.replace(
-                /&lt;\/strong&gt;/gi,
-                '</strong>'
-            );
-
-
-            // -------------------------------------
-            // Convert line breaks
-            // -------------------------------------
-
-            safe = safe.replace(
-                /\n/g,
-                '<br>'
-            );
-
-
-            // -------------------------------------
-            // Convert paragraph-like lines
-            // -------------------------------------
-
-            safe = safe.replace(
-                /<br><br>/g,
-                '<br>'
-            );
-
-
-            return safe;
-
-        }
-
-
-        // -----------------------------------------
-        // Reset dashboard counters
-        // -----------------------------------------
-
-        function resetSummary() {
-
-
-            // Stage 2 counters
-
-            criticalIssues.textContent =
-                "0";
-
-
-            securityIssues.textContent =
-                "0";
-
-
-            codeQualityIssues.textContent =
-                "0";
-
-
-            testIssues.textContent =
-                "0";
-
-
-            // Stage 3 severity counters
-
-            criticalSeverity.textContent =
-                "0";
-
-
-            highSeverity.textContent =
-                "0";
-
-
-            mediumSeverity.textContent =
-                "0";
-
-
-            lowSeverity.textContent =
-                "0";
-
-
-            // Reset security findings
-
-            securityFindings.innerHTML = `
-
-                <div class="result-placeholder">
-
-                    <p>
-                        No security findings detected yet.
-                    </p>
-
-                </div>
-
-            `;
-
-        }
-
-
-        // -----------------------------------------
-        // Display security findings
-        // -----------------------------------------
-
-        function displaySecurityFindings(findings) {
-
-
-            // No findings
-
-            if (!findings || findings.length === 0) {
-
-                securityFindings.innerHTML = `
-
-                    <div class="result-placeholder">
-
-                        <p>
-                            No security findings detected.
-                        </p>
-
-                    </div>
-
-                `;
-
-                return;
-
-            }
-
-
-            // Findings exist
-
-            securityFindings.innerHTML =
-                findings.map(
-                    function (finding) {
-
-                        const category =
-                            finding.category ||
-                            "Security Issue";
-
-
-                        const severity =
-                            finding.severity ||
-                            "MEDIUM";
-
-
-                        const file =
-                            finding.file ||
-                            "Unknown";
-
-
-                        const line =
-                            finding.line ??
-                            "Unknown";
-
-
-                        const description =
-                            finding.description ||
-                            "No description available.";
-
-
-                        const recommendation =
-                            finding.recommendation ||
-                            "Review and fix the security issue.";
-
-
-                        const testRecommendation =
-                            finding.test_recommendation ||
-                            "Add a test covering the security issue.";
-
-
-                        return `
-
-                            <div class="review-output">
-
-                                <h3>
-                                    ${escapeHtml(category)}
-                                </h3>
-
-
-                                <p>
-                                    <strong>
-                                        Severity:
-                                    </strong>
-
-                                    ${escapeHtml(
-                                        String(severity)
-                                    )}
-                                </p>
-
-
-                                <p>
-                                    <strong>
-                                        File:
-                                    </strong>
-
-                                    ${escapeHtml(
-                                        String(file)
-                                    )}
-                                </p>
-
-
-                                <p>
-                                    <strong>
-                                        Line:
-                                    </strong>
-
-                                    ${escapeHtml(
-                                        String(line)
-                                    )}
-                                </p>
-
-
-                                <p>
-                                    <strong>
-                                        Description:
-                                    </strong>
-
-                                    ${escapeHtml(
-                                        String(description)
-                                    )}
-                                </p>
-
-
-                                <p>
-                                    <strong>
-                                        Recommendation:
-                                    </strong>
-
-                                    ${escapeHtml(
-                                        String(recommendation)
-                                    )}
-                                </p>
-
-
-                                <p>
-                                    <strong>
-                                        Test Recommendation:
-                                    </strong>
-
-                                    ${escapeHtml(
-                                        String(testRecommendation)
-                                    )}
-                                </p>
-
-                            </div>
-
-                        `;
-
-                    }
-                ).join("");
-
-        }
-
-
-        // -----------------------------------------
-        // Display a stored or newly completed review
-        // -----------------------------------------
-
-        function displayReviewData(reviewText, summary) {
-
-            const reviewSummary = summary || {};
-            const severity = reviewSummary.severity || {};
-
-            criticalIssues.textContent =
-                reviewSummary.critical_issues ?? 0;
-
-            securityIssues.textContent =
-                reviewSummary.security_issues ?? 0;
-
-            codeQualityIssues.textContent =
-                reviewSummary.code_quality_issues ?? 0;
-
-            testIssues.textContent =
-                reviewSummary.test_issues ?? 0;
-
-            criticalSeverity.textContent =
-                severity.critical ?? 0;
-
-            highSeverity.textContent =
-                severity.high ?? 0;
-
-            mediumSeverity.textContent =
-                severity.medium ?? 0;
-
-            lowSeverity.textContent =
-                severity.low ?? 0;
-
-            displaySecurityFindings(
-                reviewSummary.findings || []
-            );
-
-            results.innerHTML = `
-
-                <div class="review-output">
-
-                    <div class="review-status">
-                        ✓ AI Review Completed
-                    </div>
-
-                    <div class="review-content">
-                        ${formatReview(reviewText || "")}
-                    </div>
-
-                </div>
-
-            `;
-
-        }
-
-
-        // -----------------------------------------
-        // Review history
-        // -----------------------------------------
-
-        function historySummary(review) {
-
-            return {
-                critical_issues: review.critical_issues ?? 0,
-                security_issues: review.security_issues ?? 0,
-                code_quality_issues: review.code_quality_issues ?? 0,
-                test_issues: review.test_issues ?? 0,
-                severity: {
-                    critical: review.critical_severity ?? 0,
-                    high: review.high_severity ?? 0,
-                    medium: review.medium_severity ?? 0,
-                    low: review.low_severity ?? 0
-                },
-                findings: review.findings || []
-            };
-
-        }
-
-
-        function renderReviewHistory(history) {
-
-            if (!history || history.length === 0) {
-
-                reviewHistory.innerHTML = `
-                    <p>No previous reviews found.</p>
-                `;
-
-                return;
-
-            }
-
-            reviewHistory.innerHTML = history.map(
-                function (item) {
-
-                    return `
-                        <div
-                            class="review-output review-history-item"
-                            data-review-id="${escapeHtml(String(item.id))}"
-                            role="button"
-                            tabindex="0"
-                        >
-                            <h3>${escapeHtml(String(item.filename || "Unknown file"))}</h3>
-                            <p>Reviewed: ${escapeHtml(String(item.review_date || "Unknown date"))}</p>
-                            <p>Security Issues: ${escapeHtml(String(item.security_issues ?? 0))}</p>
-                            <p>Critical: ${escapeHtml(String(item.critical_severity ?? 0))}</p>
-                            <p>High: ${escapeHtml(String(item.high_severity ?? 0))}</p>
-                            <p>Medium: ${escapeHtml(String(item.medium_severity ?? 0))}</p>
-                            <p>Low: ${escapeHtml(String(item.low_severity ?? 0))}</p>
-                            <p>Click to view full review →</p>
-                        </div>
-                    `;
-
-                }
-            ).join("");
-
-        }
-
-
-        async function loadReviewHistory() {
-
-            try {
-                const response = await fetch("/history");
-                const data = await response.json();
-
-                if (!response.ok || !data.success) {
-                    throw new Error(
-                        data.message || "Unable to load review history."
-                    );
-                }
-
-                renderReviewHistory(data.history);
-
-            } catch (error) {
-                reviewHistory.innerHTML = `
-                    <p>${escapeHtml(
-                        error.message || "Unable to load review history."
-                    )}</p>
-                `;
-            }
-
-        }
-
-
-        reviewHistory.addEventListener(
-            "click",
-            async function (event) {
-
-                const historyItem =
-                    event.target.closest("[data-review-id]");
-
-                if (!historyItem) {
-                    return;
-                }
-
-                try {
-                    const response = await fetch(
-                        `/history/${encodeURIComponent(
-                            historyItem.dataset.reviewId
-                        )}`
-                    );
-                    const data = await response.json();
-
-                    if (!response.ok || !data.success) {
-                        throw new Error(
-                            data.message || "Unable to load review."
-                        );
-                    }
-
-                    displayReviewData(
-                        data.review.review_text,
-                        historySummary(data.review)
-                    );
-
-                    document.getElementById("reviewResults").scrollIntoView({
-                        behavior: "smooth",
-                        block: "start"
-                    });
-
-                } catch (error) {
-                    results.innerHTML = `
-                        <div class="review-output">
-                            <p>${escapeHtml(
-                                error.message || "Unable to load review."
-                            )}</p>
-                        </div>
-                    `;
-                }
-
-            }
-        );
-
-
-        // -----------------------------------------
-        // Review button
-        // -----------------------------------------
-
-        reviewButton.addEventListener(
-            "click",
-            async function () {
-
-
-                // ---------------------------------
-                // Check file selection
-                // ---------------------------------
-
-                if (fileInput.files.length === 0) {
-
-                    results.innerHTML = `
-
-                        <div class="review-output">
-
-                            <h3>
-                                File Required
-                            </h3>
-
-                            <p>
-                                Please select a .diff or .patch file first.
-                            </p>
-
-                        </div>
-
-                    `;
-
-                    return;
-
-                }
-
-
-                // ---------------------------------
-                // Get selected file
-                // ---------------------------------
-
-                const file =
-                    fileInput.files[0];
-
-
-                // ---------------------------------
-                // Create form data
-                // ---------------------------------
-
-                const formData =
-                    new FormData();
-
-
-                formData.append(
-                    "file",
-                    file
-                );
-
-
-                // ---------------------------------
-                // Disable button
-                // ---------------------------------
-
-                reviewButton.disabled =
-                    true;
-
-
-                reviewButton.textContent =
-                    "Reviewing...";
-
-
-                // ---------------------------------
-                // Reset previous summary
-                // ---------------------------------
-
-                resetSummary();
-
-
-                // ---------------------------------
-                // Show loading message
-                // ---------------------------------
-
-                results.innerHTML = `
-
-                    <div class="review-output">
-
-                        <h3>
-                            AI Review in Progress
-                        </h3>
-
-                        <p>
-                            PR-Agent is analyzing your code.
-                        </p>
-
-                        <p>
-                            Please wait while the local AI model
-                            completes the review...
-                        </p>
-
-                    </div>
-
-                `;
-
-
-                try {
-
-
-                    // ---------------------------------
-                    // Send file to FastAPI
-                    // ---------------------------------
-
-                    const response =
-                        await fetch(
-                            "/upload",
-                            {
-                                method: "POST",
-                                body: formData
-                            }
-                        );
-
-
-                    // ---------------------------------
-                    // Convert response to JSON
-                    // ---------------------------------
-
-                    const data =
-                        await response.json();
-
-
-                    // ---------------------------------
-                    // Successful review
-                    // ---------------------------------
-
-                    if (
-                        response.ok &&
-                        data.review
-                    ) {
-
-
-                        // -----------------------------
-                        // Update dashboard
-                        // -----------------------------
-
-                        if (data.summary) {
-
-
-                            // -------------------------
-                            // Stage 2 counters
-                            // -------------------------
-
-                            criticalIssues.textContent =
-                                data.summary.critical_issues ?? 0;
-
-
-                            securityIssues.textContent =
-                                data.summary.security_issues ?? 0;
-
-
-                            codeQualityIssues.textContent =
-                                data.summary.code_quality_issues ?? 0;
-
-
-                            testIssues.textContent =
-                                data.summary.test_issues ?? 0;
-
-
-                            // -------------------------
-                            // Stage 3 severity
-                            // -------------------------
-
-                            const severity =
-                                data.summary.severity ?? {};
-
-
-                            criticalSeverity.textContent =
-                                severity.critical ?? 0;
-
-
-                            highSeverity.textContent =
-                                severity.high ?? 0;
-
-
-                            mediumSeverity.textContent =
-                                severity.medium ?? 0;
-
-
-                            lowSeverity.textContent =
-                                severity.low ?? 0;
-
-
-                            // -------------------------
-                            // Stage 3 findings
-                            // -------------------------
-
-                            const findings =
-                                data.summary.findings ?? [];
-
-
-                            displaySecurityFindings(
-                                findings
-                            );
-
-                        }
-
-
-                        // -----------------------------
-                        // Format AI review
-                        // -----------------------------
-
-                        const formattedReview =
-                            formatReview(
-                                data.review
-                            );
-
-
-                        // -----------------------------
-                        // Display AI review
-                        // -----------------------------
-
-                        results.innerHTML = `
-
-                            <div class="review-output">
-
-                                <div class="review-status">
-                                    ✓ AI Review Completed
-                                </div>
-
-
-                                <div class="review-content">
-                                    ${formattedReview}
-                                </div>
-
-                            </div>
-
-                        `;
-
-                        await loadReviewHistory();
-
-                    } else {
-
-
-                        // ---------------------------------
-                        // Review failed
-                        // ---------------------------------
-
-                        const message =
-                            data.message ||
-                            "The review could not be completed.";
-
-
-                        const error =
-                            data.error ||
-                            "";
-
-
-                        results.innerHTML = `
-
-                            <div class="review-output">
-
-                                <h3>
-                                    Review Error
-                                </h3>
-
-
-                                <p>
-                                    ${escapeHtml(
-                                        message
-                                    )}
-                                </p>
-
-
-                                ${
-                                    error
-                                    ?
-                                    `<pre>${escapeHtml(error)}</pre>`
-                                    :
-                                    ""
-                                }
-
-                            </div>
-
-                        `;
-
-                    }
-
-
-                } catch (error) {
-
-
-                    // ---------------------------------
-                    // Server connection error
-                    // ---------------------------------
-
-                    results.innerHTML = `
-
-                        <div class="review-output">
-
-                            <h3>
-                                Unable to Complete Review
-                            </h3>
-
-
-                            <p>
-                                Unable to connect to the review server.
-                            </p>
-
-
-                            <p>
-                                Please check that FastAPI is running.
-                            </p>
-
-                        </div>
-
-                    `;
-
-                } finally {
-
-
-                    // ---------------------------------
-                    // Re-enable button
-                    // ---------------------------------
-
-                    reviewButton.disabled =
-                        false;
-
-
-                    reviewButton.textContent =
-                        "Review Code";
-
-                }
-
-            }
-        );
-
-
-        loadReviewHistory();
-
-
     </script>
-
 </body>
-
 </html>
