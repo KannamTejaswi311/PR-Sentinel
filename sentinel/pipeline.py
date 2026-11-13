@@ -14,6 +14,8 @@ Adheres to Frozen Experimental Protocol v1.0 and Amendment v1.1.
 """
 
 import time
+from dataclasses import asdict
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from sentinel.codebert_analyzer import get_codebert_analyzer
@@ -65,9 +67,20 @@ class PRSentinelPipeline:
         # STEP 1: CodeBERT
         # ----------------------------------------------------
         codebert_result = None
+        codebert_findings = []
         if self.config.enable_codebert:
             try:
-                codebert_result = self.codebert.analyze_code_diff(diff_content)
+                codebert_hunk_findings = self.codebert.analyze_diff_hunks(
+                    diff_content=diff_content,
+                    pr_id=pr_id,
+                    default_filename=filename,
+                )
+                codebert_findings = [asdict(f) if hasattr(f, "to_dict") else dict(f) for f in codebert_hunk_findings]
+                codebert_summary = self.codebert.analyze_code_diff(diff_content)
+                codebert_result = {
+                    "findings": codebert_findings,
+                    "summary": codebert_summary,
+                }
                 manifest["codebert"] = ExecutionStatus.SUCCESS.value
             except Exception as e:
                 manifest["codebert"] = f"ERROR: {str(e)}"
@@ -82,10 +95,13 @@ class PRSentinelPipeline:
             try:
                 static_findings = self.static_analyzer.analyze_diff(diff_content, filename=filename, pr_id=pr_id)
                 manifest["static_analyzer"] = ExecutionStatus.SUCCESS.value
+                manifest["static_analysis"] = ExecutionStatus.SUCCESS.value
             except Exception as e:
                 manifest["static_analyzer"] = f"ERROR: {str(e)}"
+                manifest["static_analysis"] = f"ERROR: {str(e)}"
         else:
             manifest["static_analyzer"] = ExecutionStatus.SKIPPED.value
+            manifest["static_analysis"] = ExecutionStatus.SKIPPED.value
 
         # ----------------------------------------------------
         # STEP 3: Repository RAG
@@ -94,11 +110,28 @@ class PRSentinelPipeline:
         formatted_rag_context = ""
         if self.config.enable_rag:
             try:
-                retrieved_context_chunks = self.rag.retrieve_context(diff_content, top_k=3)
-                formatted_rag_context = self.rag.format_context_for_prompt(retrieved_context_chunks)
-                manifest["rag_pipeline"] = ExecutionStatus.SUCCESS.value
+                # Target repository and commit isolation
+                target_dir = self.config.target_repo_dir or pr_metadata.get("target_repo_dir")
+                repo_id = pr_metadata.get("repo", "default")
+                commit_sha = pr_metadata.get("base_commit") or pr_metadata.get("commit_sha") or "HEAD"
+
+                if not target_dir or not Path(target_dir).exists():
+                    manifest["rag_pipeline"] = "TOOL_ERROR: Target repository snapshot directory not specified or does not exist."
+                else:
+                    rag_inst = self.rag
+                    target_resolved = str(Path(target_dir).resolve())
+                    if not rag_inst or not rag_inst.workspace_dir or str(rag_inst.workspace_dir) != target_resolved:
+                        from sentinel.rag_pipeline import get_rag_pipeline
+                        rag_inst = get_rag_pipeline(workspace_dir=str(target_dir), repo_id=repo_id, commit_sha=commit_sha)
+                    retrieved_context_chunks = rag_inst.retrieve_context(diff_content, top_k=3)
+                    formatted_rag_context = rag_inst.format_context_for_prompt(retrieved_context_chunks)
+                    manifest["rag_pipeline"] = ExecutionStatus.SUCCESS.value
             except Exception as e:
-                manifest["rag_pipeline"] = f"ERROR: {str(e)}"
+                err_msg = str(e)
+                if "strictly forbidden" in err_msg or "requires real CodeBERT weights" in err_msg or "unavailable" in err_msg:
+                    manifest["rag_pipeline"] = f"TOOL_ERROR: {err_msg}"
+                else:
+                    manifest["rag_pipeline"] = f"ERROR: {err_msg}"
         else:
             manifest["rag_pipeline"] = ExecutionStatus.SKIPPED.value
 
@@ -119,8 +152,26 @@ class PRSentinelPipeline:
             except Exception as e:
                 manifest["multi_agent"] = f"ERROR: {str(e)}"
         elif self.config.enable_llm:
-            # Monolithic LLM review (used for E1 and E6_A4)
-            manifest["multi_agent"] = "MONOLITHIC_MODE"
+            # Monolithic LLM review (used for E1, E4, and E6_A4)
+            try:
+                mono_res = self.orchestrator.run_monolithic_review_sync(
+                    diff_content=diff_content,
+                    filename=filename,
+                    repo_context=formatted_rag_context,
+                    pr_id=pr_id,
+                )
+                mono_findings = [asdict(f) if hasattr(f, "to_dict") else dict(f) for f in mono_res.get("findings", [])]
+                status_val = mono_res.get("execution_status", ExecutionStatus.SUCCESS.value)
+                multi_agent_results = {
+                    "agents_executed": ["Monolithic Reviewer"],
+                    "agent_findings": {"Monolithic Reviewer": mono_findings},
+                    "all_findings": mono_findings,
+                    "total_raw_findings": len(mono_findings),
+                    "execution_status": status_val,
+                }
+                manifest["multi_agent"] = f"MONOLITHIC_MODE:{status_val}"
+            except Exception as e:
+                manifest["multi_agent"] = f"ERROR: {str(e)}"
         else:
             manifest["multi_agent"] = ExecutionStatus.SKIPPED.value
 

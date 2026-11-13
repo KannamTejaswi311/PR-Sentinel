@@ -55,27 +55,53 @@ class RepositoryRAGPipeline:
         ".json",
     }
 
-    def __init__(self, workspace_dir: Optional[str] = None, repo_id: str = "default"):
-        self.workspace_dir = Path(workspace_dir) if workspace_dir else Path(__file__).resolve().parent.parent
+    def __init__(
+        self,
+        workspace_dir: Optional[str] = None,
+        repo_id: str = "default",
+        commit_sha: str = "HEAD",
+        index_dir: Optional[str] = None,
+    ):
+        self.workspace_dir = Path(workspace_dir).resolve() if workspace_dir else None
         self.repo_id = repo_id
-        
-        # Isolate indexes in a dedicated storage folder if not indexing workspace root directly
-        index_dir = self.workspace_dir
-        self.index_path = index_dir / self.INDEX_FILE
+        self.commit_sha = commit_sha
+        self.is_available = self.workspace_dir is not None and self.workspace_dir.exists()
+
+        # Isolate indexes in a dedicated storage folder to prevent overwriting or cross-repo collisions
+        safe_repo = re.sub(r"[^\w\-]", "_", str(repo_id))
+        safe_sha = re.sub(r"[^\w\-]", "_", str(commit_sha)[:12])
+        if index_dir:
+            index_root = Path(index_dir).resolve()
+        elif self.workspace_dir:
+            index_root = self.workspace_dir / ".sentinel_rag"
+        else:
+            index_root = Path("evaluation/rag_cache").resolve()
+
+        try:
+            index_root.mkdir(parents=True, exist_ok=True)
+            self.index_path = index_root / f"{safe_repo}_{safe_sha}_rag_index.json"
+        except Exception:
+            self.index_path = Path(f"{safe_repo}_{safe_sha}_rag_index.json")
+
         self.chunks: List[Dict[str, Any]] = []
         self.indexed_files_count: int = 0
         self.last_indexed_time: Optional[str] = None
         self.codebert = get_codebert_analyzer()
-        self._load_index()
+        if self.is_available:
+            self._load_index()
 
     def _load_index(self) -> bool:
-        """Load persistent vector index from disk if present."""
+        """Load persistent vector index from disk if present and matching repo/commit provenance."""
         if not self.index_path.exists():
             return False
 
         try:
             with open(self.index_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
+                if data.get("repo_id") != self.repo_id:
+                    return False
+                if self.commit_sha != "HEAD" and data.get("commit_sha") != self.commit_sha:
+                    return False
                 self.chunks = data.get("chunks", [])
                 self.indexed_files_count = data.get("indexed_files_count", 0)
                 self.last_indexed_time = data.get("last_indexed_time")
@@ -84,34 +110,60 @@ class RepositoryRAGPipeline:
             return False
 
     def _save_index(self):
-        """Persist vector index to disk."""
+        """Persist vector index to disk with full provenance."""
         data = {
             "repo_id": self.repo_id,
-            "workspace_dir": str(self.workspace_dir),
+            "commit_sha": self.commit_sha,
+            "workspace_dir": str(self.workspace_dir) if self.workspace_dir else None,
             "indexed_files_count": self.indexed_files_count,
             "total_chunks": len(self.chunks),
             "last_indexed_time": self.last_indexed_time,
             "chunks": self.chunks,
         }
-        with open(self.index_path, "w", encoding="utf-8") as f:
-            json.dump(data, f)
+        try:
+            with open(self.index_path, "w", encoding="utf-8") as f:
+                json.dump(data, f)
+        except Exception:
+            pass
 
     def get_stats(self) -> Dict[str, Any]:
         """Return current RAG indexing statistics."""
         return {
             "is_indexed": len(self.chunks) > 0,
+            "is_available": self.is_available,
             "indexed_files_count": self.indexed_files_count,
             "total_chunks": len(self.chunks),
             "last_indexed_time": self.last_indexed_time or "Never",
             "index_storage_file": str(self.index_path.name),
-            "workspace_dir": str(self.workspace_dir),
+            "workspace_dir": str(self.workspace_dir) if self.workspace_dir else None,
+            "repo_id": self.repo_id,
+            "commit_sha": self.commit_sha,
         }
 
     def index_repository(self, force_reindex: bool = False, max_files: int = 150) -> Dict[str, Any]:
         """
         Scan repository files, parse AST / text blocks, extract CodeBERT embeddings,
         and build persistent index.
+        In research mode, strictly forbids synthetic embeddings.
         """
+        if not self.workspace_dir or not self.workspace_dir.exists():
+            return {
+                "is_indexed": False,
+                "is_available": False,
+                "indexed_files_count": 0,
+                "total_chunks": 0,
+                "status": "SKIPPED_NO_TARGET_WORKSPACE",
+                "workspace_dir": None,
+            }
+
+        # Protocol check: require real weights in research mode
+        if getattr(self.codebert, "require_real_weights", False):
+            if not getattr(self.codebert, "has_real_weights", False) or getattr(self.codebert, "model", None) is None:
+                raise RuntimeError(
+                    "RAG indexing in research mode requires real CodeBERT weights; "
+                    "synthetic embeddings are strictly forbidden."
+                )
+
         if self.chunks and not force_reindex:
             return self.get_stats()
 
@@ -132,7 +184,7 @@ class RepositoryRAGPipeline:
                 file_path = Path(root) / file
                 rel_path = str(file_path.relative_to(self.workspace_dir)).replace("\\", "/")
 
-                if "review_history.db" in rel_path or "vector_index" in rel_path:
+                if "review_history.db" in rel_path or "vector_index" in rel_path or ".sentinel" in rel_path:
                     continue
 
                 try:
@@ -143,9 +195,11 @@ class RepositoryRAGPipeline:
                 except Exception:
                     pass
 
-        # Generate embeddings for each chunk
+        # Generate embeddings for each chunk with full repository provenance
         for idx, chunk in enumerate(all_chunks):
             chunk["chunk_id"] = f"{self.repo_id}_chunk_{idx+1:04d}"
+            chunk["repo_id"] = self.repo_id
+            chunk["commit_sha"] = self.commit_sha
             embedding_info = self.codebert.extract_code_representation(chunk["content"])
             chunk["embedding"] = embedding_info["vector"]
 
@@ -349,9 +403,19 @@ class RepositoryRAGPipeline:
 _RAG_PIPELINE_INSTANCE: Optional[RepositoryRAGPipeline] = None
 
 
-def get_rag_pipeline(workspace_dir: Optional[str] = None, repo_id: str = "default") -> RepositoryRAGPipeline:
-    """Return singleton instance of RepositoryRAGPipeline."""
+def get_rag_pipeline(
+    workspace_dir: Optional[str] = None,
+    repo_id: str = "default",
+    commit_sha: str = "HEAD",
+    index_dir: Optional[str] = None,
+) -> RepositoryRAGPipeline:
+    """Return singleton instance of RepositoryRAGPipeline or new instance if target workspace specified."""
     global _RAG_PIPELINE_INSTANCE
     if _RAG_PIPELINE_INSTANCE is None or workspace_dir is not None:
-        _RAG_PIPELINE_INSTANCE = RepositoryRAGPipeline(workspace_dir=workspace_dir, repo_id=repo_id)
+        _RAG_PIPELINE_INSTANCE = RepositoryRAGPipeline(
+            workspace_dir=workspace_dir,
+            repo_id=repo_id,
+            commit_sha=commit_sha,
+            index_dir=index_dir,
+        )
     return _RAG_PIPELINE_INSTANCE

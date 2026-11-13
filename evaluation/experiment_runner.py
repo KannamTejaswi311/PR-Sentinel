@@ -159,11 +159,24 @@ class ExperimentRunner:
             }
 
         diff_content = diff_file.read_text(encoding="utf-8", errors="replace")
+        repo_name = pr_record.get("repo", "")
+        target_dir = None
+        for candidate in [
+            Path(f"evaluation/repos/{repo_name}_{pr_id}"),
+            Path(f"evaluation/repos/{repo_name}_base"),
+            Path(f"evaluation/repos/{repo_name}"),
+        ]:
+            if candidate.exists() and candidate.is_dir():
+                target_dir = str(candidate.resolve())
+                break
+
         pr_metadata = {
             "pr_id": pr_id,
-            "repo": pr_record.get("repo", ""),
+            "repo": repo_name,
             "pr_number": pr_record.get("pr_number", 0),
             "title": f"PR {pr_id}",
+            "target_repo_dir": target_dir,
+            "commit_sha": pr_record.get("commit_sha", "HEAD"),
         }
 
         start_time = time.time()

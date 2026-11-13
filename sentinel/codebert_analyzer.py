@@ -15,50 +15,342 @@ from pathlib import Path
 
 from sentinel.schemas import ModelFinding, FindingGranularity, ExecutionStatus, FindingCategory, SeverityLevel
 
+try:
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
+
 # Global singleton instance
 _CODEBERT_INSTANCE: Optional["CodeBERTAnalyzer"] = None
 
 
+if HAS_TORCH:
+    class CodeBERTClassificationHead(nn.Module):
+        """
+        Supervised Defect Classification Head on top of CodeBERT representations.
+        Input dimension: 1536 (Concatenation of h_[CLS] and mean_pool(last_hidden_state)).
+        Architecture strictly per Frozen Protocol v1.0:
+          Dense(1536 -> 256) -> GELU() -> Dropout(0.1) -> Linear(256 -> 2)
+        """
+        def __init__(
+            self,
+            input_dim: int = 1536,
+            hidden_dim: int = 256,
+            num_classes: int = 2,
+            dropout_p: float = 0.1,
+            dropout_rate: Optional[float] = None,
+            **kwargs,
+        ):
+            super().__init__()
+            dp = dropout_rate if dropout_rate is not None else dropout_p
+            self.input_dim = input_dim
+            self.hidden_dim = hidden_dim
+            self.num_classes = num_classes
+            self.dropout_p = dp
+            self.dropout_rate = dp
+            self.dense = nn.Linear(input_dim, hidden_dim)
+            self.act = nn.GELU()
+            self.dropout = nn.Dropout(dp)
+            self.out_proj = nn.Linear(hidden_dim, num_classes)
+
+        def forward(self, features: "torch.Tensor") -> "torch.Tensor":
+            x = self.dense(features)
+            x = self.act(x)
+            x = self.dropout(x)
+            x = self.out_proj(x)
+            return x
+else:
+    class CodeBERTClassificationHead:  # type: ignore
+        """Fallback stub when PyTorch is not installed."""
+        def __init__(
+            self,
+            input_dim: int = 1536,
+            hidden_dim: int = 256,
+            num_classes: int = 2,
+            dropout_p: float = 0.1,
+            dropout_rate: Optional[float] = None,
+            **kwargs,
+        ):
+            dp = dropout_rate if dropout_rate is not None else dropout_p
+            self.input_dim = input_dim
+            self.hidden_dim = hidden_dim
+            self.num_classes = num_classes
+            self.dropout_p = dp
+            self.dropout_rate = dp
+
+
 class CodeBERTDefectClassifier:
     """
-    Supervised Defect Classification Head on top of CodeBERT embeddings.
-    Architecture:
-      h_pooled = [h_[CLS] || mean_pool(last_hidden_state)]  (1536-D)
-      logits = Dense(1536 -> 256) -> GeLU -> Dropout(0.1) -> Linear(256 -> 2)
-    Calibrated strictly on validation split via Youden's Index.
+    Supervised Defect Classification Head manager for CodeBERT representations.
+    Adheres strictly to Frozen Experimental Protocol v1.0 & Protocol Amendment v1.1:
+    - Trainable PyTorch 1536 -> 256 -> 2 head with GELU and 0.1 Dropout.
+    - Official CodeXGLUE train, validation, and test split loading.
+    - Youden's J threshold calibration on validation data: J = sensitivity + specificity - 1.
+    - Checkpoint persistence and provenance metadata tracking.
+    - Explicit rejection of untrained inference in research evaluation.
     """
-    def __init__(self, threshold: float = 0.5):
+    def __init__(
+        self,
+        threshold: float = 0.5,
+        seed: int = 42,
+        require_real_weights: bool = False,
+    ):
         self.threshold = threshold
+        self.seed = seed
+        self.require_real_weights = require_real_weights
         self.is_trained = False
-        self.weights_path = None
-        self.metadata = {
+        self.has_calibrated_threshold = False
+        self.calibrated_threshold = threshold
+        self.head: Optional[Any] = None
+        self.weights_path: Optional[str] = None
+        self.calibration_metadata: Dict[str, Any] = {
             "model": "microsoft/codebert-base",
             "head": "MLP(1536->256->2)",
+            "activation": "GELU",
+            "dropout": 0.1,
             "calibration_criterion": "Youden_J",
             "threshold": self.threshold,
-            "trained_on": "CodeXGLUE_defect_detection"
+            "trained_on": "CodeXGLUE_defect_detection",
+            "random_seed": self.seed,
+            "training_status": "UNTRAINED",
+            "youden_j_score": 0.0,
+            "val_tpr": 0.0,
+            "val_fpr": 0.0,
+            "trained_timestamp": None,
         }
+        if HAS_TORCH:
+            torch.manual_seed(self.seed)
+            self.head = CodeBERTClassificationHead()
+            self.head.eval()
+
+    @property
+    def has_real_weights(self) -> bool:
+        return get_codebert_analyzer(require_real_weights=self.require_real_weights).has_real_weights
+
+    def extract_code_representation(self, code: str) -> Dict[str, Any]:
+        return get_codebert_analyzer(require_real_weights=self.require_real_weights).extract_code_representation(code)
+
+    def analyze_diff_hunks(self, *args, **kwargs) -> List[Any]:
+        analyzer = get_codebert_analyzer(require_real_weights=self.require_real_weights)
+        analyzer.defect_head = self
+        return analyzer.analyze_diff_hunks(*args, **kwargs)
+
+    def is_defective(self, embedding_vector: List[float]) -> Tuple[bool, float]:
+        if not self.is_trained:
+            return (False, 0.0)
+        try:
+            prob = self.predict_proba(embedding_vector)
+            return (prob >= self.threshold, prob)
+        except Exception:
+            return (True, 0.85) if getattr(self, "mock_defective", False) else (False, 0.0)
+
+    @staticmethod
+    def load_codexglue_dataset(
+        dataset_path_or_dir: str,
+        max_samples: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Load official CodeXGLUE defect detection dataset splits.
+        Expects train.jsonl, valid.jsonl, or direct file containing {"func": str, "target": int, "idx": int}.
+        Enforces strict split separation and guards against data leakage from evaluation benchmarks.
+        """
+        p = Path(dataset_path_or_dir)
+        target_file = p
+        if p.is_dir():
+            target_file = p / "train.jsonl"
+            if not target_file.exists():
+                candidates = list(p.glob("*.jsonl"))
+                if candidates:
+                    target_file = candidates[0]
+
+        if not target_file.exists():
+            raise FileNotFoundError(f"CodeXGLUE dataset file not found: {dataset_path_or_dir}")
+
+        records = []
+        with open(target_file, "r", encoding="utf-8") as f:
+            for line_idx, line in enumerate(f):
+                if max_samples and len(records) >= max_samples:
+                    break
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    item = json.loads(line)
+                except Exception:
+                    continue
+                if "func" not in item or "target" not in item:
+                    continue
+                if item["target"] not in (0, 1):
+                    continue
+                # Anti-leakage guard: never allow Qodo benchmark PR records in CodeXGLUE training
+                project_str = str(item.get("project", "")).lower()
+                if "qodo" in project_str or "cpc" in project_str or "pr-review-bench" in project_str:
+                    raise ValueError("Data leakage detected: Qodo evaluation records found in CodeXGLUE training split.")
+                records.append({
+                    "idx": item.get("idx", line_idx),
+                    "func": item["func"],
+                    "target": int(item["target"]),
+                })
+        return records
+
+    def calibrate_threshold(
+        self,
+        val_probs_or_data: Any,
+        val_labels: Optional[List[int]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Calibrate decision threshold strictly on validation split using Youden's J statistic:
+            J(t) = TPR(t) - FPR(t) = Sensitivity(t) + Specificity(t) - 1
+        Finds t* in [0.01, 0.99] that maximizes J.
+        """
+        if val_labels is None:
+            val_probs = []
+            val_labels = []
+            for item in val_probs_or_data:
+                pred = self.predict(item["func"])
+                val_probs.append(pred["defect_probability"])
+                val_labels.append(item["target"])
+        else:
+            val_probs = val_probs_or_data
+
+        if not val_probs or not val_labels or len(val_probs) != len(val_labels):
+            raise ValueError("Validation probabilities and labels must be non-empty and equal in length.")
+
+        pos_count = sum(1 for y in val_labels if y == 1)
+        neg_count = sum(1 for y in val_labels if y == 0)
+        if pos_count == 0 or neg_count == 0:
+            raise ValueError("Validation split must contain both positive and negative defect samples.")
+
+        best_j = -1.0
+        best_threshold = 0.5
+        best_tpr = 0.0
+        best_fpr = 0.0
+
+        for t_int in range(1, 100):
+            t = t_int / 100.0
+            tp = sum(1 for p, y in zip(val_probs, val_labels) if p >= t and y == 1)
+            fp = sum(1 for p, y in zip(val_probs, val_labels) if p >= t and y == 0)
+
+            tpr = tp / pos_count
+            fpr = fp / neg_count
+            j = tpr - fpr
+
+            if j > best_j:
+                best_j = j
+                best_threshold = t
+                best_tpr = tpr
+                best_fpr = fpr
+
+        self.threshold = round(best_threshold, 4)
+        self.calibrated_threshold = self.threshold
+        self.has_calibrated_threshold = True
+        res = {
+            "optimal_threshold": self.threshold,
+            "youden_j": round(best_j, 4),
+            "val_tpr": round(best_tpr, 4),
+            "val_fpr": round(best_fpr, 4),
+            "calibration_samples": len(val_probs),
+        }
+        self.calibration_metadata.update(res)
+        return res
+
+    def predict(self, code_or_embedding: Any) -> Dict[str, Any]:
+        """
+        Predict defect probability on code snippet or embedding.
+        In research mode, strictly forbids untrained predictions.
+        """
+        if not self.is_trained:
+            raise RuntimeError(
+                "Untrained CodeBERT classifier (training_status=UNTRAINED). "
+                "Per Frozen Protocol v1.0, research evaluation requires a calibrated, trained checkpoint. "
+                "Synthetic probabilities are strictly prohibited."
+            )
+        if isinstance(code_or_embedding, list):
+            prob = self.predict_proba(code_or_embedding)
+        else:
+            rep = self.extract_code_representation(str(code_or_embedding))
+            prob = self.predict_proba(rep.get("concat_cls_mean", rep.get("vector", [])))
+        is_def = prob >= self.threshold
+        return {"defect_probability": round(prob, 4), "is_defective": is_def}
+
+    def save_checkpoint(self, checkpoint_path: str):
+        """Persist trained head weights, threshold, and calibration metadata to disk."""
+        if not HAS_TORCH or self.head is None:
+            raise RuntimeError("PyTorch is required to save neural network checkpoints.")
+        if not self.is_trained:
+            raise RuntimeError("Refusing to save untrained model checkpoint. Train model before persisting.")
+
+        p = Path(checkpoint_path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "state_dict": self.head.state_dict(),
+            "threshold": self.threshold,
+            "is_trained": self.is_trained,
+            "calibration_metadata": self.calibration_metadata,
+        }
+        torch.save(payload, str(p))
+        self.weights_path = str(p)
+
+    def load_checkpoint(self, checkpoint_path: str):
+        """Load trained head weights, calibrated threshold, and provenance metadata."""
+        if not HAS_TORCH:
+            raise RuntimeError("PyTorch is required to load neural network checkpoints.")
+        p = Path(checkpoint_path)
+        if not p.exists():
+            raise FileNotFoundError(f"CodeBERT defect head checkpoint not found: {checkpoint_path}")
+
+        payload = torch.load(str(p), map_location="cpu", weights_only=False)
+        if self.head is None:
+            self.head = CodeBERTClassificationHead()
+        self.head.load_state_dict(payload["state_dict"])
+        self.head.eval()
+        self.threshold = float(payload.get("threshold", 0.5))
+        self.is_trained = bool(payload.get("is_trained", True))
+        self.calibration_metadata = payload.get("calibration_metadata", self.calibration_metadata)
+        self.calibration_metadata["training_status"] = "TRAINED_CHECKPOINT_LOADED"
+        self.weights_path = str(p)
 
     def predict_proba(self, embedding_vector: List[float]) -> float:
         """
-        Produce a defect probability from a 768-D or 1536-D embedding.
-        In inference mode, if PyTorch head is available, uses neural forward pass;
-        otherwise uses calibrated distance from reference defect centroid.
+        Produce class 1 (defective) probability from a 1536-D or 768-D embedding.
+        Strict Protocol Rule: Untrained models must NOT produce pseudo-probabilities in research mode.
         """
-        # If vector is 768-D, tile or normalize to evaluate
-        v = embedding_vector
-        norm = math.sqrt(sum(x * x for x in v))
-        if norm > 1e-9:
-            v = [x / norm for x in v]
-        
-        # Deterministic scoring function for representation probing
-        # (In full PyTorch mode with weights loaded, this evaluates the trained head)
-        score = sum(abs(x) for x in v[:32]) / 32.0
-        # Map to sigmoid probability
-        prob = 1.0 / (1.0 + math.exp(-6.0 * (score - 0.05)))
-        return float(prob)
+        if not self.is_trained:
+            raise RuntimeError(
+                "CodeBERTDefectClassifier is untrained (training_status=UNTRAINED). "
+                "Per Frozen Protocol v1.0, research evaluation requires a calibrated, trained checkpoint. "
+                "Synthetic probabilities are strictly prohibited."
+            )
+
+        if not HAS_TORCH or self.head is None:
+            raise RuntimeError("PyTorch runtime is required for neural defect head inference.")
+
+        if len(embedding_vector) == 768:
+            v_1536 = embedding_vector + embedding_vector
+        elif len(embedding_vector) == 1536:
+            v_1536 = embedding_vector
+        else:
+            raise ValueError(f"Expected embedding vector dimension 768 or 1536, got {len(embedding_vector)}")
+
+        with torch.no_grad():
+            tensor_in = torch.tensor([v_1536], dtype=torch.float32)
+            logits = self.head(tensor_in)
+            probs = F.softmax(logits, dim=-1)
+            prob_defect = probs[0, 1].item()
+            return float(prob_defect)
 
     def is_defective(self, embedding_vector: List[float]) -> Tuple[bool, float]:
+        if not self.is_trained:
+            return (False, 0.0)
+        if getattr(self, "mock_defective", False):
+            return (True, 0.85)
+        if not HAS_TORCH or self.head is None:
+            if not self.require_real_weights:
+                return (False, 0.0)
+            raise RuntimeError("PyTorch runtime is required for neural defect head inference.")
         prob = self.predict_proba(embedding_vector)
         return (prob >= self.threshold, prob)
 
@@ -120,6 +412,11 @@ class CodeBERTAnalyzer:
                     "Per Frozen Protocol v1.0, silent fallback is strictly prohibited in research mode."
                 )
             return False
+
+    @property
+    def has_real_weights(self) -> bool:
+        """Return True only if genuine CodeBERT pretrained model is loaded in memory."""
+        return bool(self._is_real_weights and self.model is not None)
 
     @property
     def status(self) -> Dict[str, Any]:
@@ -214,11 +511,15 @@ class CodeBERTAnalyzer:
                     return_tensors="pt",
                 )
                 with torch.no_grad():
-                    outputs = self.model(**encoded)
-                    last_hidden = outputs.last_hidden_state  # shape: (1, seq_len, 768)
-                    mask = encoded["attention_mask"].unsqueeze(-1)
+                    # 1. CLS representation (h_[CLS])
+                    cls_rep = last_hidden[:, 0, :]  # shape: (1, 768)
+                    
+                    # 2. Attention-masked mean pooled representation
                     summed = (last_hidden * mask).sum(dim=1)
-                    mean_pooled = summed / mask.sum(dim=1).clamp(min=1e-9)
+                    mean_pooled = summed / mask.sum(dim=1).clamp(min=1e-9)  # shape: (1, 768)
+                    
+                    # 3. Concatenated 1536-D representation for defect head
+                    concat_1536 = torch.cat([cls_rep, mean_pooled], dim=-1)[0].tolist()
                     vector = mean_pooled[0].tolist()
 
                 # L2 normalize
@@ -228,6 +529,8 @@ class CodeBERTAnalyzer:
 
                 return {
                     "vector": vector,
+                    "vector_1536": concat_1536,
+                    "concat_cls_mean": concat_1536,
                     "dimension": len(vector),
                     "model": self.MODEL_NAME,
                     "token_count": int(encoded["attention_mask"].sum().item()),
@@ -255,8 +558,11 @@ class CodeBERTAnalyzer:
         if norm > 1e-9:
             vector = [v / norm for v in vector]
 
+        concat_1536 = vector + vector
         return {
             "vector": vector,
+            "vector_1536": concat_1536,
+            "concat_cls_mean": concat_1536,
             "dimension": self.VECTOR_DIM,
             "model": self.MODEL_NAME,
             "token_count": token_info["token_count"],
@@ -332,7 +638,7 @@ class CodeBERTAnalyzer:
             ),
         }
 
-    def analyze_diff_hunks(self, diff_content: str, pr_id: str, default_filename: str = "patch.py") -> List[ModelFinding]:
+    def analyze_diff_hunks(self, diff_content: str, pr_id: str = "pr_unknown", default_filename: str = "patch.py") -> List[ModelFinding]:
         """
         Approved E3 implementation: Evaluate individual diff hunks using CodeBERT
         representation and the supervised classification head.
@@ -342,20 +648,34 @@ class CodeBERTAnalyzer:
         if not diff_content or not diff_content.strip():
             return findings
 
-        # Check real weights requirement
-        if self.require_real_weights and not self._is_real_weights:
-            findings.append(ModelFinding(
-                pr_id=pr_id,
-                source="codebert_head",
-                category=FindingCategory.BUG.value,
-                file_path=default_filename,
-                line_start=1,
-                evidence="",
-                description="CodeBERT model weights failed to load in research mode.",
-                execution_status=ExecutionStatus.TOOL_ERROR.value,
-                granularity=FindingGranularity.HUNK_SPAN.value
-            ))
-            return findings
+        # Check real weights and trained head requirement in research mode
+        if self.require_real_weights:
+            if not self._is_real_weights:
+                findings.append(ModelFinding(
+                    pr_id=pr_id,
+                    source="codebert_head",
+                    category=FindingCategory.BUG.value,
+                    file_path=default_filename,
+                    line_start=1,
+                    evidence="",
+                    description="CodeBERT model weights failed to load in research mode.",
+                    execution_status=ExecutionStatus.TOOL_ERROR.value,
+                    granularity=FindingGranularity.HUNK_SPAN.value
+                ))
+                return findings
+            if not self.defect_head.is_trained:
+                findings.append(ModelFinding(
+                    pr_id=pr_id,
+                    source="codebert_head",
+                    category=FindingCategory.BUG.value,
+                    file_path=default_filename,
+                    line_start=1,
+                    evidence="",
+                    description="CodeBERT defect classification head is untrained in research mode.",
+                    execution_status=ExecutionStatus.TOOL_ERROR.value,
+                    granularity=FindingGranularity.HUNK_SPAN.value
+                ))
+                return findings
 
         # Parse diff into hunks
         hunk_header_pattern = re.compile(r"^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
@@ -378,7 +698,14 @@ class CodeBERTAnalyzer:
                 if current_hunk_lines:
                     hunk_text = "\n".join(current_hunk_lines)
                     rep = self.extract_code_representation(hunk_text)
-                    is_defect, prob = self.defect_head.is_defective(rep["vector"])
+                    rep_vec = rep.get("vector_1536") or rep["vector"]
+                    if self.defect_head.is_trained:
+                        is_defect, prob = self.defect_head.is_defective(rep_vec)
+                    else:
+                        # Non-research development fallback only
+                        is_defect = False
+                        prob = 0.0
+
                     if is_defect:
                         findings.append(ModelFinding(
                             pr_id=pr_id,
@@ -407,7 +734,13 @@ class CodeBERTAnalyzer:
         if current_hunk_lines:
             hunk_text = "\n".join(current_hunk_lines)
             rep = self.extract_code_representation(hunk_text)
-            is_defect, prob = self.defect_head.is_defective(rep["vector"])
+            rep_vec = rep.get("vector_1536") or rep["vector"]
+            if self.defect_head.is_trained:
+                is_defect, prob = self.defect_head.is_defective(rep_vec)
+            else:
+                is_defect = False
+                prob = 0.0
+
             if is_defect:
                 findings.append(ModelFinding(
                     pr_id=pr_id,
@@ -428,11 +761,11 @@ class CodeBERTAnalyzer:
         return findings
 
 
-def get_codebert_analyzer(require_real_weights: bool = False) -> CodeBERTAnalyzer:
+def get_codebert_analyzer(require_real_weights: bool = False, force_new: bool = False) -> CodeBERTAnalyzer:
     """Return singleton instance of CodeBERTAnalyzer."""
     global _CODEBERT_INSTANCE
-    if _CODEBERT_INSTANCE is None:
+    if force_new or _CODEBERT_INSTANCE is None:
         _CODEBERT_INSTANCE = CodeBERTAnalyzer(lazy_load=True, require_real_weights=require_real_weights)
-    elif require_real_weights and not _CODEBERT_INSTANCE.require_real_weights:
-        _CODEBERT_INSTANCE.require_real_weights = True
+    else:
+        _CODEBERT_INSTANCE.require_real_weights = require_real_weights
     return _CODEBERT_INSTANCE

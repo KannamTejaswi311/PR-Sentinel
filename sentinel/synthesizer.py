@@ -84,10 +84,30 @@ class ReviewSynthesizer:
                 "execution_status": sf.get("execution_status", ExecutionStatus.SUCCESS.value),
             })
 
-        # 3. Validate line numbers against diff content
+        # 3. From CodeBERT defect classifier
+        if codebert_analysis and isinstance(codebert_analysis, dict) and "findings" in codebert_analysis:
+            for cf in codebert_analysis["findings"]:
+                combined.append({
+                    "title": cf.get("title") or cf.get("rule_id", "CodeBERT Hunk Defect"),
+                    "category": cf.get("category", "BUG"),
+                    "source": cf.get("source", "codebert_head"),
+                    "severity": cf.get("severity", "MEDIUM").upper(),
+                    "file": cf.get("file_path") or cf.get("file", filename),
+                    "line": max(1, int(cf.get("line_start", cf.get("line", 1)))),
+                    "line_end": int(cf.get("line_end", cf.get("line", 1))),
+                    "description": cf.get("description", ""),
+                    "evidence": cf.get("evidence", ""),
+                    "suggested_fix": cf.get("recommendation") or cf.get("suggested_fix", ""),
+                    "confidence": float(cf.get("confidence", 0.85)),
+                    "rule_id": cf.get("rule_id", "CODEBERT_DEFECT"),
+                    "granularity": cf.get("granularity", FindingGranularity.HUNK_SPAN.value),
+                    "execution_status": cf.get("execution_status", ExecutionStatus.SUCCESS.value),
+                })
+
+        # 4. Validate line numbers against diff content
         validated = self._validate_and_enrich_findings(combined, diff_content, filename)
 
-        # 4. Deduplicate across sources
+        # 5. Deduplicate across sources
         unique_findings = self._deduplicate_findings(validated)
 
         # 5. Count findings by severity

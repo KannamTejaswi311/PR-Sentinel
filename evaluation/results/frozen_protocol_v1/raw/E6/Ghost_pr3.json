@@ -1,0 +1,358 @@
+{
+  "pr_id": "Ghost_pr3",
+  "experiment_id": "E6",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr3.diff",
+      "line_start": 96,
+      "evidence": "// For high volume senders (400k+), cap the increase at 20% or 75k absolute",
+      "execution_status": "SUCCESS",
+      "finding_id": "8cd03518-24d2-4af7-9729-b781ab1e621c",
+      "line_end": 96,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr3.diff",
+      "line_start": 111,
+      "evidence": "// This should not be reached given the thresholds cover all cases up to highVolume.threshold",
+      "execution_status": "SUCCESS",
+      "finding_id": "4c567947-c74d-4290-b6a1-1e8c3b0377c6",
+      "line_end": 111,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr3.diff",
+      "line_start": 123,
+      "evidence": "// Uses a fixed base date to ensure consistent day progression",
+      "execution_status": "SUCCESS",
+      "finding_id": "4e3dc783-b703-46bb-b769-bf2f2dc6d346",
+      "line_end": 123,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr3.diff",
+      "line_start": 165,
+      "evidence": "// Day 1: Base limit of 200 (no prior emails)",
+      "execution_status": "SUCCESS",
+      "finding_id": "7ce337bf-5235-4a13-96fb-78c05c627d76",
+      "line_end": 165,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr3.diff",
+      "line_start": 175,
+      "evidence": "// Day 2: 200 \u00d7 1.25 = 250",
+      "execution_status": "SUCCESS",
+      "finding_id": "dc583ac0-e18a-4d99-86e8-52e19c55bd17",
+      "line_end": 175,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr3.diff",
+      "line_start": 185,
+      "evidence": "// Day 3: 250 \u00d7 1.25 = 313",
+      "execution_status": "SUCCESS",
+      "finding_id": "09cebe91-83f0-4df7-8a09-a6066db783d0",
+      "line_end": 185,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr3.diff",
+      "line_start": 295,
+      "evidence": "// With lastCount=1000, calculated limit is 1250 (1.25\u00d7 scale)",
+      "execution_status": "SUCCESS",
+      "finding_id": "72f52bb7-9b5c-42fa-81fb-8d151f5f0b3e",
+      "line_end": 295,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr3.diff",
+      "line_start": 296,
+      "evidence": "// emailCount=1000 is less than 1250, so return emailCount",
+      "execution_status": "SUCCESS",
+      "finding_id": "0abe5b41-5d7f-44bd-be39-174fb9a9a66e",
+      "line_end": 296,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr3.diff",
+      "line_start": 369,
+      "evidence": "// New conservative scaling:",
+      "execution_status": "SUCCESS",
+      "finding_id": "5c95766a-18f6-426e-8201-de7e3edf12e5",
+      "line_end": 369,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr3.diff",
+      "line_start": 398,
+      "evidence": "{lastCount: 500000, expected: 575000}, // min(500000 \u00d7 1.2, 500000 + 75000) = min(600000, 575000)",
+      "execution_status": "SUCCESS",
+      "finding_id": "de85f91c-c1dd-43c4-bd03-9ac93da3d927",
+      "line_end": 398,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr3.diff",
+      "line_start": 399,
+      "evidence": "{lastCount: 800000, expected: 875000} // min(800000 \u00d7 1.2, 800000 + 75000) = min(960000, 875000)",
+      "execution_status": "SUCCESS",
+      "finding_id": "3f39e80c-9939-47a4-9821-8254dc5f5cd6",
+      "line_end": 399,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/core/server/services/email-service/DomainWarmingService.ts",
+      "line_start": 1,
+      "evidence": "diff --git a/ghost/core/core/server/services/email-service/DomainWarmingService.ts b/ghost/core/core/server/services/email-service/DomainWarmingService.ts",
+      "execution_status": "SUCCESS",
+      "finding_id": "a8d38e1e-6976-44cb-ad9e-b1a021e6361b",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.ts)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/core/server/services/email-service/DomainWarmingService.ts' has unsupported extension '.ts'.",
+      "recommendation": "Add external static analyzer for '.ts' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/test/integration/services/email-service/domain-warming.test.js",
+      "line_start": 1,
+      "evidence": "diff --git a/ghost/core/core/server/services/email-service/DomainWarmingService.ts b/ghost/core/core/server/services/email-service/DomainWarmingService.ts",
+      "execution_status": "SUCCESS",
+      "finding_id": "4d74bb9e-9cbe-4a46-8a6f-78582506f19a",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.js)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/test/integration/services/email-service/domain-warming.test.js' has unsupported extension '.js'.",
+      "recommendation": "Add external static analyzer for '.js' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/test/unit/server/services/email-service/domain-warming-service.test.ts",
+      "line_start": 1,
+      "evidence": "diff --git a/ghost/core/core/server/services/email-service/DomainWarmingService.ts b/ghost/core/core/server/services/email-service/DomainWarmingService.ts",
+      "execution_status": "SUCCESS",
+      "finding_id": "dbe236b3-89bf-449d-a754-09a4a8358ddb",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.ts)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/test/unit/server/services/email-service/domain-warming-service.test.ts' has unsupported extension '.ts'.",
+      "recommendation": "Add external static analyzer for '.ts' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    }
+  ],
+  "findings_count": 14,
+  "risk_assessment": {
+    "score": 100,
+    "risk_level": "CRITICAL RISK",
+    "recommendation": "DO NOT MERGE: PR contains critical security or logic defects. Extensive remediation required.",
+    "metrics": {
+      "raw_finding_score": 166.5,
+      "file_spread_multiplier": 1.2,
+      "diff_size_multiplier": 1.2,
+      "codebert_penalty_added": 0.0,
+      "total_diff_lines": 411,
+      "modified_files_count": 3
+    },
+    "formula_explanation": "PR Risk Score = min(100, round(RawScore(166.5) * FileSpread(1.20) * DiffSize(1.20) + CodeBERTPenalty(0.0))) = 100",
+    "top_contributions": [
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      },
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      },
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      },
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      },
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      }
+    ]
+  },
+  "duration_seconds": 136.124,
+  "execution_manifest": {
+    "codebert": "SUCCESS",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SUCCESS",
+    "multi_agent": "SUCCESS",
+    "synthesizer": "SUCCESS",
+    "test_generator": "SUCCESS"
+  }
+}

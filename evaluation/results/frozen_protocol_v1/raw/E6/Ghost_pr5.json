@@ -1,0 +1,1114 @@
+{
+  "pr_id": "Ghost_pr5",
+  "experiment_id": "E6",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 10,
+      "evidence": "// Sort multiple import lines into alphabetical groups",
+      "execution_status": "SUCCESS",
+      "finding_id": "b9b146b9-7495-4aeb-bd76-7917a4e1e216",
+      "line_end": 10,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 16,
+      "evidence": "// Enforce kebab-case (lowercase with hyphens) for all filenames",
+      "execution_status": "SUCCESS",
+      "finding_id": "e28b1c5b-e68c-47b2-8683-487f0e267765",
+      "line_end": 16,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 17,
+      "evidence": "'ghost/filenames/match-regex': ['error', '^[a-z0-9.-]+$', false],",
+      "execution_status": "SUCCESS",
+      "finding_id": "67e781a2-6187-493f-92b5-c041379a3430",
+      "line_end": 17,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 19,
+      "evidence": "// Suppress errors for missing 'import React' in JSX files, as we don't need it",
+      "execution_status": "SUCCESS",
+      "finding_id": "76fb2c30-0525-4a80-bca5-ad3fd0fad7eb",
+      "line_end": 19,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 22,
+      "evidence": "// Ignore prop-types for now",
+      "execution_status": "SUCCESS",
+      "finding_id": "a41ac9b3-d528-410c-9ee2-55c78b1172a1",
+      "line_end": 22,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 26,
+      "evidence": "// Custom react rules",
+      "execution_status": "SUCCESS",
+      "finding_id": "a6878e71-597c-4fd7-a14e-5b7e96f1c0b5",
+      "line_end": 26,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 39,
+      "evidence": "import {AppContextProvider, AppContextType} from '../src/app-context';",
+      "execution_status": "SUCCESS",
+      "finding_id": "266a5803-28be-4930-b7e4-b986a59356ad",
+      "line_end": 39,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 62,
+      "evidence": "A patch release can be rolled out instantly in production, whereas a minor/major release requires the Ghost monorepo to be updated and released.",
+      "execution_status": "SUCCESS",
+      "finding_id": "ed736be1-af87-4845-b38e-6755a38a3bcd",
+      "line_end": 62,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 76,
+      "evidence": "To use the new version of signup form in Ghost, update the version in Ghost core's default configuration (currently at `core/shared/config/default.json`)",
+      "execution_status": "SUCCESS",
+      "finding_id": "532d7c36-61f6-4813-b0fe-fb495a68dd88",
+      "line_end": 76,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 107,
+      "evidence": "import {AppContextProvider, AppContextType} from './app-context';",
+      "execution_status": "SUCCESS",
+      "finding_id": "cf281edf-c2cd-42b9-9e74-d7c75e6c6653",
+      "line_end": 107,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 108,
+      "evidence": "import {ContentBox} from './components/content-box';",
+      "execution_status": "SUCCESS",
+      "finding_id": "70acb071-412e-41f7-8543-190e14ee6616",
+      "line_end": 108,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 109,
+      "evidence": "import {Frame} from './components/frame';",
+      "execution_status": "SUCCESS",
+      "finding_id": "3b3e0bb6-eeb6-4410-a762-036d55f29228",
+      "line_end": 109,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 131,
+      "evidence": "import {useAppContext} from '../app-context';",
+      "execution_status": "SUCCESS",
+      "finding_id": "929ecc36-3596-46dd-a28c-c84b7d77fab6",
+      "line_end": 131,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 149,
+      "evidence": "import {FormView} from './form-view';",
+      "execution_status": "SUCCESS",
+      "finding_id": "eaa6032a-d6ba-4336-930b-0c32002e42ea",
+      "line_end": 149,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 153,
+      "evidence": "import {useAppContext} from '../../app-context';",
+      "execution_status": "SUCCESS",
+      "finding_id": "aadbc770-6897-4f3e-b845-2aaf7c524932",
+      "line_end": 153,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 176,
+      "evidence": "import {FormView} from './form-view';",
+      "execution_status": "SUCCESS",
+      "finding_id": "ec1a0323-4c25-46aa-b361-14577e0b5712",
+      "line_end": 176,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 191,
+      "evidence": "import {useAppContext} from '../../app-context';",
+      "execution_status": "SUCCESS",
+      "finding_id": "110c2208-d199-4191-8a50-24eaeb728f19",
+      "line_end": 191,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 215,
+      "evidence": "import {SuccessView} from './success-view';",
+      "execution_status": "SUCCESS",
+      "finding_id": "b5401c65-e1fd-4b29-9973-c63abfd28f7f",
+      "line_end": 215,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 216,
+      "evidence": "import {useAppContext} from '../../app-context';",
+      "execution_status": "SUCCESS",
+      "finding_id": "67ca98b3-72d4-4bfd-b3a9-37e55a48e90b",
+      "line_end": 216,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 231,
+      "evidence": "import {SuccessView} from './success-view';",
+      "execution_status": "SUCCESS",
+      "finding_id": "0b92d1e6-11d5-4874-ae3f-c3d2be9f5d01",
+      "line_end": 231,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 246,
+      "evidence": "import {useAppContext} from '../../app-context';",
+      "execution_status": "SUCCESS",
+      "finding_id": "931bfbd7-a1a7-414c-a7c1-994ddc265db5",
+      "line_end": 246,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 256,
+      "evidence": "import App from './app.tsx';",
+      "execution_status": "SUCCESS",
+      "finding_id": "6979c5d6-c179-4494-a53f-97093967ad96",
+      "line_end": 256,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 268,
+      "evidence": "import {FormPage} from './components/pages/form-page';",
+      "execution_status": "SUCCESS",
+      "finding_id": "ad61e907-a2d1-4459-8bd0-5e53e73a7b85",
+      "line_end": 268,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 269,
+      "evidence": "import {SuccessPage} from './components/pages/success-page';",
+      "execution_status": "SUCCESS",
+      "finding_id": "7577b617-bc4b-4048-ae82-a7e495673f52",
+      "line_end": 269,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 286,
+      "evidence": "import {AppContextProvider, SignupFormOptions} from './app-context';",
+      "execution_status": "SUCCESS",
+      "finding_id": "48fe553f-5314-4286-b6f6-fb745664bc3b",
+      "line_end": 286,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 287,
+      "evidence": "import {ContentBox} from './components/content-box';",
+      "execution_status": "SUCCESS",
+      "finding_id": "49ce0e14-958a-4ac4-929e-7f1a99f538aa",
+      "line_end": 287,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 297,
+      "evidence": "import {SignupFormOptions} from '../app-context';",
+      "execution_status": "SUCCESS",
+      "finding_id": "ae7dbf98-eeb0-4f70-ba82-ba442aef948f",
+      "line_end": 297,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "multi_agent",
+      "category": "BUG",
+      "file_path": "Ghost_pr5.diff",
+      "line_start": 328,
+      "evidence": "import {SignupFormOptions} from '../app-context';",
+      "execution_status": "SUCCESS",
+      "finding_id": "c86378eb-5d92-4a77-96d8-5fdcafbea5e1",
+      "line_end": 328,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/.eslintrc.cjs",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "f93b6c4e-fb83-40b5-ab7e-418431edc04e",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.cjs)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/.eslintrc.cjs' has unsupported extension '.cjs'.",
+      "recommendation": "Add external static analyzer for '.cjs' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/.storybook/preview.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "699fabb6-878f-4ea0-8129-522e924bb77b",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/.storybook/preview.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/README.md",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "e4f69c59-5ae2-49d3-919b-4045f7401423",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.md)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/README.md' has unsupported extension '.md'.",
+      "recommendation": "Add external static analyzer for '.md' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/package.json",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "4e73721b-bdb6-4d8d-a5b3-9c783b62954f",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.json)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/package.json' has unsupported extension '.json'.",
+      "recommendation": "Add external static analyzer for '.json' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/app-context.ts",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "9fbbb69c-e524-4c5d-bdbd-75d84cc1452b",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.ts)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/app-context.ts' has unsupported extension '.ts'.",
+      "recommendation": "Add external static analyzer for '.ts' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/app.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "cfe4dc6a-d495-4f51-9402-5062f9b4631f",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/app.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/components/content-box.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "4c73fdd3-408a-44bf-a857-df42f7cb2ad7",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/components/content-box.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/components/frame.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "d3332c1a-6b5e-4a1c-9122-712526d0e6fb",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/components/frame.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/components/iframe.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "afecddd7-201e-4252-8b72-a864ffe775f6",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/components/iframe.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/components/pages/form-page.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "ec5404c7-e797-4c5a-8676-5626f40e6560",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/components/pages/form-page.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/components/pages/form-view.stories.ts",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "8bd521c5-0f00-4544-9e29-f33028d313fb",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.ts)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/components/pages/form-view.stories.ts' has unsupported extension '.ts'.",
+      "recommendation": "Add external static analyzer for '.ts' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/components/pages/form-view.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "1ba72b95-6408-4690-b305-c980c0504bd2",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/components/pages/form-view.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/components/pages/success-page.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "3503a643-15cb-4b19-8e45-3dcc70e63a36",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/components/pages/success-page.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/components/pages/success-view.stories.ts",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "26740a78-ee62-4bd4-b802-c3c9f1a3a0c6",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.ts)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/components/pages/success-view.stories.ts' has unsupported extension '.ts'.",
+      "recommendation": "Add external static analyzer for '.ts' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/components/pages/success-view.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "ad4159ab-d1fa-472c-addb-9816e503749b",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/components/pages/success-view.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/index.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "d550e6b6-1824-4fad-8e98-316d8633392b",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/index.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/pages.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "2688b9a8-ba21-4be6-93e3-f4690d1521c5",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/pages.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/preview.stories.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "bc8836af-994d-454b-8f91-fa357cef7de5",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/preview.stories.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/utils/helpers.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "1a55ef69-e5e6-4c25-b677-39ff6f202885",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/utils/helpers.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/src/utils/options.tsx",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "e8be94f0-1356-439a-9353-982dc4d050e7",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.tsx)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/src/utils/options.tsx' has unsupported extension '.tsx'.",
+      "recommendation": "Add external static analyzer for '.tsx' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "apps/signup-form/test/utils/is-test-env.js",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "0886288c-25f2-4f25-acd9-d9eb8620f741",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.js)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'apps/signup-form/test/utils/is-test-env.js' has unsupported extension '.js'.",
+      "recommendation": "Add external static analyzer for '.js' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "static_staticanalyzer",
+      "category": "CONVENTION",
+      "file_path": "ghost/core/core/shared/config/defaults.json",
+      "line_start": 1,
+      "evidence": "diff --git a/apps/signup-form/.eslintrc.cjs b/apps/signup-form/.eslintrc.cjs",
+      "execution_status": "SUCCESS",
+      "finding_id": "169c1e54-7274-4d9b-b397-db6e63c42d0a",
+      "line_end": 1,
+      "rule_id": "Unsupported Language (.json)",
+      "severity": "INFORMATIONAL",
+      "confidence": null,
+      "description": "Static analysis currently supports Python. File 'ghost/core/core/shared/config/defaults.json' has unsupported extension '.json'.",
+      "recommendation": "Add external static analyzer for '.json' (e.g. ESLint, SwiftLint, Clippy).",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    }
+  ],
+  "findings_count": 50,
+  "risk_assessment": {
+    "score": 100,
+    "risk_level": "CRITICAL RISK",
+    "recommendation": "DO NOT MERGE: PR contains critical security or logic defects. Extensive remediation required.",
+    "metrics": {
+      "raw_finding_score": 431.0,
+      "file_spread_multiplier": 1.5,
+      "diff_size_multiplier": 1.2,
+      "codebert_penalty_added": 0.0,
+      "total_diff_lines": 346,
+      "modified_files_count": 18
+    },
+    "formula_explanation": "PR Risk Score = min(100, round(RawScore(431.0) * FileSpread(1.50) * DiffSize(1.20) + CodeBERTPenalty(0.0))) = 100",
+    "top_contributions": [
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      },
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      },
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      },
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      },
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      }
+    ]
+  },
+  "duration_seconds": 117.891,
+  "execution_manifest": {
+    "codebert": "SUCCESS",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SUCCESS",
+    "multi_agent": "SUCCESS",
+    "synthesizer": "SUCCESS",
+    "test_generator": "SUCCESS"
+  }
+}

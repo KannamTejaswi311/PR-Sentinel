@@ -1,0 +1,6 @@
+pr_id,chunk_id,file_path,retrieval_rank,query_type,relevance_score,annotator_id,notes
+# RELEVANCE SCORING GUIDELINE:
+# 0 = Irrelevant: Chunk has no connection to changed code or defect context.
+# 1 = Contextually Helpful: Provides architectural context, import definitions, or type signatures related to the diff.
+# 2 = Directly Relevant: Contains the direct caller, callee, schema, or test directly modified or broken by the PR.
+# Instructions: Enter relevance_score (0, 1, or 2), annotator_id (e.g. A1, A2), and optional notes.

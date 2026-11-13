@@ -34,10 +34,48 @@ RAW_RESULTS_DIR = BASE_DIR / "results" / "frozen_protocol_v1" / "raw"
 AUDIT_DIR = BASE_DIR / "results" / "frozen_protocol_v1" / "audit"
 
 AUDIT_RUBRIC = {
-    "CAT-A": "Valid Finding: Genuine defect or security flaw missed by benchmark ground truth annotations (True Positive).",
-    "CAT-B": "True False Positive: Hallucination, invalid rule firing, syntax misunderstanding, or incorrect advice.",
-    "CAT-C": "Borderline / Subjective: Stylistic suggestion, minor non-blocking convention, or debatable best practice.",
+    "CAT-A": "Hallucination / Erroneous Finding: False alarm, invalid rule firing, syntax misunderstanding, incorrect or hallucinated recommendation (Confirmed False Positive).",
+    "CAT-B": "Latent Valid Defect: Genuine defect or security vulnerability missed by benchmark annotations (Reclassified True Positive).",
+    "CAT-C": "Benign Quality Observation / Nitpick: Stylistic suggestion, non-blocking convention, minor refactoring, or subjective observation.",
 }
+
+
+def calculate_adjusted_precision(
+    tp_benchmark: int,
+    fp_benchmark: int,
+    n_A: int,
+    n_B: int,
+    n_C: int,
+) -> Dict[str, Any]:
+    """
+    Computes manual-audit estimated adjusted precision:
+        P_adj = (TP + rho_B * FP_apparent) / (TP + FP_apparent)
+    where rho_B = n_B / (n_A + n_B + n_C).
+
+    NOTE: This is an estimated precision under manual audit sampling, NOT a
+    mathematically guaranteed lower bound unless verified under stated assumptions.
+    """
+    total_samples = n_A + n_B + n_C
+    rho_B = (n_B / total_samples) if total_samples > 0 else 0.0
+    denom = tp_benchmark + fp_benchmark
+    p_apparent = (tp_benchmark / denom) if denom > 0 else 0.0
+    p_adjusted = ((tp_benchmark + (rho_B * fp_benchmark)) / denom) if denom > 0 else 0.0
+
+    return {
+        "tp_benchmark": tp_benchmark,
+        "fp_benchmark": fp_benchmark,
+        "n_A": n_A,
+        "n_B": n_B,
+        "n_C": n_C,
+        "total_audit_samples": total_samples,
+        "rho_B_latent_rate": round(rho_B, 4),
+        "apparent_precision": round(p_apparent, 4),
+        "adjusted_precision": round(p_adjusted, 4),
+        "precision_interpretation": (
+            "Estimated precision under manual audit sampling. Not a mathematically "
+            "guaranteed lower bound."
+        ),
+    }
 
 
 def extract_apparent_fps(
@@ -71,7 +109,10 @@ def sample_candidates(
     n_samples: int,
     seed: int = 42,
 ) -> List[Dict[str, Any]]:
-    """Sample candidates using reproducible seeded pseudo-random selection with stratification."""
+    """
+    Proportional stratified sampling across severity and repository/category strata.
+    Guarantees exact proportional quota allocation without quadratic density distortion.
+    """
     if not fps:
         return []
 
@@ -81,18 +122,48 @@ def sample_candidates(
     rng = np.random.default_rng(seed)
     df = pd.DataFrame(fps)
 
-    # Attempt stratified sampling by category and severity
-    if "category" in df.columns and "severity" in df.columns:
-        groups = df.groupby(["category", "severity"], group_keys=False)
-        # Proportionate allocation
-        weights = df.groupby(["category", "severity"])["finding_id"].transform("count")
-        prob = weights / weights.sum()
-        chosen_indices = rng.choice(len(df), size=n_samples, replace=False, p=prob.values / prob.values.sum())
-    else:
+    # Determine stratum key: severity + category (or pr_id if category missing)
+    strat_cols = [c for c in ["severity", "category"] if c in df.columns]
+    if not strat_cols:
         chosen_indices = rng.choice(len(df), size=n_samples, replace=False)
+        return df.iloc[chosen_indices].to_dict(orient="records")
 
-    sampled_df = df.iloc[chosen_indices].copy()
-    return sampled_df.to_dict(orient="records")
+    # True proportional allocation per stratum
+    total_N = len(df)
+    strata = df.groupby(strat_cols).indices
+    allocated_samples = []
+
+    # Calculate integer quotas
+    stratum_quotas = {}
+    remainders = {}
+    for s_key, indices in strata.items():
+        prop = len(indices) * n_samples / total_N
+        base_quota = int(np.floor(prop))
+        stratum_quotas[s_key] = base_quota
+        remainders[s_key] = prop - base_quota
+
+    # Distribute remaining slots by largest remainder
+    slots_left = n_samples - sum(stratum_quotas.values())
+    sorted_remainders = sorted(remainders.items(), key=lambda x: x[1], reverse=True)
+    for i in range(slots_left):
+        stratum_quotas[sorted_remainders[i % len(sorted_remainders)][0]] += 1
+
+    for s_key, indices in strata.items():
+        quota = min(stratum_quotas[s_key], len(indices))
+        if quota > 0:
+            chosen = rng.choice(indices, size=quota, replace=False)
+            allocated_samples.extend(chosen)
+
+    # Safety: if slight rounding mismatch, fill or trim
+    if len(allocated_samples) < n_samples:
+        remaining_pool = list(set(range(len(df))) - set(allocated_samples))
+        needed = n_samples - len(allocated_samples)
+        extra = rng.choice(remaining_pool, size=min(needed, len(remaining_pool)), replace=False)
+        allocated_samples.extend(extra)
+    elif len(allocated_samples) > n_samples:
+        allocated_samples = list(rng.choice(allocated_samples, size=n_samples, replace=False))
+
+    return df.iloc[allocated_samples].to_dict(orient="records")
 
 
 def format_audit_records(
@@ -145,24 +216,27 @@ def generate_audit_samples(
     e6_fps = extract_apparent_fps("E6", gt_by_pr)
     logger.info(f"Total apparent FPs in E6: {len(e6_fps)}")
 
+    tier1_adequacy = "SUFFICIENT" if len(e6_fps) >= tier1_size else f"INSUFFICIENT (M={len(e6_fps)} < {tier1_size})"
     tier1_sampled = sample_candidates(e6_fps, n_samples=tier1_size, seed=seed)
     tier1_formatted = format_audit_records(tier1_sampled, "TIER1_E6")
     tier1_file = audit_dir / "tier1_e6_sample_50.csv"
     if tier1_formatted:
         pd.DataFrame(tier1_formatted).to_csv(tier1_file, index=False)
-        logger.info(f"Saved {len(tier1_formatted)} Tier 1 audit records to {tier1_file}")
+        logger.info(f"Saved {len(tier1_formatted)} Tier 1 audit records to {tier1_file} (Adequacy: {tier1_adequacy})")
     else:
-        logger.warning("No Tier 1 samples extracted (E6 predictions not available or empty).")
+        logger.warning(f"No Tier 1 samples extracted ({tier1_adequacy}).")
 
     # --------------------------------------------------------
     # TIER 2: Baselines E1, E2, E3, E5 (n=15 each, total up to 60)
     # --------------------------------------------------------
     tier2_configs = ["E1", "E2", "E3", "E5"]
     tier2_all_formatted = []
+    tier2_adequacy = {}
     for cfg in tier2_configs:
         logger.info(f"Extracting apparent false positives for Tier 2 ({cfg})...")
         cfg_fps = extract_apparent_fps(cfg, gt_by_pr)
         logger.info(f"Total apparent FPs in {cfg}: {len(cfg_fps)}")
+        tier2_adequacy[cfg] = "SUFFICIENT" if len(cfg_fps) >= tier2_per_config else f"INSUFFICIENT (M={len(cfg_fps)} < {tier2_per_config})"
         cfg_sampled = sample_candidates(cfg_fps, n_samples=tier2_per_config, seed=seed)
         formatted = format_audit_records(cfg_sampled, f"TIER2_{cfg}")
         tier2_all_formatted.extend(formatted)
@@ -178,11 +252,13 @@ def generate_audit_samples(
         "rubric": AUDIT_RUBRIC,
         "tier1_e6_total_fps": len(e6_fps),
         "tier1_e6_sampled_count": len(tier1_formatted),
+        "tier1_sample_adequacy": tier1_adequacy,
         "tier1_file": str(tier1_file.name),
         "tier2_total_sampled_count": len(tier2_all_formatted),
+        "tier2_sample_adequacy": tier2_adequacy,
         "tier2_file": str(tier2_file.name),
         "audit_status": "PENDING_HUMAN_REVIEW",
-        "instruction": "Reviewers must populate reviewer_1_label and reviewer_2_label independently using CAT-A, CAT-B, CAT-C.",
+        "instruction": "Two independent reviewers must populate reviewer_1_label and reviewer_2_label independently using CAT-A, CAT-B, CAT-C.",
     }
     manifest_file = audit_dir / "manual_audit_manifest.json"
     with open(manifest_file, "w", encoding="utf-8") as f:

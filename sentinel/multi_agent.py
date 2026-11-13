@@ -522,9 +522,20 @@ class MultiAgentOrchestrator:
     ) -> Dict[str, Any]:
         """
         Synchronous deterministic execution of the four review agents.
-        Applies agent-specific heuristic rule analyzers and aggregates findings.
+        Invokes Ollama model when online, with heuristic rule analyzer fallback.
         """
         static_findings = static_findings or []
+        is_offline = os.environ.get("PR_SENTINEL_OFFLINE", "").lower() in ("1", "true", "yes")
+
+        ollama_online = False
+        if not is_offline:
+            try:
+                with httpx.Client(timeout=3.0) as client:
+                    r = client.get("http://localhost:11434/api/tags")
+                    ollama_online = (r.status_code == 200)
+            except Exception:
+                ollama_online = False
+
         results: Dict[str, Any] = {
             "agents_executed": [a.name for a in self.agents],
             "agent_findings": {},
@@ -535,11 +546,30 @@ class MultiAgentOrchestrator:
 
         all_findings = []
         for agent in self.agents:
+            agent_findings = []
             heuristic_findings = agent.analyze_heuristically(diff_content, filename, static_findings)
-            deduped = self._deduplicate(heuristic_findings)
+            agent_findings.extend(heuristic_findings)
+
+            exec_status = ExecutionStatus.SUCCESS.value
+            err_msg = None
+
+            if ollama_online:
+                llm_res, status, err = self._call_agent_llm_sync(agent, diff_content, filename, repo_context, static_findings)
+                exec_status = status
+                err_msg = err
+                if llm_res:
+                    results["llm_used"] = True
+                    agent_findings.extend(llm_res)
+            elif is_offline:
+                exec_status = ExecutionStatus.SUCCESS.value
+            else:
+                exec_status = ExecutionStatus.SKIPPED.value
+                err_msg = "Ollama service offline"
+
+            deduped = self._deduplicate(agent_findings)
             results["agent_execution_status"][agent.name] = {
-                "status": ExecutionStatus.FALLBACK_USED.value if os.environ.get("PR_SENTINEL_OFFLINE") else ExecutionStatus.SUCCESS.value,
-                "error": None
+                "status": exec_status,
+                "error": err_msg,
             }
             results["agent_findings"][agent.name] = {
                 "role": agent.role,
@@ -725,6 +755,147 @@ If no issues are found, return []."""
                 execution_status=ExecutionStatus.TIMEOUT.value if isinstance(e, httpx.TimeoutException) else ExecutionStatus.LLM_ERROR.value,
             )]
 
+    def run_monolithic_review_sync(
+        self,
+        diff_content: str,
+        filename: str = "modified_code.py",
+        repo_context: str = "",
+        pr_id: str = "pr_unknown",
+    ) -> Dict[str, Any]:
+        """
+        Synchronous single-prompt review for Configuration E1, E4, and E6-A4.
+        Returns dictionary with keys:
+            "findings": List[ModelFinding]
+            "execution_status": str
+            "error": Optional[str]
+        """
+        if os.environ.get("PR_SENTINEL_OFFLINE", "").lower() in ("1", "true", "yes"):
+            finding = ModelFinding(
+                pr_id=pr_id,
+                source="llm_monolithic",
+                category=FindingCategory.UNKNOWN.value,
+                file_path=filename,
+                line_start=1,
+                evidence="",
+                description="Ollama offline or execution bypassed via PR_SENTINEL_OFFLINE.",
+                execution_status=ExecutionStatus.SKIPPED.value,
+            )
+            return {
+                "findings": [finding],
+                "execution_status": ExecutionStatus.SKIPPED.value,
+                "error": "Offline mode active",
+            }
+
+        prompt = f"""You are an expert automated code reviewer.
+Review the following pull request code diff and report any bugs, security vulnerabilities, or critical flaws.
+Target File: {filename}
+
+Repository Context:
+{repo_context}
+
+Code Diff:
+```diff
+{diff_content}
+```
+
+Instructions:
+Respond ONLY with a JSON array of findings matching this exact schema:
+[
+  {{
+    "title": "Clear concise finding title",
+    "category": "BUG" | "SECURITY" | "PERFORMANCE" | "CODE_QUALITY",
+    "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFORMATIONAL",
+    "file": "{filename}",
+    "line": <line_number_or_1>,
+    "description": "Detailed explanation of the problem",
+    "evidence": "Exact code snippet",
+    "suggested_fix": "Concrete code correction",
+    "confidence": 0.85
+  }}
+]
+If no issues are found, return []."""
+
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                resp = client.post(
+                    self.ollama_url,
+                    json={
+                        "model": self.model,
+                        "prompt": prompt,
+                        "stream": False,
+                        "format": "json",
+                    },
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    raw_text = data.get("response", "").strip()
+                    parsed = self._parse_json_findings(raw_text, "Monolithic Reviewer", filename)
+                    model_findings = []
+                    for d in parsed:
+                        model_findings.append(ModelFinding(
+                            pr_id=pr_id,
+                            source="llm_monolithic",
+                            category=d.get("category", FindingCategory.BUG.value),
+                            file_path=d.get("file", filename),
+                            line_start=int(d.get("line", 1)),
+                            evidence=d.get("evidence", ""),
+                            severity=d.get("severity", SeverityLevel.MEDIUM.value),
+                            confidence=float(d.get("confidence", 0.85)),
+                            description=d.get("description", ""),
+                            recommendation=d.get("suggested_fix", ""),
+                            execution_status=ExecutionStatus.SUCCESS.value
+                        ))
+                    return {
+                        "findings": model_findings,
+                        "execution_status": ExecutionStatus.SUCCESS.value,
+                        "error": None,
+                    }
+                else:
+                    return {
+                        "findings": [ModelFinding(
+                            pr_id=pr_id,
+                            source="llm_monolithic",
+                            category=FindingCategory.UNKNOWN.value,
+                            file_path=filename,
+                            line_start=1,
+                            evidence="",
+                            description=f"Ollama returned HTTP status {resp.status_code}",
+                            execution_status=ExecutionStatus.LLM_ERROR.value,
+                        )],
+                        "execution_status": ExecutionStatus.LLM_ERROR.value,
+                        "error": f"HTTP {resp.status_code}",
+                    }
+        except httpx.TimeoutException:
+            return {
+                "findings": [ModelFinding(
+                    pr_id=pr_id,
+                    source="llm_monolithic",
+                    category=FindingCategory.UNKNOWN.value,
+                    file_path=filename,
+                    line_start=1,
+                    evidence="",
+                    description=f"Ollama timed out after {self.timeout}s",
+                    execution_status=ExecutionStatus.TIMEOUT.value,
+                )],
+                "execution_status": ExecutionStatus.TIMEOUT.value,
+                "error": f"Timeout after {self.timeout}s",
+            }
+        except Exception as e:
+            return {
+                "findings": [ModelFinding(
+                    pr_id=pr_id,
+                    source="llm_monolithic",
+                    category=FindingCategory.UNKNOWN.value,
+                    file_path=filename,
+                    line_start=1,
+                    evidence="",
+                    description=f"Ollama invocation failed: {str(e)}",
+                    execution_status=ExecutionStatus.TOOL_ERROR.value,
+                )],
+                "execution_status": ExecutionStatus.TOOL_ERROR.value,
+                "error": str(e),
+            }
+
     async def _call_agent_llm(
         self,
         agent: BaseReviewAgent,
@@ -738,6 +909,39 @@ If no issues are found, return []."""
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 resp = await client.post(
+                    self.ollama_url,
+                    json={
+                        "model": self.model,
+                        "prompt": prompt,
+                        "stream": False,
+                        "format": "json",
+                    },
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    raw_text = data.get("response", "").strip()
+                    findings = self._parse_json_findings(raw_text, agent.name, filename)
+                    return findings, ExecutionStatus.SUCCESS.value, None
+                else:
+                    return [], ExecutionStatus.LLM_ERROR.value, f"HTTP {resp.status_code}"
+        except httpx.TimeoutException:
+            return [], ExecutionStatus.TIMEOUT.value, f"Timed out after {self.timeout}s"
+        except Exception as exc:
+            return [], ExecutionStatus.LLM_ERROR.value, str(exc)
+
+    def _call_agent_llm_sync(
+        self,
+        agent: BaseReviewAgent,
+        diff_content: str,
+        filename: str,
+        repo_context: str,
+        static_findings: List[Dict[str, Any]],
+    ) -> Tuple[List[Dict[str, Any]], str, Optional[str]]:
+        """Call Ollama synchronously for agent-specific reasoning, capturing errors explicitly."""
+        prompt = agent.build_agent_prompt(diff_content, filename, repo_context, static_findings)
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                resp = client.post(
                     self.ollama_url,
                     json={
                         "model": self.model,
