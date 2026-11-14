@@ -311,9 +311,9 @@ class ReviewSynthesizer:
 
         scaled_score = raw_score * file_spread_mult * diff_size_mult
 
-        # CodeBERT additive penalty (non-compounded per protocol audit)
+        # CodeBERT additive penalty (strictly requires genuine pretrained weights; disabled for fallback representations)
         codebert_penalty = 0.0
-        if codebert_analysis:
+        if codebert_analysis and codebert_analysis.get("is_pretrained_weights", False):
             indicators = codebert_analysis.get("semantic_indicators", {})
             deviation = indicators.get("semantic_risk_deviation", 0.0)
             if deviation > 0.05:

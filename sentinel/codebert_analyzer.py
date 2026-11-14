@@ -92,11 +92,18 @@ class CodeBERTDefectClassifier:
     - Checkpoint persistence and provenance metadata tracking.
     - Explicit rejection of untrained inference in research evaluation.
     """
+
+    DEFAULT_CHECKPOINT_PATHS = [
+        Path("sentinel/weights/codebert_classifier.pt"),
+        Path("evaluation/checkpoints/codebert_classifier.pt"),
+    ]
+
     def __init__(
         self,
         threshold: float = 0.5,
         seed: int = 42,
         require_real_weights: bool = False,
+        checkpoint_path: Optional[str] = None,
     ):
         self.threshold = threshold
         self.seed = seed
@@ -125,6 +132,20 @@ class CodeBERTDefectClassifier:
             torch.manual_seed(self.seed)
             self.head = CodeBERTClassificationHead()
             self.head.eval()
+
+            # Attempt automatic checkpoint discovery
+            cp_to_try = checkpoint_path
+            if not cp_to_try:
+                for default_cp in self.DEFAULT_CHECKPOINT_PATHS:
+                    if default_cp.exists():
+                        cp_to_try = str(default_cp)
+                        break
+
+            if cp_to_try and Path(cp_to_try).exists():
+                try:
+                    self.load_checkpoint(cp_to_try)
+                except Exception as e:
+                    logger.warning(f"Could not auto-load CodeBERT checkpoint from {cp_to_try}: {e}")
 
     @property
     def has_real_weights(self) -> bool:
@@ -366,14 +387,23 @@ class CodeBERTAnalyzer:
     MODEL_NAME = "microsoft/codebert-base"
     VECTOR_DIM = 768
 
-    def __init__(self, lazy_load: bool = True, require_real_weights: bool = False):
+    def __init__(
+        self,
+        lazy_load: bool = True,
+        require_real_weights: bool = False,
+        checkpoint_path: Optional[str] = None,
+    ):
         self.tokenizer = None
         self.model = None
         self._is_loaded = False
         self._is_real_weights = False
         self._load_error = None
         self.require_real_weights = require_real_weights
-        self.defect_head = CodeBERTDefectClassifier(threshold=0.5)
+        self.defect_head = CodeBERTDefectClassifier(
+            threshold=0.5,
+            require_real_weights=require_real_weights,
+            checkpoint_path=checkpoint_path,
+        )
 
         if not lazy_load:
             self.load_model(require_real_weights=require_real_weights)

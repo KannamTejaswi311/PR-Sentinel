@@ -129,9 +129,16 @@ class PRSentinelPipeline:
                 else:
                     rag_inst = self.rag
                     target_resolved = str(Path(target_dir).resolve())
-                    if not rag_inst or not rag_inst.workspace_dir or str(rag_inst.workspace_dir) != target_resolved:
+                    if (
+                        not rag_inst
+                        or not rag_inst.workspace_dir
+                        or str(rag_inst.workspace_dir) != target_resolved
+                        or getattr(rag_inst, "repo_id", None) != repo_id
+                        or getattr(rag_inst, "commit_sha", None) != commit_sha
+                    ):
                         from sentinel.rag_pipeline import get_rag_pipeline
                         rag_inst = get_rag_pipeline(workspace_dir=str(target_dir), repo_id=repo_id, commit_sha=commit_sha)
+                        self.rag = rag_inst
                     retrieved_context_chunks = rag_inst.retrieve_context(diff_content, top_k=3)
                     formatted_rag_context = rag_inst.format_context_for_prompt(retrieved_context_chunks)
                     manifest["rag_pipeline"] = ExecutionStatus.SUCCESS.value
