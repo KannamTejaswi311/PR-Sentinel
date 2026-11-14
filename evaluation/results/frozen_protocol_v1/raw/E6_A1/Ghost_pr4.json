@@ -1,0 +1,32 @@
+{
+  "pr_id": "Ghost_pr4",
+  "experiment_id": "E6_A1",
+  "status": "SUCCESS",
+  "findings": [],
+  "findings_count": 0,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "APPROVE: No significant defects, security concerns, or architectural flaws identified.",
+    "metrics": {
+      "raw_finding_score": 0.0,
+      "file_spread_multiplier": 1.4,
+      "diff_size_multiplier": 1.2,
+      "codebert_penalty_added": 0.0,
+      "total_diff_lines": 619,
+      "modified_files_count": 5
+    },
+    "formula_explanation": "PR Risk Score = min(100, round(RawScore(0.0) * FileSpread(1.40) * DiffSize(1.20) + CodeBERTPenalty(0.0))) = 0",
+    "top_contributions": []
+  },
+  "duration_seconds": 148.227,
+  "execution_manifest": {
+    "codebert": "SUCCESS",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SUCCESS",
+    "multi_agent": "SUCCESS",
+    "synthesizer": "SUCCESS",
+    "test_generator": "SUCCESS"
+  }
+}

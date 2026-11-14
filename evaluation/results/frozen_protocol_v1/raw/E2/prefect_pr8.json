@@ -1,0 +1,297 @@
+{
+  "pr_id": "prefect_pr8",
+  "experiment_id": "E2",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "prefect_pr8",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "Dockerfile",
+      "line_start": 8,
+      "evidence": "ARG BASE_IMAGE=python:${PYTHON_VERSION}-slim",
+      "execution_status": "SUCCESS",
+      "finding_id": "2d0c276d-fea3-40cb-8a51-7d8b9b6d7beb",
+      "line_end": 8,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: invalid syntax",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr8",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "Dockerfile",
+      "line_start": 8,
+      "evidence": "Column 6",
+      "execution_status": "SUCCESS",
+      "finding_id": "de20e7f4-4817-4270-818f-aa7911967845",
+      "line_end": 8,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "SyntaxError: invalid syntax",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr8",
+      "source": "Flake8",
+      "category": "BUG",
+      "file_path": "src/prefect/__init__.py",
+      "line_start": 65,
+      "evidence": "Column 21",
+      "execution_status": "SUCCESS",
+      "finding_id": "5f5b0acf-917a-4e2a-8d63-096fd494dab6",
+      "line_end": 65,
+      "rule_id": "Linting F821: Undefined Variable / Runtime Error",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "undefined name 'pathlib'",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr8",
+      "source": "Flake8",
+      "category": "BUG",
+      "file_path": "src/prefect/__init__.py",
+      "line_start": 69,
+      "evidence": "Column 27",
+      "execution_status": "SUCCESS",
+      "finding_id": "4c24d168-d31c-4fc0-957b-54d66dea9092",
+      "line_end": 69,
+      "rule_id": "Linting F821: Undefined Variable / Runtime Error",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "undefined name 'pathlib'",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr8",
+      "source": "Flake8",
+      "category": "BUG",
+      "file_path": "src/prefect/__init__.py",
+      "line_start": 72,
+      "evidence": "Column 24",
+      "execution_status": "SUCCESS",
+      "finding_id": "577bcfef-46e4-4704-9370-07aaa0ddb565",
+      "line_end": 72,
+      "rule_id": "Linting F821: Undefined Variable / Runtime Error",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "undefined name 'pathlib'",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr8",
+      "source": "Flake8",
+      "category": "BUG",
+      "file_path": "src/prefect/__init__.py",
+      "line_start": 74,
+      "evidence": "Column 5",
+      "execution_status": "SUCCESS",
+      "finding_id": "fc7cea50-64b0-49c4-b14c-d217edc1867a",
+      "line_end": 74,
+      "rule_id": "Linting F821: Undefined Variable / Runtime Error",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "undefined name '_build_info'",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr8",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "src/prefect/__init__.py",
+      "line_start": 75,
+      "evidence": "Column 1",
+      "execution_status": "SUCCESS",
+      "finding_id": "950bd9d8-2b64-41bf-8bd6-b8a1385cd2bc",
+      "line_end": 75,
+      "rule_id": "Linting W391: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "blank line at end of file",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr8",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "src/prefect/server/api/server.py",
+      "line_start": 506,
+      "evidence": "if not os.path.exists(static_dir):",
+      "execution_status": "SUCCESS",
+      "finding_id": "dd955255-169c-4fc9-b403-4dffdff15a15",
+      "line_end": 506,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr8",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "src/prefect/server/api/server.py",
+      "line_start": 506,
+      "evidence": "Column 9",
+      "execution_status": "SUCCESS",
+      "finding_id": "1a4804e4-ffb3-484e-b48b-eae74e79260c",
+      "line_end": 506,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr8",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "src/prefect/settings/models/server/ui.py",
+      "line_start": 19,
+      "evidence": "),",
+      "execution_status": "SUCCESS",
+      "finding_id": "896c0808-11a9-472f-917f-f683d8e70366",
+      "line_end": 19,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr8",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "src/prefect/settings/models/server/ui.py",
+      "line_start": 19,
+      "evidence": "Column 9",
+      "execution_status": "SUCCESS",
+      "finding_id": "18b81303-eb12-4f40-b56a-8525cb455a82",
+      "line_end": 19,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr8",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "tests/test_settings.py",
+      "line_start": 490,
+      "evidence": "\"PREFECT_SERVER_UI_SERVE_BASE\": {\"test_value\": \"/base\"},",
+      "execution_status": "SUCCESS",
+      "finding_id": "da0efe3f-9d04-4622-b99b-48c7418d344d",
+      "line_end": 490,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr8",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "tests/test_settings.py",
+      "line_start": 490,
+      "evidence": "Column 5",
+      "execution_status": "SUCCESS",
+      "finding_id": "018f6503-4c6b-4663-a24b-ede414c6997a",
+      "line_end": 490,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    }
+  ],
+  "findings_count": 13,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 10.511,
+  "execution_manifest": {
+    "codebert": "SKIPPED",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SKIPPED",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

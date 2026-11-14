@@ -6,39 +6,18 @@
     {
       "pr_id": "Ghost_pr1",
       "source": "multi_agent",
-      "category": "BUG",
-      "file_path": "Ghost_pr1.diff",
-      "line_start": 9,
-      "evidence": "// NOTE: If you need to add dependencies for services, use npm install <package>",
-      "execution_status": "SUCCESS",
-      "finding_id": "aab10433-de65-44a0-96ea-8821fb7c4190",
-      "line_end": 9,
-      "rule_id": "Potential Zero-Division by Variable",
-      "severity": "HIGH",
-      "confidence": null,
-      "description": "Division by variable without apparent non-zero validation.",
-      "recommendation": "Ensure variable is validated != 0 before division.",
-      "granularity": "STATEMENT",
-      "related_context_chunks": [],
-      "metadata": {
-        "experiment_id": "E6"
-      }
-    },
-    {
-      "pr_id": "Ghost_pr1",
-      "source": "static_staticanalyzer",
-      "category": "CONVENTION",
+      "category": "SECURITY",
       "file_path": "ghost/core/core/boot.js",
-      "line_start": 1,
-      "evidence": "diff --git a/ghost/core/core/boot.js b/ghost/core/core/boot.js",
+      "line_start": 45,
+      "evidence": "Code snippet: 'listener(testModel);' without input validation.",
       "execution_status": "SUCCESS",
-      "finding_id": "04f4579f-b240-4579-b960-d1b1270628df",
-      "line_end": 1,
-      "rule_id": "Unsupported Language (.js)",
-      "severity": "INFORMATIONAL",
+      "finding_id": "2115646c-5615-4240-b72f-20ecd320e64a",
+      "line_end": 45,
+      "rule_id": "Security vulnerability in XML-RPC handling",
+      "severity": "CRITICAL",
       "confidence": null,
-      "description": "Static analysis currently supports Python. File 'ghost/core/core/boot.js' has unsupported extension '.js'.",
-      "recommendation": "Add external static analyzer for '.js' (e.g. ESLint, SwiftLint, Clippy).",
+      "description": "The code handles XML-RPC requests without validating the input, which could lead to security vulnerabilities such as XML injection attacks.",
+      "recommendation": "Implement input validation for XML-RPC requests to prevent XML injection attacks.",
       "granularity": "STATEMENT",
       "related_context_chunks": [],
       "metadata": {
@@ -47,19 +26,19 @@
     },
     {
       "pr_id": "Ghost_pr1",
-      "source": "static_staticanalyzer",
-      "category": "CONVENTION",
-      "file_path": "ghost/core/core/server/services/xmlrpc.js",
-      "line_start": 1,
-      "evidence": "diff --git a/ghost/core/core/boot.js b/ghost/core/core/boot.js",
+      "source": "multi_agent",
+      "category": "PERFORMANCE",
+      "file_path": "ghost/core/server/services/xmlrpc.js",
+      "line_start": 24,
+      "evidence": "```\nconst testPost = _.clone(testUtils.DataGenerator.Content.posts[2]);\n```",
       "execution_status": "SUCCESS",
-      "finding_id": "7e658299-8ed7-466c-94c9-1f6345daa31f",
-      "line_end": 1,
-      "rule_id": "Unsupported Language (.js)",
-      "severity": "INFORMATIONAL",
+      "finding_id": "a6be135e-60a8-45e3-8101-cc74d75ac3c7",
+      "line_end": 24,
+      "rule_id": "Missing file path in import statement",
+      "severity": "LOW",
       "confidence": null,
-      "description": "Static analysis currently supports Python. File 'ghost/core/core/server/services/xmlrpc.js' has unsupported extension '.js'.",
-      "recommendation": "Add external static analyzer for '.js' (e.g. ESLint, SwiftLint, Clippy).",
+      "description": "The import statement uses a relative path './data-generator/content/posts', which might cause issues if the file structure changes.",
+      "recommendation": "Use an absolute path to the file.",
       "granularity": "STATEMENT",
       "related_context_chunks": [],
       "metadata": {
@@ -68,40 +47,19 @@
     },
     {
       "pr_id": "Ghost_pr1",
-      "source": "static_staticanalyzer",
-      "category": "CONVENTION",
-      "file_path": "ghost/core/core/shared/config/env/config.development.json",
-      "line_start": 1,
-      "evidence": "diff --git a/ghost/core/core/boot.js b/ghost/core/core/boot.js",
+      "source": "multi_agent",
+      "category": "CODE_QUALITY",
+      "file_path": "ghost/core/core/boot.js",
+      "line_start": 2,
+      "evidence": "import sinon from 'sinon';",
       "execution_status": "SUCCESS",
-      "finding_id": "b3ef7236-7bf1-4355-86f6-fec324cf1683",
-      "line_end": 1,
-      "rule_id": "Unsupported Language (.json)",
-      "severity": "INFORMATIONAL",
+      "finding_id": "c1f0a5c8-a216-4079-b0ff-43176dcb3dcc",
+      "line_end": 2,
+      "rule_id": "Unused import of `sinon` in `core/core/boot.js`",
+      "severity": "LOW",
       "confidence": null,
-      "description": "Static analysis currently supports Python. File 'ghost/core/core/shared/config/env/config.development.json' has unsupported extension '.json'.",
-      "recommendation": "Add external static analyzer for '.json' (e.g. ESLint, SwiftLint, Clippy).",
-      "granularity": "STATEMENT",
-      "related_context_chunks": [],
-      "metadata": {
-        "experiment_id": "E6"
-      }
-    },
-    {
-      "pr_id": "Ghost_pr1",
-      "source": "static_staticanalyzer",
-      "category": "CONVENTION",
-      "file_path": "ghost/core/test/unit/server/services/xmlrpc.test.js",
-      "line_start": 1,
-      "evidence": "diff --git a/ghost/core/core/boot.js b/ghost/core/core/boot.js",
-      "execution_status": "SUCCESS",
-      "finding_id": "41e6f5f6-dd38-421c-887d-174892efb1a1",
-      "line_end": 1,
-      "rule_id": "Unsupported Language (.js)",
-      "severity": "INFORMATIONAL",
-      "confidence": null,
-      "description": "Static analysis currently supports Python. File 'ghost/core/test/unit/server/services/xmlrpc.test.js' has unsupported extension '.js'.",
-      "recommendation": "Add external static analyzer for '.js' (e.g. ESLint, SwiftLint, Clippy).",
+      "description": "The import statement for `sinon` is not used anywhere in the file.",
+      "recommendation": "Remove the unused import statement.",
       "granularity": "STATEMENT",
       "related_context_chunks": [],
       "metadata": {
@@ -109,54 +67,42 @@
       }
     }
   ],
-  "findings_count": 5,
+  "findings_count": 3,
   "risk_assessment": {
-    "score": 22,
-    "risk_level": "LOW RISK",
-    "recommendation": "APPROVE WITH SUGGESTIONS: Minor style or non-critical observations.",
+    "score": 65,
+    "risk_level": "HIGH RISK",
+    "recommendation": "CHANGES REQUESTED: High-priority defects detected. Address flagged vulnerabilities prior to merge.",
     "metrics": {
-      "raw_finding_score": 17.0,
+      "raw_finding_score": 49.0,
       "file_spread_multiplier": 1.1,
       "diff_size_multiplier": 1.2,
       "codebert_penalty_added": 0.0,
       "total_diff_lines": 481,
       "modified_files_count": 2
     },
-    "formula_explanation": "PR Risk Score = min(100, round(RawScore(17.0) * FileSpread(1.10) * DiffSize(1.20) + CodeBERTPenalty(0.0))) = 22",
+    "formula_explanation": "PR Risk Score = min(100, round(RawScore(49.0) * FileSpread(1.10) * DiffSize(1.20) + CodeBERTPenalty(0.0))) = 65",
     "top_contributions": [
       {
-        "title": "Potential Zero-Division by Variable",
-        "severity": "HIGH",
-        "is_security": false,
-        "points_added": 15.0
+        "title": "Security vulnerability in XML-RPC handling",
+        "severity": "CRITICAL",
+        "is_security": true,
+        "points_added": 45.0
       },
       {
-        "title": "Unsupported Language (.js)",
-        "severity": "INFORMATIONAL",
+        "title": "Missing file path in import statement",
+        "severity": "LOW",
         "is_security": false,
-        "points_added": 0.5
+        "points_added": 2.0
       },
       {
-        "title": "Unsupported Language (.js)",
-        "severity": "INFORMATIONAL",
+        "title": "Unused import of `sinon` in `core/core/boot.js`",
+        "severity": "LOW",
         "is_security": false,
-        "points_added": 0.5
-      },
-      {
-        "title": "Unsupported Language (.json)",
-        "severity": "INFORMATIONAL",
-        "is_security": false,
-        "points_added": 0.5
-      },
-      {
-        "title": "Unsupported Language (.js)",
-        "severity": "INFORMATIONAL",
-        "is_security": false,
-        "points_added": 0.5
+        "points_added": 2.0
       }
     ]
   },
-  "duration_seconds": 95.402,
+  "duration_seconds": 175.46,
   "execution_manifest": {
     "codebert": "SUCCESS",
     "static_analyzer": "SUCCESS",

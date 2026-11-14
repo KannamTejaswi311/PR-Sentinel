@@ -1,0 +1,108 @@
+{
+  "pr_id": "prefect_pr11",
+  "experiment_id": "E2",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "prefect_pr11",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "src/integrations/prefect-kubernetes/prefect_kubernetes/observer.py",
+      "line_start": 57,
+      "evidence": "logger.info(\"Initializing clients\")",
+      "execution_status": "SUCCESS",
+      "finding_id": "f56c29ab-16f9-4f45-ab85-8eb472a51362",
+      "line_end": 57,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr11",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "src/integrations/prefect-kubernetes/prefect_kubernetes/observer.py",
+      "line_start": 57,
+      "evidence": "Column 5",
+      "execution_status": "SUCCESS",
+      "finding_id": "e3fe7424-294d-4aaf-80c3-92b49b973e16",
+      "line_end": 57,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr11",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "src/integrations/prefect-kubernetes/prefect_kubernetes/settings.py",
+      "line_start": 56,
+      "evidence": "\"should be provided in the format `key=value`.\",",
+      "execution_status": "SUCCESS",
+      "finding_id": "c42a069c-7f1f-4243-97bc-ccefdcdcf840",
+      "line_end": 56,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr11",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "src/integrations/prefect-kubernetes/prefect_kubernetes/settings.py",
+      "line_start": 56,
+      "evidence": "Column 9",
+      "execution_status": "SUCCESS",
+      "finding_id": "fb3b970d-51f8-42dd-81e2-62577189d4ca",
+      "line_end": 56,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    }
+  ],
+  "findings_count": 4,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 4.282,
+  "execution_manifest": {
+    "codebert": "SKIPPED",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SKIPPED",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

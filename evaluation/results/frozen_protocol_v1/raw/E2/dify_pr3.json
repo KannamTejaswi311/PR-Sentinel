@@ -1,0 +1,171 @@
+{
+  "pr_id": "dify_pr3",
+  "experiment_id": "E2",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "dify_pr3",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "api/core/workflow/nodes/node_factory.py",
+      "line_start": 42,
+      "evidence": "code_executor: type[CodeExecutor] | None = None,",
+      "execution_status": "SUCCESS",
+      "finding_id": "c05502e9-a686-4b51-b60e-6f0dc8978ead",
+      "line_end": 42,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr3",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/core/workflow/nodes/node_factory.py",
+      "line_start": 42,
+      "evidence": "Column 9",
+      "execution_status": "SUCCESS",
+      "finding_id": "d4a4e194-b849-48a2-b6f4-54646feaeb7d",
+      "line_end": 42,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr3",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/core/workflow/nodes/template_transform/template_renderer.py",
+      "line_start": 40,
+      "evidence": "Column 24",
+      "execution_status": "SUCCESS",
+      "finding_id": "0b70e2e8-840e-4327-822c-2550af46d9c4",
+      "line_end": 40,
+      "rule_id": "Linting W292: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "no newline at end of file",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr3",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "api/core/workflow/nodes/template_transform/template_transform_node.py",
+      "line_start": 67,
+      "evidence": "try:",
+      "execution_status": "SUCCESS",
+      "finding_id": "1709e05f-7d42-40b1-976e-63b659e1698c",
+      "line_end": 67,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unindent does not match any outer indentation level",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr3",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/core/workflow/nodes/template_transform/template_transform_node.py",
+      "line_start": 67,
+      "evidence": "Column 14",
+      "execution_status": "SUCCESS",
+      "finding_id": "23a36ae3-9ba8-40e8-9b4b-584b2bf62568",
+      "line_end": 67,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unindent does not match any outer indentation level",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr3",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "api/tests/unit_tests/core/workflow/nodes/template_transform/template_transform_node_spec.py",
+      "line_start": 127,
+      "evidence": "\"\"\"Test version class method.\"\"\"",
+      "execution_status": "SUCCESS",
+      "finding_id": "1828cc91-3986-4b88-8b46-b0f500294c23",
+      "line_end": 127,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr3",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/tests/unit_tests/core/workflow/nodes/template_transform/template_transform_node_spec.py",
+      "line_start": 127,
+      "evidence": "Column 9",
+      "execution_status": "SUCCESS",
+      "finding_id": "18a04d08-eaa1-43e7-a072-f0f014ce5e59",
+      "line_end": 127,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    }
+  ],
+  "findings_count": 7,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 5.995,
+  "execution_manifest": {
+    "codebert": "SKIPPED",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SKIPPED",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

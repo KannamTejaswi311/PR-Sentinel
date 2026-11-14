@@ -1,0 +1,171 @@
+{
+  "pr_id": "dify_pr13",
+  "experiment_id": "E2",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "dify_pr13",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "api/core/workflow/graph_engine/graph_traversal/skip_propagator.py",
+      "line_start": 60,
+      "evidence": "if edge_states[\"has_taken\"]:",
+      "execution_status": "SUCCESS",
+      "finding_id": "4231d6f9-3200-4e58-84ea-e0d41d79e74f",
+      "line_end": 60,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr13",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/core/workflow/graph_engine/graph_traversal/skip_propagator.py",
+      "line_start": 60,
+      "evidence": "Column 9",
+      "execution_status": "SUCCESS",
+      "finding_id": "40cfe4c0-6dd6-41d8-86ea-1486e6d8a276",
+      "line_end": 60,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr13",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/tests/unit_tests/core/workflow/graph_engine/graph_traversal/__init__.py",
+      "line_start": 1,
+      "evidence": "Column 44",
+      "execution_status": "SUCCESS",
+      "finding_id": "216978b4-de94-4b4f-8004-3b30325a8db9",
+      "line_end": 1,
+      "rule_id": "Linting W292: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "no newline at end of file",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr13",
+      "source": "Bandit",
+      "category": "SECURITY",
+      "file_path": "api/tests/unit_tests/core/workflow/graph_engine/graph_traversal/test_skip_propagator.py",
+      "line_start": 147,
+      "evidence": "146         mock_state_manager.mark_edge_skipped.assert_any_call(\"edge_3\")\n147         assert mock_state_manager.mark_edge_skipped.call_count == 2\n148         # Should recursively propagate from each edge",
+      "execution_status": "SUCCESS",
+      "finding_id": "3d7d031e-f983-4d07-8b57-add6262cb94c",
+      "line_end": 147,
+      "rule_id": "assert_used",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "recommendation": "https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr13",
+      "source": "Bandit",
+      "category": "SECURITY",
+      "file_path": "api/tests/unit_tests/core/workflow/graph_engine/graph_traversal/test_skip_propagator.py",
+      "line_start": 182,
+      "evidence": "181         mock_state_manager.mark_edge_skipped.assert_any_call(\"edge_2\")\n182         assert mock_state_manager.mark_edge_skipped.call_count == 2\n183         # propagate_skip_from_edge should be called for each edge",
+      "execution_status": "SUCCESS",
+      "finding_id": "2d9b9c47-2b46-4194-a7af-831903c2705c",
+      "line_end": 182,
+      "rule_id": "assert_used",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "recommendation": "https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr13",
+      "source": "Bandit",
+      "category": "SECURITY",
+      "file_path": "api/tests/unit_tests/core/workflow/graph_engine/graph_traversal/test_skip_propagator.py",
+      "line_start": 242,
+      "evidence": "241         mock_state_manager.mark_node_skipped.assert_any_call(\"node_4\")\n242         assert mock_state_manager.mark_node_skipped.call_count == 2\n243",
+      "execution_status": "SUCCESS",
+      "finding_id": "ed4ef7bc-bc0e-40ed-ada2-6f57a5f5b50d",
+      "line_end": 242,
+      "rule_id": "assert_used",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "recommendation": "https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr13",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/tests/unit_tests/core/workflow/graph_engine/graph_traversal/test_skip_propagator.py",
+      "line_start": 307,
+      "evidence": "Column 79",
+      "execution_status": "SUCCESS",
+      "finding_id": "95716392-e008-4168-8cb4-b4d9caba479d",
+      "line_end": 307,
+      "rule_id": "Linting W292: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "no newline at end of file",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    }
+  ],
+  "findings_count": 7,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 6.595,
+  "execution_manifest": {
+    "codebert": "SKIPPED",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SKIPPED",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

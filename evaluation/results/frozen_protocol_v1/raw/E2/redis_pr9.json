@@ -1,0 +1,23 @@
+{
+  "pr_id": "redis_pr9",
+  "experiment_id": "E2",
+  "status": "SUCCESS",
+  "findings": [],
+  "findings_count": 0,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 0.014,
+  "execution_manifest": {
+    "codebert": "SKIPPED",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SKIPPED",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

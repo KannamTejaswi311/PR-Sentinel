@@ -26,6 +26,18 @@ from sentinel.schemas import (
 )
 
 
+def extract_primary_diff_file(diff_content: str, fallback: str = "modified_code.py") -> str:
+    """Extract first modified target file path from unified diff header."""
+    for line in diff_content.splitlines():
+        if line.startswith("+++ b/"):
+            return line[6:].strip()
+        elif line.startswith("+++ "):
+            p = line[4:].strip()
+            if p and p != "/dev/null":
+                return p
+    return fallback if not fallback.endswith(".diff") else "modified_code.py"
+
+
 class BaseReviewAgent:
     """Base class for specialized code review agents."""
 
@@ -34,6 +46,47 @@ class BaseReviewAgent:
         self.role = role
         self.focus_areas = focus_areas
         self.category = category
+
+    def parse_diff_lines(self, diff_content: str, default_filename: str) -> List[Dict[str, Any]]:
+        """
+        Parses diff content into added lines with accurate file path and source line number.
+        Returns list of dicts: {"file": str, "line": int, "code": str}
+        """
+        parsed_lines = []
+        primary = extract_primary_diff_file(diff_content, default_filename)
+        current_file = primary
+        current_line = 1
+        hunk_header_pattern = re.compile(r"^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
+
+        for raw_line in diff_content.splitlines():
+            if raw_line.startswith("+++ b/"):
+                current_file = raw_line[6:].strip()
+                continue
+            elif raw_line.startswith("+++ "):
+                p = raw_line[4:].strip()
+                if p and p != "/dev/null":
+                    current_file = p
+                continue
+
+            match = hunk_header_pattern.match(raw_line)
+            if match:
+                current_line = int(match.group(2))
+                continue
+
+            if raw_line.startswith("+") and not raw_line.startswith("+++"):
+                code = raw_line[1:].strip()
+                parsed_lines.append({
+                    "file": current_file,
+                    "line": current_line,
+                    "code": code,
+                })
+                current_line += 1
+            elif raw_line.startswith(" "):
+                current_line += 1
+            elif raw_line.startswith("-"):
+                pass
+
+        return parsed_lines
 
     def build_agent_prompt(
         self,
@@ -49,13 +102,14 @@ class BaseReviewAgent:
             if static_findings
             else "None detected"
         )
+        target_file = extract_primary_diff_file(diff_content, filename)
 
         return f"""You are the {self.name} in the PR-Sentinel automated code review system.
 Your specific role: {self.role}
 Your focus areas: {focus_str}
 
 Analyze the following code change strictly through your specialty.
-Target File: {filename}
+Target File: {target_file}
 
 Static Analysis Evidence:
 {static_str}
@@ -69,22 +123,24 @@ Code Diff:
 ```
 
 Instructions:
-Respond ONLY with a JSON array of findings matching this exact schema:
-[
-  {{
-    "title": "Clear concise finding title",
-    "category": "{self.category}",
-    "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFORMATIONAL",
-    "file": "{filename}",
-    "line": <line_number_or_1>,
-    "description": "Detailed explanation of the problem",
-    "evidence": "Exact code snippet or condition causing the issue",
-    "suggested_fix": "Concrete code correction or recommendation",
-    "confidence": 0.85
-  }}
-]
+Respond ONLY with a JSON object in this format:
+{{
+  "findings": [
+    {{
+      "title": "Clear concise finding title",
+      "category": "{self.category}",
+      "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFORMATIONAL",
+      "file": "{target_file}",
+      "line": <line_number_in_target_file>,
+      "description": "Detailed explanation of the problem",
+      "evidence": "Exact code snippet from the diff",
+      "suggested_fix": "Concrete code correction or recommendation",
+      "confidence": 0.85
+    }}
+  ]
+}}
 
-If no issues in your focus area are found, return an empty JSON array: [].
+If no issues in your focus area are found, return: {{"findings": []}}
 Do not include any conversational preamble or markdown outside the JSON block.
 """
 
@@ -126,79 +182,91 @@ class BugDetectionAgent(BaseReviewAgent):
         """
         Documented Agent Heuristic Rules:
         - BUG-01: Division by zero literal (/ 0)
-        - BUG-02: Unguarded variable division
-        - BUG-03: Mutable default argument in function definition
-        - BUG-04: Subscripting fetchone() without None check
+        - BUG-02: Unguarded variable division (arithmetic expressions only)
+        - BUG-03: Mutable default argument in function definition (Python only)
+        - BUG-04: Subscripting fetchone() without None check (Python only)
         """
         findings = []
+        parsed_lines = self.parse_diff_lines(diff_content, filename)
 
-        for idx, line in enumerate(diff_content.splitlines(), 1):
-            if line.startswith("+") and not line.startswith("+++"):
-                code = line[1:].strip()
+        for item in parsed_lines:
+            file_name = item["file"]
+            line_no = item["line"]
+            code = item["code"]
 
-                # Rule BUG-01: Division by zero literal
-                if re.search(r"/\s*0(?:\.0*)?(?!\d)", code):
-                    findings.append({
-                        "title": "Division by Zero Error",
-                        "category": self.category,
-                        "severity": "CRITICAL",
-                        "file": filename,
-                        "line": idx,
-                        "description": "Division operation with a zero denominator will cause ZeroDivisionError.",
-                        "evidence": code,
-                        "suggested_fix": "Add a pre-condition guard check ensuring the denominator is non-zero.",
-                        "confidence": 0.95,
-                    })
+            is_comment = (
+                code.startswith("//") or code.startswith("/*") or
+                code.startswith("*") or code.startswith("#")
+            )
 
-                # Rule BUG-02: Unguarded division by variable
-                elif re.search(r"/\s*[A-Za-z_][A-Za-z0-9_]*", code) and not any(k in code for k in ("!= 0", "> 0", "if")):
-                    # Exclude comment lines or URL strings
-                    if not code.startswith("#") and "://" not in code:
+            # Rule BUG-01: Division by zero literal (/ 0)
+            if not is_comment and re.search(r"/\s*0(?:\.0*)?(?!\d)", code):
+                findings.append({
+                    "title": "Division by Zero Error",
+                    "category": self.category,
+                    "severity": "CRITICAL",
+                    "file": file_name,
+                    "line": line_no,
+                    "description": "Division operation with a zero denominator will cause ZeroDivisionError.",
+                    "evidence": code,
+                    "suggested_fix": "Add a pre-condition guard check ensuring the denominator is non-zero.",
+                    "confidence": 0.95,
+                })
+
+            # Rule BUG-02: Unguarded division by variable (arithmetic expressions only)
+            elif (
+                not is_comment
+                and "://" not in code
+                and not any(code.startswith(p) for p in ("import ", "require(", "from ", "<", "</", "export "))
+            ):
+                # Must be an arithmetic division: operand before slash, identifier after slash
+                if re.search(r"[a-zA-Z0-9_\)\]]\s*/\s*[A-Za-z_][A-Za-z0-9_]*", code) and not any(k in code for k in ("!= 0", "> 0", "if", "assert")):
+                    if not re.search(r"['\"`].*/.*['\"`]", code) and not re.search(r"^/[^/]+/[gimsuy]*$", code):
                         findings.append({
                             "title": "Potential Zero-Division by Variable",
                             "category": self.category,
                             "severity": "HIGH",
-                            "file": filename,
-                            "line": idx,
+                            "file": file_name,
+                            "line": line_no,
                             "description": "Division by variable without apparent non-zero validation.",
                             "evidence": code,
                             "suggested_fix": "Ensure variable is validated != 0 before division.",
                             "confidence": 0.70,
                         })
 
-                # Rule BUG-03: Mutable default arguments (def foo(bar=[]))
-                if re.search(r"def\s+[A-Za-z_][A-Za-z0-9_]*\s*\(.*=\s*(\[\]|\{\})", code):
-                    findings.append({
-                        "title": "Mutable Default Argument Bug",
-                        "category": self.category,
-                        "severity": "MEDIUM",
-                        "file": filename,
-                        "line": idx,
-                        "description": "Mutable default argument retains state across multiple function calls.",
-                        "evidence": code,
-                        "suggested_fix": "Use None as the default value and initialize the mutable object inside the function body.",
-                        "confidence": 0.90,
-                    })
+            # Rule BUG-03: Mutable default arguments (Python only)
+            if file_name.endswith(".py") and re.search(r"def\s+[A-Za-z_][A-Za-z0-9_]*\s*\(.*=\s*(\[\]|\{\})", code):
+                findings.append({
+                    "title": "Mutable Default Argument Bug",
+                    "category": self.category,
+                    "severity": "MEDIUM",
+                    "file": file_name,
+                    "line": line_no,
+                    "description": "Mutable default argument retains state across multiple function calls.",
+                    "evidence": code,
+                    "suggested_fix": "Use None as the default value and initialize the mutable object inside the function body.",
+                    "confidence": 0.90,
+                })
 
-                # Rule BUG-04: Subscripting fetchone() directly without None check
-                if re.search(r"\.fetchone\(\)\[", code):
-                    findings.append({
-                        "title": "Potential TypeError on fetchone() None result",
-                        "category": self.category,
-                        "severity": "HIGH",
-                        "file": filename,
-                        "line": idx,
-                        "description": "Subscripting cursor.fetchone() directly will raise TypeError if query returns no rows.",
-                        "evidence": code,
-                        "suggested_fix": "Store fetchone() in a variable, verify it is not None, then access columns.",
-                        "confidence": 0.85,
-                    })
+            # Rule BUG-04: Subscripting fetchone() directly without None check (Python only)
+            if file_name.endswith(".py") and re.search(r"\.fetchone\(\)\[", code):
+                findings.append({
+                    "title": "Potential TypeError on fetchone() None result",
+                    "category": self.category,
+                    "severity": "HIGH",
+                    "file": file_name,
+                    "line": line_no,
+                    "description": "Subscripting cursor.fetchone() directly will raise TypeError if query returns no rows.",
+                    "evidence": code,
+                    "suggested_fix": "Store fetchone() in a variable, verify it is not None, then access columns.",
+                    "confidence": 0.85,
+                })
 
         # Deduplicate
         seen = set()
         deduped = []
         for f in findings:
-            key = (f["title"], f["line"])
+            key = (f["title"], f["file"], f["line"])
             if key not in seen:
                 seen.add(key)
                 deduped.append(f)
@@ -238,15 +306,19 @@ class SecurityReviewAgent(BaseReviewAgent):
         """
         static_findings = static_findings or []
         findings = []
+        parsed_lines = self.parse_diff_lines(diff_content, filename)
+        primary = extract_primary_diff_file(diff_content, filename)
 
-        # Promote static findings into agent findings
+        # Promote static findings into agent findings (skip unsupported language markers)
         for sf in static_findings:
+            if sf.get("execution_status") == ExecutionStatus.UNSUPPORTED_LANGUAGE.value:
+                continue
             if sf.get("severity") in ("CRITICAL", "HIGH", "MEDIUM"):
                 findings.append({
                     "title": sf.get("title", "Static Security Finding"),
                     "category": self.category,
                     "severity": sf.get("severity", "HIGH"),
-                    "file": sf.get("file", filename),
+                    "file": sf.get("file", primary),
                     "line": sf.get("line", 1),
                     "description": sf.get("description", ""),
                     "evidence": sf.get("evidence", ""),
@@ -254,43 +326,51 @@ class SecurityReviewAgent(BaseReviewAgent):
                     "confidence": 0.95,
                 })
 
-        for idx, line in enumerate(diff_content.splitlines(), 1):
-            if line.startswith("+") and not line.startswith("+++"):
-                code = line[1:].strip()
+        for item in parsed_lines:
+            file_name = item["file"]
+            line_no = item["line"]
+            code = item["code"]
 
-                # Rule SEC-01: Direct SQL concatenation
-                if any(k in code.upper() for k in ("SELECT ", "INSERT ", "UPDATE ", "DELETE ")) and ("+" in code or "f\"" in code or "f'" in code):
+            is_comment = (
+                code.startswith("//") or code.startswith("/*") or
+                code.startswith("*") or code.startswith("#")
+            )
+            if is_comment:
+                continue
+
+            # Rule SEC-01: Direct SQL concatenation
+            if any(k in code.upper() for k in ("SELECT ", "INSERT ", "UPDATE ", "DELETE ")) and ("+" in code or "f\"" in code or "f'" in code):
+                findings.append({
+                    "title": "SQL Injection Risk (Direct Concatenation)",
+                    "category": self.category,
+                    "severity": "HIGH",
+                    "file": file_name,
+                    "line": line_no,
+                    "description": "SQL statement dynamically built via string concatenation or f-string interpolation.",
+                    "evidence": code,
+                    "suggested_fix": "Use parameterized queries with placeholder syntax.",
+                    "confidence": 0.90,
+                })
+
+            # Rule SEC-02: Command injection
+            if any(k in code for k in ("os.system(", "subprocess.Popen(", "subprocess.call(")):
+                if "+" in code or "shell=True" in code or "f\"" in code or "f'" in code:
                     findings.append({
-                        "title": "SQL Injection Risk (Direct Concatenation)",
+                        "title": "Command Injection Vulnerability",
                         "category": self.category,
-                        "severity": "HIGH",
-                        "file": filename,
-                        "line": idx,
-                        "description": "SQL statement dynamically built via string concatenation or f-string interpolation.",
+                        "severity": "CRITICAL",
+                        "file": file_name,
+                        "line": line_no,
+                        "description": "System command execution with dynamic arguments or shell=True.",
                         "evidence": code,
-                        "suggested_fix": "Use parameterized queries with placeholder syntax.",
-                        "confidence": 0.90,
+                        "suggested_fix": "Pass command arguments as a list with shell=False.",
+                        "confidence": 0.95,
                     })
-
-                # Rule SEC-02: Command injection
-                if any(k in code for k in ("os.system(", "subprocess.Popen(", "subprocess.call(")):
-                    if "+" in code or "shell=True" in code or "f\"" in code or "f'" in code:
-                        findings.append({
-                            "title": "Command Injection Vulnerability",
-                            "category": self.category,
-                            "severity": "CRITICAL",
-                            "file": filename,
-                            "line": idx,
-                            "description": "System command execution with dynamic arguments or shell=True.",
-                            "evidence": code,
-                            "suggested_fix": "Pass command arguments as a list with shell=False.",
-                            "confidence": 0.95,
-                        })
 
         seen = set()
         deduped = []
         for f in findings:
-            key = (f["title"], f["line"])
+            key = (f["title"], f["file"], f["line"])
             if key not in seen:
                 seen.add(key)
                 deduped.append(f)
@@ -327,43 +407,52 @@ class PerformanceReviewAgent(BaseReviewAgent):
         """
         static_findings = static_findings or []
         findings = []
+        parsed_lines = self.parse_diff_lines(diff_content, filename)
 
-        for idx, line in enumerate(diff_content.splitlines(), 1):
-            if line.startswith("+") and not line.startswith("+++"):
-                code = line[1:].strip()
+        for item in parsed_lines:
+            file_name = item["file"]
+            line_no = item["line"]
+            code = item["code"]
 
-                # Rule PERF-01: Unbounded SELECT
-                if "SELECT " in code.upper() and "FROM " in code.upper() and "LIMIT " not in code.upper():
-                    findings.append({
-                        "title": "Unbounded Database Query (Missing LIMIT)",
-                        "category": self.category,
-                        "severity": "LOW",
-                        "file": filename,
-                        "line": idx,
-                        "description": "SQL query lacks pagination or LIMIT clause, risking memory exhaustion.",
-                        "evidence": code,
-                        "suggested_fix": "Add a LIMIT clause or implement cursor pagination.",
-                        "confidence": 0.70,
-                    })
+            is_comment = (
+                code.startswith("//") or code.startswith("/*") or
+                code.startswith("*") or code.startswith("#")
+            )
+            if is_comment:
+                continue
 
-                # Rule PERF-02: Connection leak
-                if "connect(" in code and "with " not in code:
-                    findings.append({
-                        "title": "Unmanaged Connection Resource",
-                        "category": self.category,
-                        "severity": "LOW",
-                        "file": filename,
-                        "line": idx,
-                        "description": "Connection opened without context manager ('with' statement) may leak sockets/handles.",
-                        "evidence": code,
-                        "suggested_fix": "Wrap database connection in a 'with' context manager.",
-                        "confidence": 0.75,
-                    })
+            # Rule PERF-01: Unbounded SELECT
+            if "SELECT " in code.upper() and "FROM " in code.upper() and "LIMIT " not in code.upper():
+                findings.append({
+                    "title": "Unbounded Database Query (Missing LIMIT)",
+                    "category": self.category,
+                    "severity": "LOW",
+                    "file": file_name,
+                    "line": line_no,
+                    "description": "SQL query lacks pagination or LIMIT clause, risking memory exhaustion.",
+                    "evidence": code,
+                    "suggested_fix": "Add a LIMIT clause or implement cursor pagination.",
+                    "confidence": 0.70,
+                })
+
+            # Rule PERF-02: Connection leak
+            if "connect(" in code and "with " not in code and file_name.endswith(".py"):
+                findings.append({
+                    "title": "Unmanaged Connection Resource",
+                    "category": self.category,
+                    "severity": "LOW",
+                    "file": file_name,
+                    "line": line_no,
+                    "description": "Connection opened without context manager ('with' statement) may leak sockets/handles.",
+                    "evidence": code,
+                    "suggested_fix": "Wrap database connection in a 'with' context manager.",
+                    "confidence": 0.75,
+                })
 
         seen = set()
         deduped = []
         for f in findings:
-            key = (f["title"], f["line"])
+            key = (f["title"], f["file"], f["line"])
             if key not in seen:
                 seen.add(key)
                 deduped.append(f)
@@ -397,18 +486,23 @@ class CodeQualityAgent(BaseReviewAgent):
         Documented Agent Heuristic Rules:
         - Ingests Flake8 style violations
         - QUAL-01: Single-letter identifier assignment
+        - QUAL-02: Bare except clause (Python only)
         """
         static_findings = static_findings or []
         findings = []
+        parsed_lines = self.parse_diff_lines(diff_content, filename)
+        primary = extract_primary_diff_file(diff_content, filename)
 
         # Check static analysis style findings (Flake8)
         for sf in static_findings:
+            if sf.get("execution_status") == ExecutionStatus.UNSUPPORTED_LANGUAGE.value:
+                continue
             if sf.get("source") == "Flake8" or "style" in sf.get("title", "").lower():
                 findings.append({
                     "title": sf.get("title", "Code Style Finding"),
                     "category": self.category,
                     "severity": sf.get("severity", "LOW"),
-                    "file": sf.get("file", filename),
+                    "file": sf.get("file", primary),
                     "line": sf.get("line", 1),
                     "description": sf.get("description", ""),
                     "evidence": sf.get("evidence", ""),
@@ -416,42 +510,50 @@ class CodeQualityAgent(BaseReviewAgent):
                     "confidence": 0.90,
                 })
 
-        for idx, line in enumerate(diff_content.splitlines(), 1):
-            if line.startswith("+") and not line.startswith("+++"):
-                code = line[1:].strip()
+        for item in parsed_lines:
+            file_name = item["file"]
+            line_no = item["line"]
+            code = item["code"]
 
-                # Rule QUAL-01: Single letter variable names (except conventional i, j, x, y, e, k, v)
-                if re.search(r"^\s*[a-z]\s*=\s*", code) and not re.search(r"^\s*[ijxyekv_]\s*=\s*", code):
-                    findings.append({
-                        "title": "Non-Descriptive Identifier Name",
-                        "category": self.category,
-                        "severity": "INFORMATIONAL",
-                        "file": filename,
-                        "line": idx,
-                        "description": "Single-letter variable names reduce readability and maintainability.",
-                        "evidence": code,
-                        "suggested_fix": "Use descriptive naming reflecting the entity's domain purpose.",
-                        "confidence": 0.75,
-                    })
+            is_comment = (
+                code.startswith("//") or code.startswith("/*") or
+                code.startswith("*") or code.startswith("#")
+            )
+            if is_comment:
+                continue
 
-                # Rule QUAL-02: Bare except clause
-                if re.search(r"except\s*:", code):
-                    findings.append({
-                        "title": "Bare Exception Clause",
-                        "category": self.category,
-                        "severity": "MEDIUM",
-                        "file": filename,
-                        "line": idx,
-                        "description": "Bare 'except:' catches SystemExit and KeyboardInterrupt, concealing critical execution faults.",
-                        "evidence": code,
-                        "suggested_fix": "Catch specific exceptions such as 'except Exception:' or domain-specific exceptions.",
-                        "confidence": 0.90,
-                    })
+            # Rule QUAL-01: Single letter variable names (except conventional i, j, x, y, e, k, v)
+            if re.search(r"^\s*[a-z]\s*=\s*", code) and not re.search(r"^\s*[ijxyekv_]\s*=\s*", code):
+                findings.append({
+                    "title": "Non-Descriptive Identifier Name",
+                    "category": self.category,
+                    "severity": "INFORMATIONAL",
+                    "file": file_name,
+                    "line": line_no,
+                    "description": "Single-letter variable names reduce readability and maintainability.",
+                    "evidence": code,
+                    "suggested_fix": "Use descriptive naming reflecting the entity's domain purpose.",
+                    "confidence": 0.75,
+                })
+
+            # Rule QUAL-02: Bare except clause (Python only)
+            if file_name.endswith(".py") and re.search(r"except\s*:", code):
+                findings.append({
+                    "title": "Bare Exception Clause",
+                    "category": self.category,
+                    "severity": "MEDIUM",
+                    "file": file_name,
+                    "line": line_no,
+                    "description": "Bare 'except:' catches SystemExit and KeyboardInterrupt, concealing critical execution faults.",
+                    "evidence": code,
+                    "suggested_fix": "Catch specific exceptions such as 'except Exception:' or domain-specific exceptions.",
+                    "confidence": 0.90,
+                })
 
         seen = set()
         deduped = []
         for f in findings:
-            key = (f["title"], f["line"])
+            key = (f["title"], f["file"], f["line"])
             if key not in seen:
                 seen.add(key)
                 deduped.append(f)
@@ -469,7 +571,7 @@ class MultiAgentOrchestrator:
         self,
         ollama_url: str = "http://localhost:11434/api/generate",
         model: str = "qwen2.5-coder:3b-instruct",
-        timeout: float = 30.0,
+        timeout: float = 60.0,
     ):
         self.ollama_url = ollama_url
         self.model = model
@@ -496,7 +598,7 @@ class MultiAgentOrchestrator:
 
         # Fast socket probe directly to IPv4 to prevent Windows IPv6 SYN timeout hang
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(0.15)
+        s.settimeout(0.2)
         try:
             s.connect(("127.0.0.1", 11434))
             s.close()
@@ -525,6 +627,7 @@ class MultiAgentOrchestrator:
         Invokes Ollama model when online, with heuristic rule analyzer fallback.
         """
         static_findings = static_findings or []
+        target_file = extract_primary_diff_file(diff_content, filename)
         is_offline = os.environ.get("PR_SENTINEL_OFFLINE", "").lower() in ("1", "true", "yes")
 
         ollama_online = False
@@ -547,14 +650,14 @@ class MultiAgentOrchestrator:
         all_findings = []
         for agent in self.agents:
             agent_findings = []
-            heuristic_findings = agent.analyze_heuristically(diff_content, filename, static_findings)
+            heuristic_findings = agent.analyze_heuristically(diff_content, target_file, static_findings)
             agent_findings.extend(heuristic_findings)
 
             exec_status = ExecutionStatus.SUCCESS.value
             err_msg = None
 
             if ollama_online:
-                llm_res, status, err = self._call_agent_llm_sync(agent, diff_content, filename, repo_context, static_findings)
+                llm_res, status, err = self._call_agent_llm_sync(agent, diff_content, target_file, repo_context, static_findings)
                 exec_status = status
                 err_msg = err
                 if llm_res:
@@ -598,6 +701,7 @@ class MultiAgentOrchestrator:
         if os.environ.get("PR_SENTINEL_OFFLINE", "").lower() in ("1", "true", "yes"):
             return self.run_review_sync(diff_content, filename, repo_context, static_findings, pr_id)
         static_findings = static_findings or []
+        target_file = extract_primary_diff_file(diff_content, filename)
         ollama_online = await self._check_ollama()
         results: Dict[str, Any] = {
             "agents_executed": [a.name for a in self.agents],
@@ -616,12 +720,12 @@ class MultiAgentOrchestrator:
             err_msg = None
 
             # 1. Run agent-specific heuristic analysis
-            heuristic_findings = agent.analyze_heuristically(diff_content, filename, static_findings)
+            heuristic_findings = agent.analyze_heuristically(diff_content, target_file, static_findings)
             agent_findings.extend(heuristic_findings)
 
             # 2. Attempt LLM call if Ollama is accessible
             if ollama_online:
-                llm_res, status, err = await self._call_agent_llm(agent, diff_content, filename, repo_context, static_findings)
+                llm_res, status, err = await self._call_agent_llm(agent, diff_content, target_file, repo_context, static_findings)
                 exec_status = status
                 err_msg = err
                 if llm_res:
@@ -659,13 +763,14 @@ class MultiAgentOrchestrator:
         """
         Single-prompt review for Configuration E1 (Standalone LLM) and E6-A4 (E6 w/o Multi-Agent).
         """
+        target_file = extract_primary_diff_file(diff_content, filename)
         ollama_online = await self._check_ollama()
         if not ollama_online:
             return [ModelFinding(
                 pr_id=pr_id,
                 source="llm_monolithic",
                 category=FindingCategory.BUG.value,
-                file_path=filename,
+                file_path=target_file,
                 line_start=1,
                 evidence="",
                 description="Ollama server offline or unreachable.",
@@ -674,7 +779,7 @@ class MultiAgentOrchestrator:
 
         prompt = f"""You are an expert automated code reviewer.
 Review the following pull request code diff and report any bugs, security vulnerabilities, or critical flaws.
-Target File: {filename}
+Target File: {target_file}
 
 Repository Context:
 {repo_context}
@@ -685,21 +790,23 @@ Code Diff:
 ```
 
 Instructions:
-Respond ONLY with a JSON array of findings matching this exact schema:
-[
-  {{
-    "title": "Clear concise finding title",
-    "category": "BUG" | "SECURITY" | "PERFORMANCE" | "CODE_QUALITY",
-    "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFORMATIONAL",
-    "file": "{filename}",
-    "line": <line_number_or_1>,
-    "description": "Detailed explanation of the problem",
-    "evidence": "Exact code snippet",
-    "suggested_fix": "Concrete code correction",
-    "confidence": 0.85
-  }}
-]
-If no issues are found, return []."""
+Respond ONLY with a JSON object in this format:
+{{
+  "findings": [
+    {{
+      "title": "Clear concise finding title",
+      "category": "BUG" | "SECURITY" | "PERFORMANCE" | "CODE_QUALITY",
+      "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFORMATIONAL",
+      "file": "{target_file}",
+      "line": <line_number_in_target_file>,
+      "description": "Detailed explanation of the problem",
+      "evidence": "Exact code snippet from the diff",
+      "suggested_fix": "Concrete code correction or recommendation",
+      "confidence": 0.85
+    }}
+  ]
+}}
+If no issues are found, return: {{"findings": []}}"""
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -715,14 +822,14 @@ If no issues are found, return []."""
                 if resp.status_code == 200:
                     data = resp.json()
                     raw_text = data.get("response", "").strip()
-                    parsed_dicts = self._parse_json_findings(raw_text, "Monolithic LLM", filename)
+                    parsed_dicts = self._parse_json_findings(raw_text, "Monolithic LLM", target_file)
                     model_findings = []
                     for d in parsed_dicts:
                         model_findings.append(ModelFinding(
                             pr_id=pr_id,
                             source="llm_monolithic",
                             category=d.get("category", FindingCategory.BUG.value),
-                            file_path=d.get("file", filename),
+                            file_path=d.get("file", target_file),
                             line_start=int(d.get("line", 1)),
                             evidence=d.get("evidence", ""),
                             severity=d.get("severity", SeverityLevel.MEDIUM.value),
@@ -737,7 +844,7 @@ If no issues are found, return []."""
                         pr_id=pr_id,
                         source="llm_monolithic",
                         category=FindingCategory.BUG.value,
-                        file_path=filename,
+                        file_path=target_file,
                         line_start=1,
                         evidence="",
                         description=f"Ollama returned HTTP status {resp.status_code}",
@@ -748,7 +855,7 @@ If no issues are found, return []."""
                 pr_id=pr_id,
                 source="llm_monolithic",
                 category=FindingCategory.BUG.value,
-                file_path=filename,
+                file_path=target_file,
                 line_start=1,
                 evidence="",
                 description=f"Ollama invocation failed: {str(e)}",
@@ -769,12 +876,13 @@ If no issues are found, return []."""
             "execution_status": str
             "error": Optional[str]
         """
+        target_file = extract_primary_diff_file(diff_content, filename)
         if os.environ.get("PR_SENTINEL_OFFLINE", "").lower() in ("1", "true", "yes"):
             finding = ModelFinding(
                 pr_id=pr_id,
                 source="llm_monolithic",
                 category=FindingCategory.UNKNOWN.value,
-                file_path=filename,
+                file_path=target_file,
                 line_start=1,
                 evidence="",
                 description="Ollama offline or execution bypassed via PR_SENTINEL_OFFLINE.",
@@ -788,7 +896,7 @@ If no issues are found, return []."""
 
         prompt = f"""You are an expert automated code reviewer.
 Review the following pull request code diff and report any bugs, security vulnerabilities, or critical flaws.
-Target File: {filename}
+Target File: {target_file}
 
 Repository Context:
 {repo_context}
@@ -799,21 +907,23 @@ Code Diff:
 ```
 
 Instructions:
-Respond ONLY with a JSON array of findings matching this exact schema:
-[
-  {{
-    "title": "Clear concise finding title",
-    "category": "BUG" | "SECURITY" | "PERFORMANCE" | "CODE_QUALITY",
-    "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFORMATIONAL",
-    "file": "{filename}",
-    "line": <line_number_or_1>,
-    "description": "Detailed explanation of the problem",
-    "evidence": "Exact code snippet",
-    "suggested_fix": "Concrete code correction",
-    "confidence": 0.85
-  }}
-]
-If no issues are found, return []."""
+Respond ONLY with a JSON object in this format:
+{{
+  "findings": [
+    {{
+      "title": "Clear concise finding title",
+      "category": "BUG" | "SECURITY" | "PERFORMANCE" | "CODE_QUALITY",
+      "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFORMATIONAL",
+      "file": "{target_file}",
+      "line": <line_number_in_target_file>,
+      "description": "Detailed explanation of the problem",
+      "evidence": "Exact code snippet from the diff",
+      "suggested_fix": "Concrete code correction or recommendation",
+      "confidence": 0.85
+    }}
+  ]
+}}
+If no issues are found, return: {{"findings": []}}"""
 
         try:
             with httpx.Client(timeout=self.timeout) as client:
@@ -829,14 +939,14 @@ If no issues are found, return []."""
                 if resp.status_code == 200:
                     data = resp.json()
                     raw_text = data.get("response", "").strip()
-                    parsed = self._parse_json_findings(raw_text, "Monolithic Reviewer", filename)
+                    parsed = self._parse_json_findings(raw_text, "Monolithic Reviewer", target_file)
                     model_findings = []
                     for d in parsed:
                         model_findings.append(ModelFinding(
                             pr_id=pr_id,
                             source="llm_monolithic",
                             category=d.get("category", FindingCategory.BUG.value),
-                            file_path=d.get("file", filename),
+                            file_path=d.get("file", target_file),
                             line_start=int(d.get("line", 1)),
                             evidence=d.get("evidence", ""),
                             severity=d.get("severity", SeverityLevel.MEDIUM.value),
@@ -856,7 +966,7 @@ If no issues are found, return []."""
                             pr_id=pr_id,
                             source="llm_monolithic",
                             category=FindingCategory.UNKNOWN.value,
-                            file_path=filename,
+                            file_path=target_file,
                             line_start=1,
                             evidence="",
                             description=f"Ollama returned HTTP status {resp.status_code}",
@@ -871,7 +981,7 @@ If no issues are found, return []."""
                     pr_id=pr_id,
                     source="llm_monolithic",
                     category=FindingCategory.UNKNOWN.value,
-                    file_path=filename,
+                    file_path=target_file,
                     line_start=1,
                     evidence="",
                     description=f"Ollama timed out after {self.timeout}s",
@@ -886,7 +996,7 @@ If no issues are found, return []."""
                     pr_id=pr_id,
                     source="llm_monolithic",
                     category=FindingCategory.UNKNOWN.value,
-                    file_path=filename,
+                    file_path=target_file,
                     line_start=1,
                     evidence="",
                     description=f"Ollama invocation failed: {str(e)}",
@@ -966,7 +1076,7 @@ If no issues are found, return []."""
         """Safely extract JSON array of findings from LLM output without greedy blowout."""
         if not text:
             return []
-        
+
         # Clean markdown code blocks if any
         cleaned = re.sub(r"^```(?:json)?\s*", "", text.strip(), flags=re.MULTILINE)
         cleaned = re.sub(r"\s*```$", "", cleaned.strip(), flags=re.MULTILINE)
@@ -975,10 +1085,24 @@ If no issues are found, return []."""
             parsed = json.loads(cleaned)
             if isinstance(parsed, list):
                 return self._normalize_findings(parsed, agent_name, default_file)
-            elif isinstance(parsed, dict) and "findings" in parsed:
-                return self._normalize_findings(parsed["findings"], agent_name, default_file)
+            elif isinstance(parsed, dict):
+                for key in ("findings", "issues", "defects", "results"):
+                    if key in parsed and isinstance(parsed[key], list):
+                        return self._normalize_findings(parsed[key], agent_name, default_file)
+                if "title" in parsed:
+                    return self._normalize_findings([parsed], agent_name, default_file)
         except Exception:
             pass
+
+        # Regex search for {"findings": [...]}
+        match_obj = re.search(r"\{\s*\"findings\"\s*:\s*(\[.*?\])\s*\}", text, re.DOTALL)
+        if match_obj:
+            try:
+                parsed = json.loads(match_obj.group(1))
+                if isinstance(parsed, list):
+                    return self._normalize_findings(parsed, agent_name, default_file)
+            except Exception:
+                pass
 
         # Non-greedy search for JSON array block
         match = re.search(r"\[\s*\{.*?\}\s*\]", text, re.DOTALL)
@@ -997,15 +1121,25 @@ If no issues are found, return []."""
         for item in items:
             if not isinstance(item, dict):
                 continue
+            f_path = str(item.get("file") or item.get("file_path") or default_file)
+            if f_path.endswith(".diff") and not default_file.endswith(".diff"):
+                f_path = default_file
+
+            raw_line = item.get("line") or item.get("line_start") or 1
+            try:
+                line_no = max(1, int(float(raw_line)))
+            except (ValueError, TypeError):
+                line_no = 1
+
             normalized.append({
-                "title": item.get("title", "Review Finding"),
-                "category": item.get("category", agent_name),
-                "severity": item.get("severity", "MEDIUM").upper(),
-                "file": item.get("file", default_file),
-                "line": max(1, int(item.get("line", 1))),
-                "description": item.get("description", ""),
-                "evidence": item.get("evidence", ""),
-                "suggested_fix": item.get("suggested_fix", ""),
+                "title": str(item.get("title", "Review Finding")),
+                "category": str(item.get("category", agent_name)),
+                "severity": str(item.get("severity", "MEDIUM")).upper(),
+                "file": f_path,
+                "line": line_no,
+                "description": str(item.get("description", "")),
+                "evidence": str(item.get("evidence", "")),
+                "suggested_fix": str(item.get("suggested_fix") or item.get("recommendation", "")),
                 "confidence": float(item.get("confidence", 0.8)),
             })
         return normalized

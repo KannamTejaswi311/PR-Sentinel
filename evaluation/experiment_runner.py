@@ -12,9 +12,15 @@ import json
 import logging
 import os
 from pathlib import Path
+import sys
 import time
 from typing import Any, Dict, List, Optional
 import uuid
+
+# Ensure repository root is on sys.path
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from sentinel.pipeline import PRSentinelPipeline
 from sentinel.schemas import (
@@ -66,7 +72,20 @@ def extract_model_findings(
 
     for item in raw_findings:
         if isinstance(item, ModelFinding):
+            if item.execution_status in (
+                ExecutionStatus.TOOL_ERROR.value,
+                ExecutionStatus.SKIPPED.value,
+                ExecutionStatus.UNSUPPORTED_LANGUAGE.value,
+            ) or item.rule_id == "LANG_UNSUPPORTED":
+                continue
             findings.append(item)
+            continue
+
+        if item.get("execution_status") in (
+            ExecutionStatus.TOOL_ERROR.value,
+            ExecutionStatus.SKIPPED.value,
+            ExecutionStatus.UNSUPPORTED_LANGUAGE.value,
+        ) or item.get("rule_id") == "LANG_UNSUPPORTED":
             continue
 
         file_path = item.get("file") or item.get("file_path") or "unknown.py"
@@ -220,9 +239,10 @@ class ExperimentRunner:
         exp_id: str,
         pr_limit: Optional[int] = None,
         pr_ids: Optional[List[str]] = None,
+        resume: bool = True,
     ) -> Dict[str, Any]:
         """Execute a full or partial experimental run for a configuration."""
-        logger.info(f"=== Starting Experiment Execution: {exp_id} ===")
+        logger.info(f"=== Starting Experiment Execution: {exp_id} (resume={resume}) ===")
         manifest_records = self.load_manifest()
 
         if pr_ids:
@@ -257,12 +277,35 @@ class ExperimentRunner:
 
         for idx, rec in enumerate(records, 1):
             pr_id = rec["pr_id"]
+            pr_file = out_dir / f"{pr_id}.json"
+
+            if resume and pr_file.exists():
+                try:
+                    with open(pr_file, "r", encoding="utf-8") as f:
+                        cached_res = json.load(f)
+                    if cached_res.get("status") == "SUCCESS":
+                        findings_cnt = cached_res.get("findings_count", len(cached_res.get("findings", [])))
+                        logger.info(
+                            f"[{idx}/{len(records)}] Resuming {exp_id} on PR: {pr_id} "
+                            f"(already SUCCESS, {findings_cnt} findings)"
+                        )
+                        exp_manifest["successful_prs"] += 1
+                        exp_manifest["total_findings_generated"] += findings_cnt
+                        exp_manifest["per_pr_results"][pr_id] = {
+                            "status": "SUCCESS",
+                            "findings_count": findings_cnt,
+                            "duration_seconds": cached_res.get("duration_seconds", 0.0),
+                            "error": None,
+                        }
+                        continue
+                except Exception as e:
+                    logger.warning(f"Could not load existing file for {pr_id}, re-running: {e}")
+
             logger.info(f"[{idx}/{len(records)}] Running {exp_id} on PR: {pr_id}")
 
             pr_res = self.run_pr(rec, exp_id=exp_id, pipeline=pipeline)
 
             # Save immutable raw PR prediction file
-            pr_file = out_dir / f"{pr_id}.json"
             with open(pr_file, "w", encoding="utf-8") as f:
                 json.dump(pr_res, f, indent=2)
 
@@ -279,7 +322,12 @@ class ExperimentRunner:
                 "error": pr_res.get("error"),
             }
 
-        # Write overall configuration manifest
+            # Periodically update manifest on disk
+            manifest_file = out_dir / "execution_manifest.json"
+            with open(manifest_file, "w", encoding="utf-8") as f:
+                json.dump(exp_manifest, f, indent=2)
+
+        # Write final overall configuration manifest
         manifest_file = out_dir / "execution_manifest.json"
         with open(manifest_file, "w", encoding="utf-8") as f:
             json.dump(exp_manifest, f, indent=2)
@@ -314,14 +362,20 @@ def main():
         default=None,
         help="Run for a specific single PR ID",
     )
+    parser.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="Disable resuming from existing successful outputs (re-run all PRs)",
+    )
     args = parser.parse_args()
 
     runner = ExperimentRunner()
     target_configs = ALL_EXPERIMENT_CONFIGS if args.experiment == "ALL" else [args.experiment]
     pr_ids = [args.pr_id] if args.pr_id else None
+    resume = not args.no_resume
 
     for cfg in target_configs:
-        runner.run_experiment(exp_id=cfg, pr_limit=args.limit, pr_ids=pr_ids)
+        runner.run_experiment(exp_id=cfg, pr_limit=args.limit, pr_ids=pr_ids, resume=resume)
 
 
 if __name__ == "__main__":

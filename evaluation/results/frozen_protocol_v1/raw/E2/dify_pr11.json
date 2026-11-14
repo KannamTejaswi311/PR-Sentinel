@@ -1,0 +1,150 @@
+{
+  "pr_id": "dify_pr11",
+  "experiment_id": "E2",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "dify_pr11",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "api/core/agent/base_agent_runner.py",
+      "line_start": 515,
+      "evidence": "]",
+      "execution_status": "SUCCESS",
+      "finding_id": "09bb43e5-775d-44d0-b789-9d4cf2344d49",
+      "line_end": 515,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: closing parenthesis ']' does not match opening parenthesis '(' on line 105",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr11",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/core/agent/base_agent_runner.py",
+      "line_start": 515,
+      "evidence": "Column 30",
+      "execution_status": "SUCCESS",
+      "finding_id": "2ab5e9f1-2618-4753-a415-1d0f898635bc",
+      "line_end": 515,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "SyntaxError: closing parenthesis ']' does not match opening parenthesis '(' on line 105",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr11",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "api/models/model.py",
+      "line_start": 1835,
+      "evidence": ")",
+      "execution_status": "SUCCESS",
+      "finding_id": "67d3c74e-6104-412d-ae7d-e8550d19ecb1",
+      "line_end": 1835,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr11",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/models/model.py",
+      "line_start": 1835,
+      "evidence": "Column 5",
+      "execution_status": "SUCCESS",
+      "finding_id": "0243b034-7ab4-4981-847a-e8a3f61befbe",
+      "line_end": 1835,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr11",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "api/tests/test_containers_integration_tests/services/test_agent_service.py",
+      "line_start": 232,
+      "evidence": "thought1 = MessageAgentThought(",
+      "execution_status": "SUCCESS",
+      "finding_id": "9b13dd67-5df4-44bb-8494-04aa7dd53849",
+      "line_end": 232,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr11",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/tests/test_containers_integration_tests/services/test_agent_service.py",
+      "line_start": 232,
+      "evidence": "Column 9",
+      "execution_status": "SUCCESS",
+      "finding_id": "309235c8-43f4-47ff-b458-fcb6b2f320ab",
+      "line_end": 232,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    }
+  ],
+  "findings_count": 6,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 6.308,
+  "execution_manifest": {
+    "codebert": "SKIPPED",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SKIPPED",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

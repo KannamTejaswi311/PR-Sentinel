@@ -1,0 +1,150 @@
+{
+  "pr_id": "prefect_pr6",
+  "experiment_id": "E2",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "prefect_pr6",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "src/prefect/deployments/__init__.py",
+      "line_start": 21,
+      "evidence": "def __getattr__(attr_name: str) -> object:",
+      "execution_status": "SUCCESS",
+      "finding_id": "2d54e51a-3331-4a30-a590-486db50d35e3",
+      "line_end": 21,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: expected an indented block after function definition on line 19",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr6",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "src/prefect/deployments/__init__.py",
+      "line_start": 21,
+      "evidence": "Column 44",
+      "execution_status": "SUCCESS",
+      "finding_id": "7fd1e07f-a37c-41eb-81cb-43450b2bfdda",
+      "line_end": 21,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: expected an indented block after function definition on line 19",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr6",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "src/prefect/deployments/flow_runs.py",
+      "line_start": 130,
+      "evidence": "except ValueError:",
+      "execution_status": "SUCCESS",
+      "finding_id": "caf93636-e01c-4fe6-96a9-09a6d12f22d4",
+      "line_end": 130,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: invalid syntax",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr6",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "src/prefect/deployments/flow_runs.py",
+      "line_start": 130,
+      "evidence": "Column 10",
+      "execution_status": "SUCCESS",
+      "finding_id": "75ea9ae9-74da-428a-a180-ccf5083c88c5",
+      "line_end": 130,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "SyntaxError: invalid syntax",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr6",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "tests/deployment/test_flow_runs.py",
+      "line_start": 20,
+      "evidence": "from prefect.settings import (",
+      "execution_status": "SUCCESS",
+      "finding_id": "2fddd5ff-80ff-4c1c-abd1-e35321a11b2c",
+      "line_end": 20,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: '(' was never closed",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr6",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "tests/deployment/test_flow_runs.py",
+      "line_start": 20,
+      "evidence": "Column 31",
+      "execution_status": "SUCCESS",
+      "finding_id": "f5d42a61-2d97-4ff4-92af-04d279b93544",
+      "line_end": 20,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "SyntaxError: '(' was never closed",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    }
+  ],
+  "findings_count": 6,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 6.401,
+  "execution_manifest": {
+    "codebert": "SKIPPED",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SKIPPED",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

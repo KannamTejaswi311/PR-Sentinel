@@ -1,0 +1,108 @@
+{
+  "pr_id": "dify_pr1",
+  "experiment_id": "E2",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "dify_pr1",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "api/core/workflow/nodes/variable_assigner/v1/node.py",
+      "line_start": 33,
+      "evidence": "graph_runtime_state=graph_runtime_state,",
+      "execution_status": "SUCCESS",
+      "finding_id": "92f166d6-72fe-4c2c-a312-e1cff48a93c1",
+      "line_end": 33,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr1",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/core/workflow/nodes/variable_assigner/v1/node.py",
+      "line_start": 33,
+      "evidence": "Column 13",
+      "execution_status": "SUCCESS",
+      "finding_id": "fad9187c-a350-4ab0-a9e1-a67f1ef91585",
+      "line_end": 33,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr1",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "api/tests/unit_tests/core/workflow/graph_engine/test_streaming_conversation_variables.py",
+      "line_start": 45,
+      "evidence": "runner = TableTestRunner()",
+      "execution_status": "SUCCESS",
+      "finding_id": "51b83a34-c845-48b0-9fa4-1491dc1cb416",
+      "line_end": 45,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr1",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/tests/unit_tests/core/workflow/graph_engine/test_streaming_conversation_variables.py",
+      "line_start": 45,
+      "evidence": "Column 5",
+      "execution_status": "SUCCESS",
+      "finding_id": "10e2bfa3-c18d-4504-987e-0f10da2fd3f5",
+      "line_end": 45,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    }
+  ],
+  "findings_count": 4,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 2.768,
+  "execution_manifest": {
+    "codebert": "SKIPPED",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SKIPPED",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "experiment_id": "E6",
+  "timestamp": "2026-11-13T14:00:29Z",
+  "config": {
+    "experiment_id": "E6",
+    "enable_codebert": true,
+    "enable_static": true,
+    "enable_rag": true,
+    "enable_llm": true,
+    "enable_multi_agent": true,
+    "enable_synthesis": true,
+    "enable_test_generator": true,
+    "require_real_weights": true,
+    "target_repo_dir": null,
+    "llm_model": "qwen2.5-coder:3b-instruct",
+    "ollama_url": "http://localhost:11434/api/generate",
+    "timeout_seconds": 30.0
+  },
+  "total_prs_scheduled": 5,
+  "successful_prs": 5,
+  "failed_prs": 0,
+  "total_findings_generated": 142,
+  "per_pr_results": {
+    "Ghost_pr1": {
+      "status": "SUCCESS",
+      "findings_count": 5,
+      "duration_seconds": 95.402,
+      "error": null
+    },
+    "Ghost_pr2": {
+      "status": "SUCCESS",
+      "findings_count": 17,
+      "duration_seconds": 134.544,
+      "error": null
+    },
+    "Ghost_pr3": {
+      "status": "SUCCESS",
+      "findings_count": 14,
+      "duration_seconds": 136.124,
+      "error": null
+    },
+    "Ghost_pr4": {
+      "status": "SUCCESS",
+      "findings_count": 56,
+      "duration_seconds": 115.857,
+      "error": null
+    },
+    "Ghost_pr5": {
+      "status": "SUCCESS",
+      "findings_count": 50,
+      "duration_seconds": 117.891,
+      "error": null
+    }
+  }
+}

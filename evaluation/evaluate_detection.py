@@ -18,7 +18,12 @@ import logging
 import math
 import os
 from pathlib import Path
+import sys
 from typing import Any, Dict, List, Optional, Tuple
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 import numpy as np
 import pandas as pd
@@ -274,28 +279,29 @@ def run_evaluation(
 
         df_summary = pd.DataFrame(rows)
 
-        # Compute Wilcoxon signed-rank test comparing E6 against each baseline
-        if "E6" in per_config_pr_results:
-            e6_prs = {r.pr_id: r.benchmark_apparent_f1 for r in per_config_pr_results["E6"]}
-            wilcoxon_results = {}
-            for other_cfg, other_res in per_config_pr_results.items():
-                if other_cfg == "E6":
-                    continue
-                other_prs = {r.pr_id: r.benchmark_apparent_f1 for r in other_res}
-                common_ids = sorted(set(e6_prs.keys()).intersection(set(other_prs.keys())))
-                diffs = [e6_prs[pid] - other_prs[pid] for pid in common_ids]
-                
-                # Wilcoxon requires non-zero differences
-                non_zeros = [d for d in diffs if d != 0]
-                if len(non_zeros) >= 5:
-                    stat, p_val = stats.wilcoxon(diffs, zero_method="pratt")
-                    wilcoxon_results[other_cfg] = round(p_val, 4)
-                else:
-                    wilcoxon_results[other_cfg] = "N/A (<5 non-zero diffs)"
+        # Compute Wilcoxon signed-rank test comparing primary system E6_A1 (and reference E6) against baselines
+        for ref_cfg, col_name in [("E6_A1", "wilcoxon_p_vs_E6_A1"), ("E6", "wilcoxon_p_vs_E6")]:
+            if ref_cfg in per_config_pr_results:
+                ref_prs = {r.pr_id: r.benchmark_apparent_f1 for r in per_config_pr_results[ref_cfg]}
+                wilcoxon_results = {}
+                for other_cfg, other_res in per_config_pr_results.items():
+                    if other_cfg == ref_cfg:
+                        continue
+                    other_prs = {r.pr_id: r.benchmark_apparent_f1 for r in other_res}
+                    common_ids = sorted(set(ref_prs.keys()).intersection(set(other_prs.keys())))
+                    diffs = [ref_prs[pid] - other_prs[pid] for pid in common_ids]
 
-            df_summary["wilcoxon_p_vs_E6"] = df_summary["config_id"].map(
-                lambda c: wilcoxon_results.get(c, "Baseline") if c != "E6" else "Reference (E6)"
-            )
+                    # Wilcoxon requires non-zero differences
+                    non_zeros = [d for d in diffs if d != 0]
+                    if len(non_zeros) >= 5:
+                        stat, p_val = stats.wilcoxon(diffs, zero_method="pratt")
+                        wilcoxon_results[other_cfg] = round(p_val, 4)
+                    else:
+                        wilcoxon_results[other_cfg] = "N/A (<5 non-zero diffs)"
+
+                df_summary[col_name] = df_summary["config_id"].map(
+                    lambda c: wilcoxon_results.get(c, "Baseline") if c != ref_cfg else f"Reference ({ref_cfg})"
+                )
 
         csv_name = f"metrics_summary_{proto.value.lower()}_{cohort_label.lower()}.csv"
         csv_path = output_dir / csv_name

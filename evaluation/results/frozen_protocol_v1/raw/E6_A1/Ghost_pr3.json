@@ -1,0 +1,61 @@
+{
+  "pr_id": "Ghost_pr3",
+  "experiment_id": "E6_A1",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "Ghost_pr3",
+      "source": "E6_A1",
+      "category": "CODE_QUALITY",
+      "file_path": "ghost/core/core/server/services/email-service/DomainWarmingService.ts",
+      "line_start": 75,
+      "evidence": "Email = createModelClass({ ... });\nconst service = new DomainWarmingService({ models: { Email } });",
+      "execution_status": "SUCCESS",
+      "finding_id": "5bbe7cfb-2f5d-439c-8c85-ec3c9e40ca79",
+      "line_end": 75,
+      "rule_id": "Unused variable 'Email'",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "The variable 'Email' is declared but not used anywhere in the code.",
+      "recommendation": "Remove or use the 'Email' variable.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    }
+  ],
+  "findings_count": 1,
+  "risk_assessment": {
+    "score": 3,
+    "risk_level": "LOW RISK",
+    "recommendation": "APPROVE WITH SUGGESTIONS: Minor style or non-critical observations.",
+    "metrics": {
+      "raw_finding_score": 2.0,
+      "file_spread_multiplier": 1.2,
+      "diff_size_multiplier": 1.2,
+      "codebert_penalty_added": 0.0,
+      "total_diff_lines": 411,
+      "modified_files_count": 3
+    },
+    "formula_explanation": "PR Risk Score = min(100, round(RawScore(2.0) * FileSpread(1.20) * DiffSize(1.20) + CodeBERTPenalty(0.0))) = 3",
+    "top_contributions": [
+      {
+        "title": "Unused variable 'Email'",
+        "severity": "LOW",
+        "is_security": false,
+        "points_added": 2.0
+      }
+    ]
+  },
+  "duration_seconds": 236.408,
+  "execution_manifest": {
+    "codebert": "SUCCESS",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SUCCESS",
+    "multi_agent": "SUCCESS",
+    "synthesizer": "SUCCESS",
+    "test_generator": "SUCCESS"
+  }
+}

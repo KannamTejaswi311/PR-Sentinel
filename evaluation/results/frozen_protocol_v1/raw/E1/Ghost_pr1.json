@@ -10,12 +10,13 @@
     "recommendation": "Synthesis disabled",
     "top_contributions": []
   },
-  "duration_seconds": 0.007,
+  "duration_seconds": 0.576,
   "execution_manifest": {
     "codebert": "SKIPPED",
     "static_analyzer": "SKIPPED",
+    "static_analysis": "SKIPPED",
     "rag_pipeline": "SKIPPED",
-    "multi_agent": "MONOLITHIC_MODE",
+    "multi_agent": "MONOLITHIC_MODE:TOOL_ERROR",
     "synthesizer": "SKIPPED",
     "test_generator": "SKIPPED"
   }

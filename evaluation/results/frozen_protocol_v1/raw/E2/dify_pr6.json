@@ -1,0 +1,192 @@
+{
+  "pr_id": "dify_pr6",
+  "experiment_id": "E2",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "dify_pr6",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "api/configs/feature/__init__.py",
+      "line_start": 949,
+      "evidence": "default=False,",
+      "execution_status": "SUCCESS",
+      "finding_id": "9791530c-a7a2-4621-a986-67fab015c4bf",
+      "line_end": 949,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr6",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/configs/feature/__init__.py",
+      "line_start": 949,
+      "evidence": "Column 9",
+      "execution_status": "SUCCESS",
+      "finding_id": "7674d74f-fc76-493e-babc-a502ca06feeb",
+      "line_end": 949,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr6",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "api/libs/smtp.py",
+      "line_start": 21,
+      "evidence": "self.opportunistic_tls = opportunistic_tls",
+      "execution_status": "SUCCESS",
+      "finding_id": "5717ead6-bc27-4eee-ba75-62f26f4e5e9f",
+      "line_end": 21,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr6",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/libs/smtp.py",
+      "line_start": 21,
+      "evidence": "Column 9",
+      "execution_status": "SUCCESS",
+      "finding_id": "1201d356-ef34-464d-b12c-cc9b872e0975",
+      "line_end": 21,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr6",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "api/tests/unit_tests/libs/test_smtp_client.py",
+      "line_start": 17,
+      "evidence": "client = SMTPClient(server=\"smtp.example.com\", port=25, username=\"\", password=\"\", _from=\"noreply@example.com\")",
+      "execution_status": "SUCCESS",
+      "finding_id": "eb79e4e5-f11d-4b38-abb0-bede8195b137",
+      "line_end": 17,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr6",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/tests/unit_tests/libs/test_smtp_client.py",
+      "line_start": 17,
+      "evidence": "Column 5",
+      "execution_status": "SUCCESS",
+      "finding_id": "c9c93987-a1af-45b6-9954-86afdee77fc3",
+      "line_end": 17,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr6",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "api/tests/unit_tests/tasks/test_mail_send_task.py",
+      "line_start": 9,
+      "evidence": "\"\"\"",
+      "execution_status": "SUCCESS",
+      "finding_id": "08355020-7b26-47b1-aad9-1501f01563c5",
+      "line_end": 9,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unterminated triple-quoted string literal (detected at line 28)",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "dify_pr6",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "api/tests/unit_tests/tasks/test_mail_send_task.py",
+      "line_start": 9,
+      "evidence": "Column 2",
+      "execution_status": "SUCCESS",
+      "finding_id": "158422e5-2b9a-474c-aac7-48fa9e0563d0",
+      "line_end": 9,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "SyntaxError: unterminated triple-quoted string literal (detected at line 28)",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    }
+  ],
+  "findings_count": 8,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 6.201,
+  "execution_manifest": {
+    "codebert": "SKIPPED",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SKIPPED",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

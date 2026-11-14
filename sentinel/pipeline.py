@@ -81,7 +81,16 @@ class PRSentinelPipeline:
                     "findings": codebert_findings,
                     "summary": codebert_summary,
                 }
-                manifest["codebert"] = ExecutionStatus.SUCCESS.value
+
+                # Check execution reality per Protocol v1.0
+                has_tool_error = any(
+                    f.get("execution_status") == ExecutionStatus.TOOL_ERROR.value
+                    for f in codebert_findings
+                )
+                if has_tool_error or (self.codebert.require_real_weights and (not self.codebert.has_real_weights or not self.codebert.defect_head.is_trained)):
+                    manifest["codebert"] = ExecutionStatus.TOOL_ERROR.value
+                else:
+                    manifest["codebert"] = ExecutionStatus.SUCCESS.value
             except Exception as e:
                 manifest["codebert"] = f"ERROR: {str(e)}"
         else:

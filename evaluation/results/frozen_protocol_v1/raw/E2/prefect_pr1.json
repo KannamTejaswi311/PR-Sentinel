@@ -1,0 +1,66 @@
+{
+  "pr_id": "prefect_pr1",
+  "experiment_id": "E2",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "prefect_pr1",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "src/prefect/_sdk/fetcher.py",
+      "line_start": 179,
+      "evidence": "job_vars_schema: dict[str, Any] = {}",
+      "execution_status": "SUCCESS",
+      "finding_id": "c46626f2-3301-406d-9262-7b57fa66f22e",
+      "line_end": 179,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: invalid syntax",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr1",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "src/prefect/_sdk/fetcher.py",
+      "line_start": 179,
+      "evidence": "Column 25",
+      "execution_status": "SUCCESS",
+      "finding_id": "1bb88b11-568d-4031-b15f-d5e7bfa51f2f",
+      "line_end": 179,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "SyntaxError: invalid syntax",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    }
+  ],
+  "findings_count": 2,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 2.262,
+  "execution_manifest": {
+    "codebert": "SKIPPED",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SKIPPED",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

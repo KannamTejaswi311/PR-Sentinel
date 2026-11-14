@@ -1,6 +1,6 @@
 {
   "experiment_id": "E6",
-  "timestamp": "2026-11-13T14:00:29Z",
+  "timestamp": "2026-11-13T16:43:43Z",
   "config": {
     "experiment_id": "E6",
     "enable_codebert": true,
@@ -19,36 +19,36 @@
   "total_prs_scheduled": 5,
   "successful_prs": 5,
   "failed_prs": 0,
-  "total_findings_generated": 142,
+  "total_findings_generated": 6,
   "per_pr_results": {
     "Ghost_pr1": {
       "status": "SUCCESS",
-      "findings_count": 5,
-      "duration_seconds": 95.402,
+      "findings_count": 3,
+      "duration_seconds": 175.46,
       "error": null
     },
     "Ghost_pr2": {
       "status": "SUCCESS",
-      "findings_count": 17,
-      "duration_seconds": 134.544,
+      "findings_count": 0,
+      "duration_seconds": 258.07,
       "error": null
     },
     "Ghost_pr3": {
       "status": "SUCCESS",
-      "findings_count": 14,
-      "duration_seconds": 136.124,
+      "findings_count": 1,
+      "duration_seconds": 236.408,
       "error": null
     },
     "Ghost_pr4": {
       "status": "SUCCESS",
-      "findings_count": 56,
-      "duration_seconds": 115.857,
+      "findings_count": 0,
+      "duration_seconds": 148.227,
       "error": null
     },
     "Ghost_pr5": {
       "status": "SUCCESS",
-      "findings_count": 50,
-      "duration_seconds": 117.891,
+      "findings_count": 2,
+      "duration_seconds": 160.964,
       "error": null
     }
   }

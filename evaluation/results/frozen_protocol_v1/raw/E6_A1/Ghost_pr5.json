@@ -1,0 +1,88 @@
+{
+  "pr_id": "Ghost_pr5",
+  "experiment_id": "E6_A1",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "E6_A1",
+      "category": "BUG",
+      "file_path": "apps/signup-form/README.md",
+      "line_start": 48,
+      "evidence": "A patch release can be rolled out instantly in production, whereas a minor/major release requires the Ghost monorepo to be updated and released.",
+      "execution_status": "SUCCESS",
+      "finding_id": "332cfbe8-cf0d-472c-ba51-476ce08c2591",
+      "line_end": 48,
+      "rule_id": "Potential Zero-Division by Variable",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "Division by variable without apparent non-zero validation.",
+      "recommendation": "Ensure variable is validated != 0 before division.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    },
+    {
+      "pr_id": "Ghost_pr5",
+      "source": "E6_A1",
+      "category": "CODE_QUALITY",
+      "file_path": "apps/signup-form/src/utils/helpers.tsx",
+      "line_start": 17,
+      "evidence": "```\ntry {\n    const STORAGE_KEY = 'ghost-history';\n```",
+      "execution_status": "SUCCESS",
+      "finding_id": "d1d5f8ee-f599-442c-81df-d6787cb23e7f",
+      "line_end": 17,
+      "rule_id": "Typo in `storageKey`",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "The variable `STORAGE_KEY` is defined as `ghost-history`, but used as `STORAGE_KEY` in the `getDefaultUrlHistory` function. This is a typo and can lead to incorrect behavior.",
+      "recommendation": "```\ntry {\n    const storageKey = 'ghost-history';\n```",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E6"
+      }
+    }
+  ],
+  "findings_count": 2,
+  "risk_assessment": {
+    "score": 81,
+    "risk_level": "CRITICAL RISK",
+    "recommendation": "DO NOT MERGE: PR contains critical security or logic defects. Extensive remediation required.",
+    "metrics": {
+      "raw_finding_score": 45.0,
+      "file_spread_multiplier": 1.5,
+      "diff_size_multiplier": 1.2,
+      "codebert_penalty_added": 0.0,
+      "total_diff_lines": 346,
+      "modified_files_count": 18
+    },
+    "formula_explanation": "PR Risk Score = min(100, round(RawScore(45.0) * FileSpread(1.50) * DiffSize(1.20) + CodeBERTPenalty(0.0))) = 81",
+    "top_contributions": [
+      {
+        "title": "Typo in `storageKey`",
+        "severity": "CRITICAL",
+        "is_security": false,
+        "points_added": 30.0
+      },
+      {
+        "title": "Potential Zero-Division by Variable",
+        "severity": "HIGH",
+        "is_security": false,
+        "points_added": 15.0
+      }
+    ]
+  },
+  "duration_seconds": 160.964,
+  "execution_manifest": {
+    "codebert": "SUCCESS",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SUCCESS",
+    "multi_agent": "SUCCESS",
+    "synthesizer": "SUCCESS",
+    "test_generator": "SUCCESS"
+  }
+}

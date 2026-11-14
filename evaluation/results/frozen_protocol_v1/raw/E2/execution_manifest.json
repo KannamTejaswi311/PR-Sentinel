@@ -1,6 +1,6 @@
 {
   "experiment_id": "E2",
-  "timestamp": "2026-11-11T16:03:19Z",
+  "timestamp": "2026-11-14T05:05:44Z",
   "config": {
     "experiment_id": "E2",
     "enable_codebert": false,
@@ -16,10 +16,10 @@
     "ollama_url": "http://localhost:11434/api/generate",
     "timeout_seconds": 30.0
   },
-  "total_prs_scheduled": 2,
-  "successful_prs": 2,
+  "total_prs_scheduled": 100,
+  "successful_prs": 100,
   "failed_prs": 0,
-  "total_findings_generated": 7,
+  "total_findings_generated": 253,
   "per_pr_results": {
     "Ghost_pr1": {
       "status": "SUCCESS",
@@ -31,6 +31,594 @@
       "status": "SUCCESS",
       "findings_count": 3,
       "duration_seconds": 0.006,
+      "error": null
+    },
+    "Ghost_pr3": {
+      "status": "SUCCESS",
+      "findings_count": 3,
+      "duration_seconds": 0.008,
+      "error": null
+    },
+    "Ghost_pr4": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.02,
+      "error": null
+    },
+    "Ghost_pr5": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.016,
+      "error": null
+    },
+    "Ghost_pr6": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.015,
+      "error": null
+    },
+    "Ghost_pr7": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.015,
+      "error": null
+    },
+    "Ghost_pr8": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.009,
+      "error": null
+    },
+    "Ghost_pr9": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "Ghost_pr10": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "Ghost_pr11": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.009,
+      "error": null
+    },
+    "Ghost_pr12": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "Ghost_pr13": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.008,
+      "error": null
+    },
+    "aspnetcore_pr1": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.008,
+      "error": null
+    },
+    "aspnetcore_pr2": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.006,
+      "error": null
+    },
+    "aspnetcore_pr3": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "aspnetcore_pr4": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.009,
+      "error": null
+    },
+    "aspnetcore_pr5": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "aspnetcore_pr6": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.011,
+      "error": null
+    },
+    "aspnetcore_pr7": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "aspnetcore_pr8": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "aspnetcore_pr9": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.008,
+      "error": null
+    },
+    "aspnetcore_pr10": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.009,
+      "error": null
+    },
+    "cal.com_pr1": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.008,
+      "error": null
+    },
+    "cal.com_pr2": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.008,
+      "error": null
+    },
+    "cal.com_pr3": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.01,
+      "error": null
+    },
+    "cal.com_pr4": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.009,
+      "error": null
+    },
+    "cal.com_pr5": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.01,
+      "error": null
+    },
+    "cal.com_pr6": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "cal.com_pr7": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.008,
+      "error": null
+    },
+    "cal.com_pr8": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.01,
+      "error": null
+    },
+    "cal.com_pr9": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.009,
+      "error": null
+    },
+    "cal.com_pr10": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.01,
+      "error": null
+    },
+    "cal.com_pr11": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "cal.com_pr12": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.008,
+      "error": null
+    },
+    "cal.com_pr13": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.008,
+      "error": null
+    },
+    "cal.com_pr14": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "cal.com_pr15": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "cal.com_pr16": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.007,
+      "error": null
+    },
+    "dify_pr1": {
+      "status": "SUCCESS",
+      "findings_count": 4,
+      "duration_seconds": 2.768,
+      "error": null
+    },
+    "dify_pr2": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.022,
+      "error": null
+    },
+    "dify_pr3": {
+      "status": "SUCCESS",
+      "findings_count": 7,
+      "duration_seconds": 5.995,
+      "error": null
+    },
+    "dify_pr4": {
+      "status": "SUCCESS",
+      "findings_count": 31,
+      "duration_seconds": 20.807,
+      "error": null
+    },
+    "dify_pr5": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.019,
+      "error": null
+    },
+    "dify_pr6": {
+      "status": "SUCCESS",
+      "findings_count": 8,
+      "duration_seconds": 6.201,
+      "error": null
+    },
+    "dify_pr7": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.031,
+      "error": null
+    },
+    "dify_pr8": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.018,
+      "error": null
+    },
+    "dify_pr9": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.018,
+      "error": null
+    },
+    "dify_pr10": {
+      "status": "SUCCESS",
+      "findings_count": 61,
+      "duration_seconds": 4.829,
+      "error": null
+    },
+    "dify_pr11": {
+      "status": "SUCCESS",
+      "findings_count": 6,
+      "duration_seconds": 6.308,
+      "error": null
+    },
+    "dify_pr12": {
+      "status": "SUCCESS",
+      "findings_count": 36,
+      "duration_seconds": 39.108,
+      "error": null
+    },
+    "dify_pr13": {
+      "status": "SUCCESS",
+      "findings_count": 7,
+      "duration_seconds": 6.595,
+      "error": null
+    },
+    "firefox-ios_pr1": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.022,
+      "error": null
+    },
+    "firefox-ios_pr2": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.025,
+      "error": null
+    },
+    "firefox-ios_pr3": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.021,
+      "error": null
+    },
+    "firefox-ios_pr4": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.019,
+      "error": null
+    },
+    "firefox-ios_pr5": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.021,
+      "error": null
+    },
+    "firefox-ios_pr6": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.021,
+      "error": null
+    },
+    "firefox-ios_pr7": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.024,
+      "error": null
+    },
+    "firefox-ios_pr8": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.023,
+      "error": null
+    },
+    "firefox-ios_pr9": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.019,
+      "error": null
+    },
+    "firefox-ios_pr10": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.017,
+      "error": null
+    },
+    "firefox-ios_pr11": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.015,
+      "error": null
+    },
+    "firefox-ios_pr12": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.022,
+      "error": null
+    },
+    "firefox-ios_pr13": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.019,
+      "error": null
+    },
+    "prefect_pr1": {
+      "status": "SUCCESS",
+      "findings_count": 2,
+      "duration_seconds": 2.262,
+      "error": null
+    },
+    "prefect_pr2": {
+      "status": "SUCCESS",
+      "findings_count": 30,
+      "duration_seconds": 32.186,
+      "error": null
+    },
+    "prefect_pr3": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.02,
+      "error": null
+    },
+    "prefect_pr4": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.019,
+      "error": null
+    },
+    "prefect_pr5": {
+      "status": "SUCCESS",
+      "findings_count": 10,
+      "duration_seconds": 8.231,
+      "error": null
+    },
+    "prefect_pr6": {
+      "status": "SUCCESS",
+      "findings_count": 6,
+      "duration_seconds": 6.401,
+      "error": null
+    },
+    "prefect_pr7": {
+      "status": "SUCCESS",
+      "findings_count": 16,
+      "duration_seconds": 6.598,
+      "error": null
+    },
+    "prefect_pr8": {
+      "status": "SUCCESS",
+      "findings_count": 13,
+      "duration_seconds": 10.511,
+      "error": null
+    },
+    "prefect_pr9": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.019,
+      "error": null
+    },
+    "prefect_pr10": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.016,
+      "error": null
+    },
+    "prefect_pr11": {
+      "status": "SUCCESS",
+      "findings_count": 4,
+      "duration_seconds": 4.282,
+      "error": null
+    },
+    "prefect_pr12": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.023,
+      "error": null
+    },
+    "prefect_pr13": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.016,
+      "error": null
+    },
+    "redis_pr1": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.017,
+      "error": null
+    },
+    "redis_pr2": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.018,
+      "error": null
+    },
+    "redis_pr3": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.018,
+      "error": null
+    },
+    "redis_pr4": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.016,
+      "error": null
+    },
+    "redis_pr5": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.017,
+      "error": null
+    },
+    "redis_pr6": {
+      "status": "SUCCESS",
+      "findings_count": 2,
+      "duration_seconds": 2.332,
+      "error": null
+    },
+    "redis_pr7": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.019,
+      "error": null
+    },
+    "redis_pr8": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.021,
+      "error": null
+    },
+    "redis_pr9": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.014,
+      "error": null
+    },
+    "tauri_pr1": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.015,
+      "error": null
+    },
+    "tauri_pr2": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.019,
+      "error": null
+    },
+    "tauri_pr3": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.019,
+      "error": null
+    },
+    "tauri_pr4": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.019,
+      "error": null
+    },
+    "tauri_pr5": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.029,
+      "error": null
+    },
+    "tauri_pr6": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.018,
+      "error": null
+    },
+    "tauri_pr7": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.016,
+      "error": null
+    },
+    "tauri_pr8": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.018,
+      "error": null
+    },
+    "tauri_pr9": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.017,
+      "error": null
+    },
+    "tauri_pr10": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.017,
+      "error": null
+    },
+    "tauri_pr11": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.015,
+      "error": null
+    },
+    "tauri_pr12": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.015,
+      "error": null
+    },
+    "tauri_pr13": {
+      "status": "SUCCESS",
+      "findings_count": 0,
+      "duration_seconds": 0.019,
       "error": null
     }
   }

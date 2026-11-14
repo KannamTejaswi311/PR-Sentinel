@@ -1,0 +1,360 @@
+{
+  "pr_id": "prefect_pr7",
+  "experiment_id": "E2",
+  "status": "SUCCESS",
+  "findings": [
+    {
+      "pr_id": "prefect_pr7",
+      "source": "Flake8",
+      "category": "BUG",
+      "file_path": "src/prefect/server/events/models/composite_trigger_child_firing.py",
+      "line_start": 9,
+      "evidence": "Column 1",
+      "execution_status": "SUCCESS",
+      "finding_id": "428ba4cd-ebb9-4d80-8ea1-154fd990edf7",
+      "line_end": 9,
+      "rule_id": "Linting F401: Code Quality / Logic Issue",
+      "severity": "MEDIUM",
+      "confidence": null,
+      "description": "'prefect.server.events.schemas.automations.Firing' imported but unused",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr7",
+      "source": "Flake8",
+      "category": "BUG",
+      "file_path": "src/prefect/server/events/models/composite_trigger_child_firing.py",
+      "line_start": 11,
+      "evidence": "Column 1",
+      "execution_status": "SUCCESS",
+      "finding_id": "3db33c57-70fb-4fd5-8bd7-c9ff4aab397f",
+      "line_end": 11,
+      "rule_id": "Linting F401: Code Quality / Logic Issue",
+      "severity": "MEDIUM",
+      "confidence": null,
+      "description": "'prefect.types._datetime.DateTime' imported but unused",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr7",
+      "source": "Flake8",
+      "category": "BUG",
+      "file_path": "src/prefect/server/events/models/composite_trigger_child_firing.py",
+      "line_start": 13,
+      "evidence": "Column 4",
+      "execution_status": "SUCCESS",
+      "finding_id": "01226940-281c-4c6c-a614-6f925bcc7cbc",
+      "line_end": 13,
+      "rule_id": "Linting F821: Undefined Variable / Runtime Error",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "undefined name 'TYPE_CHECKING'",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr7",
+      "source": "Flake8",
+      "category": "BUG",
+      "file_path": "src/prefect/server/events/models/composite_trigger_child_firing.py",
+      "line_start": 14,
+      "evidence": "Column 5",
+      "execution_status": "SUCCESS",
+      "finding_id": "1b0da77d-ce61-4945-9bd2-f013908ad5f7",
+      "line_end": 14,
+      "rule_id": "Linting F401: Code Quality / Logic Issue",
+      "severity": "MEDIUM",
+      "confidence": null,
+      "description": "'prefect.server.database.orm_models.ORMCompositeTriggerChildFiring' imported but unused",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr7",
+      "source": "Flake8",
+      "category": "BUG",
+      "file_path": "src/prefect/server/events/models/composite_trigger_child_firing.py",
+      "line_start": 18,
+      "evidence": "Column 14",
+      "execution_status": "SUCCESS",
+      "finding_id": "166951d9-bad4-4186-bf7d-e8369e600624",
+      "line_end": 18,
+      "rule_id": "Linting F821: Undefined Variable / Runtime Error",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "undefined name 'AsyncSession'",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr7",
+      "source": "Flake8",
+      "category": "BUG",
+      "file_path": "src/prefect/server/events/models/composite_trigger_child_firing.py",
+      "line_start": 35,
+      "evidence": "Column 13",
+      "execution_status": "SUCCESS",
+      "finding_id": "48e7e89e-221b-499a-b755-8fe21077ba02",
+      "line_end": 35,
+      "rule_id": "Linting F821: Undefined Variable / Runtime Error",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "undefined name 'sa'",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr7",
+      "source": "Flake8",
+      "category": "BUG",
+      "file_path": "src/prefect/server/events/models/composite_trigger_child_firing.py",
+      "line_start": 44,
+      "evidence": "Column 13",
+      "execution_status": "SUCCESS",
+      "finding_id": "07add641-7e3c-44e1-8286-8c97c2a6238e",
+      "line_end": 44,
+      "rule_id": "Linting F821: Undefined Variable / Runtime Error",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "undefined name 'sa'",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr7",
+      "source": "Flake8",
+      "category": "BUG",
+      "file_path": "src/prefect/server/events/models/composite_trigger_child_firing.py",
+      "line_start": 136,
+      "evidence": "Column 14",
+      "execution_status": "SUCCESS",
+      "finding_id": "35d5a384-c9b5-4e8d-af70-5345bccc66bb",
+      "line_end": 136,
+      "rule_id": "Linting F821: Undefined Variable / Runtime Error",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "undefined name 'AsyncSession'",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr7",
+      "source": "Flake8",
+      "category": "BUG",
+      "file_path": "src/prefect/server/events/models/composite_trigger_child_firing.py",
+      "line_start": 138,
+      "evidence": "Column 17",
+      "execution_status": "SUCCESS",
+      "finding_id": "ff05ac81-29c6-434f-93b1-803c7ba22c38",
+      "line_end": 138,
+      "rule_id": "Linting F821: Undefined Variable / Runtime Error",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "undefined name 'Sequence'",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr7",
+      "source": "Flake8",
+      "category": "BUG",
+      "file_path": "src/prefect/server/events/models/composite_trigger_child_firing.py",
+      "line_start": 139,
+      "evidence": "Column 10",
+      "execution_status": "SUCCESS",
+      "finding_id": "869ec9cc-69d8-44f7-af10-57b2f16f2e52",
+      "line_end": 139,
+      "rule_id": "Linting F821: Undefined Variable / Runtime Error",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "undefined name 'UUID'",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr7",
+      "source": "Flake8",
+      "category": "BUG",
+      "file_path": "src/prefect/server/events/models/composite_trigger_child_firing.py",
+      "line_start": 148,
+      "evidence": "Column 9",
+      "execution_status": "SUCCESS",
+      "finding_id": "7615186e-5f13-449a-ba57-891f7d2431a0",
+      "line_end": 148,
+      "rule_id": "Linting F821: Undefined Variable / Runtime Error",
+      "severity": "HIGH",
+      "confidence": null,
+      "description": "undefined name 'sa'",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr7",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "src/prefect/server/events/models/composite_trigger_child_firing.py",
+      "line_start": 157,
+      "evidence": "Column 39",
+      "execution_status": "SUCCESS",
+      "finding_id": "32c2ec0d-1fac-4d53-88b1-e86259662efe",
+      "line_end": 157,
+      "rule_id": "Linting W292: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "no newline at end of file",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr7",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "src/prefect/server/events/triggers.py",
+      "line_start": 35,
+      "evidence": "read_automation,",
+      "execution_status": "SUCCESS",
+      "finding_id": "6843b428-e598-459d-8ae7-520581a69ad6",
+      "line_end": 35,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr7",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "src/prefect/server/events/triggers.py",
+      "line_start": 35,
+      "evidence": "Column 5",
+      "execution_status": "SUCCESS",
+      "finding_id": "d72b51c2-a8c5-41a6-845e-9b105566ae83",
+      "line_end": 35,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr7",
+      "source": "AST_Parser",
+      "category": "BUG",
+      "file_path": "tests/events/server/triggers/test_composite_triggers.py",
+      "line_start": 1625,
+      "evidence": "await triggers.reactive_evaluation(ingredients_buy)",
+      "execution_status": "SUCCESS",
+      "finding_id": "50fcfbae-c275-4d16-9767-88986872381a",
+      "line_end": 1625,
+      "rule_id": "Syntax Error",
+      "severity": "CRITICAL",
+      "confidence": null,
+      "description": "Code contains syntax error: unexpected indent",
+      "recommendation": "Correct syntax error before deployment.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    },
+    {
+      "pr_id": "prefect_pr7",
+      "source": "Flake8",
+      "category": "CODE_QUALITY",
+      "file_path": "tests/events/server/triggers/test_composite_triggers.py",
+      "line_start": 1625,
+      "evidence": "Column 9",
+      "execution_status": "SUCCESS",
+      "finding_id": "2ba5d22a-4592-40d2-a97d-65eb976bd875",
+      "line_end": 1625,
+      "rule_id": "Linting E999: Code Style / PEP8",
+      "severity": "LOW",
+      "confidence": null,
+      "description": "IndentationError: unexpected indent",
+      "recommendation": "Fix style or linting issue according to PEP8 guidelines.",
+      "granularity": "STATEMENT",
+      "related_context_chunks": [],
+      "metadata": {
+        "experiment_id": "E2"
+      }
+    }
+  ],
+  "findings_count": 16,
+  "risk_assessment": {
+    "score": 0,
+    "risk_level": "NEGLIGIBLE",
+    "recommendation": "Synthesis disabled",
+    "top_contributions": []
+  },
+  "duration_seconds": 6.598,
+  "execution_manifest": {
+    "codebert": "SKIPPED",
+    "static_analyzer": "SUCCESS",
+    "static_analysis": "SUCCESS",
+    "rag_pipeline": "SKIPPED",
+    "multi_agent": "SKIPPED",
+    "synthesizer": "SKIPPED",
+    "test_generator": "SKIPPED"
+  }
+}

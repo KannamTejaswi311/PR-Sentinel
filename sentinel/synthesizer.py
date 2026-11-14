@@ -19,6 +19,18 @@ from sentinel.schemas import (
 )
 
 
+def extract_primary_diff_file(diff_content: str, fallback: str = "patch.py") -> str:
+    """Extract primary modified target file from unified diff header."""
+    for line in diff_content.splitlines():
+        if line.startswith("+++ b/"):
+            return line[6:].strip()
+        elif line.startswith("+++ "):
+            p = line[4:].strip()
+            if p and p != "/dev/null":
+                return p
+    return fallback if not fallback.endswith(".diff") else "patch.py"
+
+
 class ReviewSynthesizer:
     """
     Consolidates findings from static analysis, CodeBERT representations,
@@ -48,17 +60,28 @@ class ReviewSynthesizer:
         Synthesize all review inputs into a consolidated report.
         """
         combined: List[Dict[str, Any]] = []
+        target_file = extract_primary_diff_file(diff_content, filename)
 
         # 1. From multi-agent orchestrator
         all_agent_findings = multi_agent_results.get("all_findings", [])
         for f in all_agent_findings:
+            if f.get("execution_status") in (
+                ExecutionStatus.TOOL_ERROR.value,
+                ExecutionStatus.SKIPPED.value,
+                ExecutionStatus.TIMEOUT.value,
+                ExecutionStatus.LLM_ERROR.value,
+            ):
+                continue
+            item_file = f.get("file", target_file)
+            if item_file.endswith(".diff"):
+                item_file = target_file
             combined.append({
                 "title": f.get("title", "Agent Finding"),
                 "category": f.get("category", "Multi-Agent"),
                 "source": f.get("source", "multi_agent"),
                 "severity": f.get("severity", "MEDIUM").upper(),
-                "file": f.get("file", filename),
-                "line": max(1, int(f.get("line", 1))),
+                "file": item_file,
+                "line": max(1, int(float(f.get("line", 1)))),
                 "description": f.get("description", ""),
                 "evidence": f.get("evidence", ""),
                 "suggested_fix": f.get("suggested_fix", ""),
@@ -66,16 +89,26 @@ class ReviewSynthesizer:
                 "rule_id": f.get("rule_id"),
             })
 
-        # 2. From static analysis
+        # 2. From static analysis (suppress unsupported language status messages from defect findings)
         for sf in static_findings:
+            if sf.get("execution_status") in (
+                ExecutionStatus.UNSUPPORTED_LANGUAGE.value,
+                ExecutionStatus.TOOL_ERROR.value,
+                ExecutionStatus.SKIPPED.value,
+            ) or sf.get("rule_id") == "LANG_UNSUPPORTED":
+                continue
+
             src = sf.get("source", "Static Analysis")
+            item_file = sf.get("file", target_file)
+            if item_file.endswith(".diff"):
+                item_file = target_file
             combined.append({
                 "title": sf.get("title", "Static Analysis Issue"),
                 "category": sf.get("category", sf.get("source", "Static Analysis")),
                 "source": f"static_{src.lower()}",
                 "severity": sf.get("severity", "MEDIUM").upper(),
-                "file": sf.get("file", filename),
-                "line": max(1, int(sf.get("line", 1))),
+                "file": item_file,
+                "line": max(1, int(float(sf.get("line", 1)))),
                 "description": sf.get("description", ""),
                 "evidence": sf.get("evidence", ""),
                 "suggested_fix": sf.get("recommendation", ""),
@@ -87,14 +120,22 @@ class ReviewSynthesizer:
         # 3. From CodeBERT defect classifier
         if codebert_analysis and isinstance(codebert_analysis, dict) and "findings" in codebert_analysis:
             for cf in codebert_analysis["findings"]:
+                if cf.get("execution_status") in (
+                    ExecutionStatus.TOOL_ERROR.value,
+                    ExecutionStatus.SKIPPED.value,
+                ):
+                    continue
+                item_file = cf.get("file_path") or cf.get("file", target_file)
+                if item_file.endswith(".diff"):
+                    item_file = target_file
                 combined.append({
                     "title": cf.get("title") or cf.get("rule_id", "CodeBERT Hunk Defect"),
                     "category": cf.get("category", "BUG"),
                     "source": cf.get("source", "codebert_head"),
                     "severity": cf.get("severity", "MEDIUM").upper(),
-                    "file": cf.get("file_path") or cf.get("file", filename),
-                    "line": max(1, int(cf.get("line_start", cf.get("line", 1)))),
-                    "line_end": int(cf.get("line_end", cf.get("line", 1))),
+                    "file": item_file,
+                    "line": max(1, int(float(cf.get("line_start", cf.get("line", 1))))),
+                    "line_end": int(float(cf.get("line_end", cf.get("line", 1)))),
                     "description": cf.get("description", ""),
                     "evidence": cf.get("evidence", ""),
                     "suggested_fix": cf.get("recommendation") or cf.get("suggested_fix", ""),
